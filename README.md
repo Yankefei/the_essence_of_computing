@@ -1,0 +1,2 @@
+# the_essence_of_computing
+practice of the_essence_of_computing
