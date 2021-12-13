@@ -7,4 +7,4 @@ include_directories(../../tools)
 
 aux_source_directory(. SRCS)
 
-add_executable(1_e_1_3_find_max_subinterval  ${SRCS})
+add_executable(part1  ${SRCS})
