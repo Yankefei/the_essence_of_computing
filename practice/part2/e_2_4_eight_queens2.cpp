@@ -22,6 +22,7 @@ bool is_valid(char chess[][8], int line, int column)
     // 每列只有一个
     for (int j = 0; j < 8; j ++)
     {
+        if (j == line) continue;
         if (chess[j][column] == 1)
         {
             return false;
@@ -79,6 +80,26 @@ bool is_valid(char chess[][8], int line, int column)
     return true;
 }
 
+bool is_valid(char chess[][8])
+{
+    for (int i = 0; i < 8; i ++)
+    {
+        for (int j = 0; j < 8; j ++)
+        {
+            if (chess[i][j] == 1)
+            {
+                if (!is_valid(chess, i, j))
+                {
+                    std::cout << i << " " << j << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 /*
     处处体现着逆向思维
     1. 只有先确定合法，再赋值，比赋值后再判断是否合法要少做很多事情
@@ -100,7 +121,6 @@ bool eight_queens(char chess[][8], int line)
     if (line < 0)
     {
         g_find_num ++;
-        print(chess);
         return true;
     }
 
@@ -127,7 +147,10 @@ bool eight_queens(char chess[][8], int line)
 
 void eight_queues2()
 {
-    char cheer[8][8] = {0};
-    eight_queens(cheer, 7);
+    char chess[8][8] = {0};
+    eight_queens(chess, 7);
+    print(chess);
+    // if (is_valid(chess))
+    //     std::cout << "pass" << std::endl;
     std::cout << "find: "<< g_find_num << std::endl;
 }
