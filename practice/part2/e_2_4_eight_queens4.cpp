@@ -1,5 +1,5 @@
 #include <iostream>
-#include <stack>
+#include "stack.h"
 
 namespace eight_test_4
 {
@@ -100,7 +100,7 @@ void get_eight_queens_with_no_recursive(char chess[8], int line)
 
     // 如何退出循环？
     // 怎样才算循环了一遍?
-    std::stack<int> h_j; // 向下游循环时，记录当时的j值
+    tools::Stack<int> h_j; // 向下游循环时，记录当时的j值
     while(true)
     {
         for (; j < 8; j ++)
