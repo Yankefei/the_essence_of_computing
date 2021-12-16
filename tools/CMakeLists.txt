@@ -11,6 +11,8 @@ add_library(tools STATIC ${SRCS})
 target_link_libraries(tools  pthread)
 
 
-
 add_executable(tools_main  main.cpp)
 target_link_libraries(tools_main  tools)
+
+add_executable(tree_main  tree_main.cpp)
+target_link_libraries(tree_main  tools)

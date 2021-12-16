@@ -28,18 +28,9 @@ public:
     RQueue(const RQueue& rhs)
     {
         element_ = new T[rhs.cap_];
-        cap_ = cap_;
+        cap_ = rhs.cap_;
 
-        front_ = element_ + (rhs.front - rhs.element_);
-        back_ = element_ + (rhs.back_ - rhs.element_);
-        auto front_temp = front_;
-        auto rhs_front_temp = rhs.front_;
-        for (; size_ != rhs.size_; size_ ++)
-        {
-            *front_temp = *rhs_front_temp;
-            front_temp = add_point(front_temp);
-            rhs_front_temp = add_point(rhs_front_temp);
-        }
+        copy_data(rhs);
     }
 
     RQueue& operator=(const RQueue& rhs)
@@ -49,18 +40,9 @@ public:
             free();
 
             element_ = new T[rhs.cap_];
-            cap_ = cap_;
+            cap_ = rhs.cap_;
 
-            front_ = element_ + (rhs.front - rhs.element_);
-            back_ = element_ + (rhs.back_ - rhs.element_);
-            auto front_temp = front_;
-            auto rhs_front_temp = rhs.front_;
-            for (; size_ != rhs.size_; size_ ++)
-            {
-                *front_temp = *rhs_front_temp;
-                front_temp = add_point(front_temp);
-                rhs_front_temp = add_point(rhs_front_temp);
-            }
+            copy_data(rhs);
         }
 
         return *this;
@@ -83,17 +65,17 @@ public:
         add_front();        
     }
 
-    T& front()
+    T& front() const
     {
         return *front_;
     }
 
-    T& back()
+    T& back() const
     {
         return *sub_point(back_);
     }
 
-    std::size_t size()
+    std::size_t size() const
     {
         return size_;
     }
@@ -107,11 +89,28 @@ private:
             element_ = nullptr;
             size_ = 0;
             front_ = nullptr;
-            back_ = nullptr;   
+            back_ = nullptr;
+            cap_ = 0;
         }
     }
 
-    T* add_point(T* pointer)
+    void copy_data(const RQueue& rhs)
+    {
+        front_ = element_ + (rhs.front_ - rhs.element_);
+        back_ = element_ + (rhs.back_ - rhs.element_);
+        auto front_temp = front_;
+        auto rhs_front_temp = rhs.front_;
+        for (; size_ != rhs.size_; size_ ++)
+        {
+            *front_temp = *rhs_front_temp;
+            front_temp = add_point(front_temp);
+            rhs_front_temp = rhs.add_point(rhs_front_temp);   // rhs's  add_point
+        }
+        assert(front_temp == back_);
+        assert(rhs_front_temp == rhs.back_);
+    }
+
+    T* add_point(T* pointer) const
     {
         if (pointer == cap_ + element_ - 1)
         {
@@ -123,7 +122,7 @@ private:
         }
     }
 
-    T* sub_point(T* pointer)
+    T* sub_point(T* pointer) const
     {
         if (pointer == element_)
             return element_ + cap_ - 1;

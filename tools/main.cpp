@@ -2,11 +2,82 @@
 #include "stack.h"
 
 #include "ring_queue.h"
+#include "queue.h"
 
 using namespace tools;
 
 int main()
 {
+    {
+        NQueue<int>  r_queue;
+
+        for (int i = 0; i < 110; i ++)
+        {
+            r_queue.push_back(i);
+        }
+
+        stream <<"num: " <<r_queue.size() <<std::endl;
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+        NQueue<int> r_queue_t = r_queue;
+        stream << "compare1..." << std::endl;
+        for (int i = 100; i < 120; i ++)
+        {
+            r_queue.push_back(i);
+        }
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+
+        stream << "compare2..." << std::endl;
+        
+        r_queue_t = r_queue;
+        stream <<"num: " <<r_queue_t.size() <<", front: "<< r_queue_t.front() <<", back: "<< r_queue_t.back() <<std::endl;
+    }
+
+    {
+        Queue<int>  r_queue;
+
+        for (int i = 0; i < 110; i ++)
+        {
+            r_queue.push_back(i);
+        }
+
+        stream <<"num: " <<r_queue.size() <<std::endl;
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+        Queue<int> r_queue_t = r_queue;
+        stream << "compare1..." << std::endl;
+        for (int i = 100; i < 120; i ++)
+        {
+            r_queue.push_back(i);
+        }
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+
+        stream << "compare2..." << std::endl;
+        
+        r_queue_t = r_queue;
+        stream <<"num: " <<r_queue_t.size() <<", front: "<< r_queue_t.front() <<", back: "<< r_queue_t.back() <<std::endl;
+    }
+
+#if 0
+
     {
         RQueue<int>  r_queue(100);
 
@@ -23,6 +94,8 @@ int main()
         
         stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
 
+        RQueue<int> r_queue_t = r_queue;
+        stream << "compare1..." << std::endl;
         for (int i = 100; i < 120; i ++)
         {
             if (!r_queue.push_back(i))
@@ -33,9 +106,14 @@ int main()
             r_queue.pop_front();
         
         stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+
+        stream << "compare2..." << std::endl;
+        
+        r_queue_t = r_queue;
+        stream <<"num: " <<r_queue_t.size() <<", front: "<< r_queue_t.front() <<", back: "<< r_queue_t.back() <<std::endl;
     }
 
-#if 0
     {
         Stack<int>  stack_int;
         for (int i = 0; i < 1000; i ++)
