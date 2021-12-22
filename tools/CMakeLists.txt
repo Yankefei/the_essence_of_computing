@@ -4,9 +4,7 @@ project(tools)
 
 include_directories(.)
 
-aux_source_directory (. SRCS)
-
-add_library(tools STATIC ${SRCS})
+add_library(tools STATIC stream.cpp  util.cpp)
 
 target_link_libraries(tools  pthread)
 
