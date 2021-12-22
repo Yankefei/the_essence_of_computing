@@ -76,9 +76,8 @@ int main()
         stream <<"num: " <<r_queue_t.size() <<", front: "<< r_queue_t.front() <<", back: "<< r_queue_t.back() <<std::endl;
     }
 
-#if 0
-
     {
+        stream << "RQueue" << std::endl;
         RQueue<int>  r_queue(100);
 
         for (int i = 0; i < 110; i ++)
@@ -115,6 +114,44 @@ int main()
     }
 
     {
+        stream << "RQueue2" << std::endl;
+        RQueue2<int>  r_queue(100);
+
+        for (int i = 0; i < 110; i ++)
+        {
+            if (!r_queue.push_back(i))
+                stream <<" push_back failed: "<< i << std::endl;
+        }
+
+        stream <<"num: " <<r_queue.size() <<std::endl;
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+        RQueue2<int> r_queue_t = r_queue;
+        stream << "compare1..." << std::endl;
+        for (int i = 100; i < 120; i ++)
+        {
+            if (!r_queue.push_back(i))
+                stream <<" push_back failed: "<< i << std::endl;
+        }
+
+        for (int i = 0; i < 30; i++)
+            r_queue.pop_front();
+        
+        stream <<"num: " <<r_queue.size() <<", front: "<< r_queue.front() <<", back: "<< r_queue.back() <<std::endl;
+
+
+        stream << "compare2..." << std::endl;
+        
+        r_queue_t = r_queue;
+        stream <<"num: " <<r_queue_t.size() <<", front: "<< r_queue_t.front() <<", back: "<< r_queue_t.back() <<std::endl;
+    }
+
+    {
+        stream << "Stack" << std::endl;
         Stack<int>  stack_int;
         for (int i = 0; i < 1000; i ++)
             stack_int.push(i);
@@ -134,6 +171,6 @@ int main()
         Stack<int> stack_int_temp = stack_int;
         stream << stack_int_temp.size() << " " << stack_int_temp.capacity()<<  " " << stack_int_temp.top() << std::endl;
     }
-#endif
+
     return 0;
 }

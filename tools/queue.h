@@ -50,6 +50,7 @@ public:
         return *this;
     }
 
+    void push(const T& val) { push_back(val); } 
     void push_back(const T& val)
     {
         Node* ptr = buy_node(val);
@@ -58,11 +59,12 @@ public:
         size_ ++;
     }
 
+    void pop() { pop_front(); } 
     void pop_front()
     {
         if (front_ == back_) return;
 
-        pop();
+        pop_();
         size_ --;
     }
 
@@ -81,12 +83,17 @@ public:
         return size_;
     }
 
+    bool empty() const
+    {
+        return size_ == 0;
+    }
+
 private:
     void free()
     {
         while(front_->next != nullptr)
         {
-            pop();
+            pop_();
         }
         size_ = 0;
     }
@@ -102,7 +109,7 @@ private:
         }
     }
 
-    void pop()
+    void pop_()
     {
         Node* p = front_->next;
         if (back_ == p)
@@ -133,6 +140,7 @@ private:
 
 
 // 起始位置没有空节点的自增长队列
+// 没有空节点，很容易出现未判断空的逻辑
 template<typename T>
 class Queue
 {
@@ -169,6 +177,7 @@ public:
         return *this;
     }
 
+    void push(const T& val) { push_back(val); }
     void push_back(const T& val)
     {
         Node* p = buy_node(val);
@@ -183,6 +192,7 @@ public:
         size_ ++;
     }
 
+    void pop() { pop_front(); }
     void pop_front()
     {
         if (front_ == nullptr) return;
@@ -191,6 +201,9 @@ public:
         front_ = front_->next;
         free_node(p);
         size_ --;
+        // do not forget
+        if (size_ == 0)
+            back_ = nullptr;
     }
 
     T& front() const
@@ -206,6 +219,11 @@ public:
     size_t size() const
     {
         return size_;
+    }
+
+    bool empty() const
+    {
+        return size_ == 0;
     }
 
 private:

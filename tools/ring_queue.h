@@ -48,6 +48,7 @@ public:
         return *this;
     }
 
+    bool push(const T&val) { return push_back(val); }
     bool push_back(const T& val)
     {
         if (!can_add_back()) return false;
@@ -58,6 +59,7 @@ public:
         return true;        
     }
 
+    bool pop(const T&val) { return pop_front(); }
     void pop_front()
     {
         if (!can_add_front()) return;
@@ -78,6 +80,11 @@ public:
     std::size_t size() const
     {
         return size_;
+    }
+
+    bool empty() const
+    {
+        return size_ == 0;
     }
 
 private:
@@ -166,7 +173,123 @@ private:
     T* back_{nullptr};
 };
 
-}
+// 环形队列，使用数组下标的方式实现, 实现简单了很多
+template<typename T>
+class RQueue2
+{
+public:
+    RQueue2(std::size_t size) : cap_(size > MIN_QUEUE_NUM ? size : MIN_QUEUE_NUM)
+    {
+        element_ = new T[cap_];
+        front_ = tail_ = 0;
+    }
 
+    ~RQueue2()
+    {
+        free();
+    }
+
+    RQueue2(const RQueue2& rhs)
+    {
+        element_ = new T[rhs.cap_];
+        cap_ = rhs.cap_;
+
+        copy_data(rhs);
+    }
+
+    RQueue2& operator=(const RQueue2& rhs)
+    {
+        if (this != &rhs)
+        {
+            free();
+
+            element_ = new T[rhs.cap_];
+            cap_ = rhs.cap_;
+
+            copy_data(rhs);
+        }
+
+        return *this;
+    }
+
+    bool push(const T&val) { return push_back(val); }
+    bool push_back(const T& val)
+    {
+        if (is_full()) return false;
+
+        element_[tail_] = val;
+        tail_ = (tail_ + 1) % cap_;
+        size_ ++;
+        return true;
+    }
+
+    bool pop(const T&val) { return pop_front(); }
+    void pop_front()
+    {
+        if (empty()) return;
+
+        front_ = (front_ + 1) % cap_;
+        size_ --;
+    }
+
+    T& front() const
+    {
+        assert(size_ > 0);
+        return element_[front_];
+    }
+
+    T& back() const
+    {
+        assert(size_ > 0);
+        return element_[(tail_ + cap_ - 1) % cap_];
+    }
+
+    std::size_t size() const
+    {
+        return size_;
+    }
+
+    bool empty() const
+    {
+        return size_ == 0;
+    }
+
+private:
+    bool is_full()
+    {
+        return cap_ == size_;
+    }
+
+    void free()
+    {
+        if (cap_)
+        {
+            delete[] element_;
+            cap_ = size_ = front_ = tail_ = 0;
+        }
+    }
+
+    void copy_data(const RQueue2& val)
+    {
+        front_ = val.front_;
+        tail_ = val.tail_;
+        for(auto i = front_; size_ != val.size_;
+            size_ ++, i = (i + 1) % val.cap_)
+        {
+            element_[i] = val.element_[i];
+        }
+    }
+
+private:
+    std::size_t cap_{0};
+    T* element_{nullptr};
+
+    std::size_t size_{0};
+    // 当两个下标重合时，如果size_为0则为空，非零则为满
+    std::size_t front_{0};
+    std::size_t tail_{0};
+};
+
+}
 
 #endif 

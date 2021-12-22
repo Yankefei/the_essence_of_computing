@@ -54,6 +54,12 @@ public:
     {
         if (size() == 0) return false;
         alloc_.destroy(-- first_free_);
+        
+    }
+
+    bool empty() const
+    {
+        return size() == 0;
     }
 
     std::size_t size() const

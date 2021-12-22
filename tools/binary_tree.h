@@ -6,21 +6,23 @@
 
 #include "stream.h"
 #include "stack.h"
-#include "tree_util.h"
+#include "queue.h"
 
 namespace tools
 {
 
-enum class CreateType : uint8_t
+enum class OrderType : uint8_t
 {
     PreOrder,
     InOrder,
-    LastOrder
+    LastOrder,
+    LevelOrder
 };
 
 template<typename T = char>
 class BinaryTree
 {
+public:
     struct Node
     {
         Node() = default;
@@ -51,9 +53,9 @@ public:
     }
 
     // 使用输入的完整字符串来创建树
-    void create_tree(T* str, CreateType type);
+    void create_tree(T* str, OrderType type);
 
-    void print_tree(CreateType type);
+    void print_tree(OrderType type);
 
     void create_tree_pre_in(T* pre, T* in, int n)
     {
@@ -105,6 +107,77 @@ public:
         }
 
         return false;
+    }
+
+public:
+    // 另一种堆栈的遍历算法
+    // 因为中序遍历和后序遍历都有这样的特点：
+    // 中序遍历，一个节点，从上往下第二次遍历的时候，才能遍历到
+    // 后序遍历，一个节点，从上往下第三次遍历的时候，才能遍历到
+    // 那么可以使用这样的规律，通过出栈的次数来进行打印
+    struct StkNode
+    {
+        Node*   pnode;
+        int     popnum;  // 出栈的次数
+    public:
+        StkNode(Node *p=nullptr):pnode(p),popnum(0){}
+    };
+
+    void StkNicePastOrder(Node *ptr)
+    {
+        if(ptr == nullptr) return ;
+        Stack<StkNode > st;
+        st.push(StkNode(ptr));
+        while(!st.empty())
+        {
+            StkNode node = st.top();
+            st.pop();
+            if(++node.popnum == 3) // 第三次出栈的时候才进行打印
+            {
+                stream <<node.pnode->data_<<"  ";
+            }
+            else
+            {
+                st.push(node);
+                if(node.popnum == 1 && node.pnode->left_tree_ != nullptr)
+                {
+                    st.push(StkNode(node.pnode->left_tree_));
+                }else if(node.popnum == 2 && node.pnode->right_tree_ != nullptr)
+                {
+                    st.push(StkNode(node.pnode->right_tree_));
+                }
+            }
+        }
+        stream << std::endl;
+    }
+
+    void StkNiceInOrder(Node *ptr)
+    {
+        if(ptr == nullptr) return ;
+        Stack<StkNode > st;
+        st.push(StkNode(ptr));
+        while(!st.empty())
+        {
+            StkNode node = st.top();
+            st.pop();
+            if(++node.popnum == 2) // 第二次出栈的时候才进行打印
+            {
+                if(node.pnode->right_tree_ != nullptr)
+                {
+                    st.push(StkNode(node.pnode->right_tree_));
+                }
+                stream <<node.pnode->data_<<"  ";
+            }else 
+            {
+                st.push(node);
+                if(node.popnum == 1 && node.pnode->left_tree_ != nullptr)
+                {
+                    st.push(StkNode(node.pnode->left_tree_));
+                }
+            }
+        
+        }
+        stream << std::endl;
     }
 
 private:
@@ -187,7 +260,8 @@ private:
             }
             ptr->left_tree_ = build_tree_pre_in(pre+1, in, head_index);
             ptr->right_tree_ =
-                build_tree_pre_in(pre + head_index + 1, in + head_index + 1, n - head_index - 1);
+                build_tree_pre_in(pre + head_index + 1, in + head_index + 1,
+                                  n - head_index - 1);
         }
         return ptr;
     }
@@ -304,9 +378,30 @@ private:
         }
     }
 
+    void my_nice_pre_order(Node* ptr);
+
+    // 非递归的前序遍历
     void nice_pre_order(Node* ptr)
     {
+        if (!ptr) return;
+        Stack<Node*> stack;
+        stack.push(ptr);
 
+        while(!stack.empty())
+        {
+            auto t_ptr = stack.top();
+            stack.pop();
+            stream << t_ptr->data_ << " ";
+            
+            if (t_ptr->right_tree_)
+            {
+                stack.push(t_ptr->right_tree_);
+            }
+            if (t_ptr->left_tree_)
+            {
+                stack.push(t_ptr->left_tree_);
+            }
+        }
     }
 
     void InOrder(Node* ptr)
@@ -319,9 +414,25 @@ private:
         }
     }
 
+    void my_nice_in_order(Node* ptr);
+
+    // 非递归的中序遍历
     void nice_in_order(Node* ptr)
     {
-
+        if (!ptr) return;
+        Stack<Node*> stack;
+        while(ptr || !stack.empty())
+        {
+            while(ptr)
+            {
+                stack.push(ptr);
+                ptr = ptr->left_tree_;
+            }
+            ptr = stack.top();
+            stack.pop();
+            stream << ptr->data_ << " ";
+            ptr = ptr->right_tree_;
+        }
     }
 
     void LastOrder(Node* ptr)
@@ -334,10 +445,60 @@ private:
         }
     }
 
+    void my_nice_last_order(Node* ptr);
+
+    // 非递归后序遍历
     void nice_last_order(Node* ptr)
     {
+        if (!ptr) return;
+        Stack<Node*> stack;
+        Node* f_ptr = nullptr;  // 一个记录状态的指针
+        while(ptr || !stack.empty())
+        {
+            while(ptr)
+            {
+                stack.push(ptr);
+                ptr = ptr->left_tree_;
+            }
 
+            ptr = stack.top();
+            stack.pop();
+            if (ptr->right_tree_ == nullptr  ||
+                ptr->right_tree_ == f_ptr)
+            {
+                stream << ptr->data_ << " ";
+                f_ptr = ptr;
+                ptr = nullptr;
+            }
+            else
+            {
+                stack.push(ptr);
+                ptr = ptr->right_tree_;
+            }
+        }
     }
+
+    void level_order(Node* ptr)
+    {
+        if (!ptr) return;
+
+        tools::Queue<Node*> queue;
+        queue.push_back(ptr);
+        while(!queue.empty())
+        {
+            auto t_ptr = queue.front();
+            queue.pop_front();
+
+            stream << t_ptr->data_ << " ";
+            if (t_ptr->left_tree_)
+                queue.push_back(t_ptr->left_tree_);
+            if (t_ptr->right_tree_)
+                queue.push_back(t_ptr->right_tree_);
+        }
+    }
+
+private:
+
 
 private:
     Root  root_{nullptr};
@@ -345,24 +506,191 @@ private:
 };
 
 template<typename T>
-void BinaryTree<T>::create_tree(T* str, CreateType type)
+void BinaryTree<T>::my_nice_pre_order(Node* ptr)
+{
+    if (!ptr) return;
+
+    Node* f_ptr = ptr; // 遍历伴随指针
+    tools::Stack<Node*> stack;
+    while(true)
+    {
+        while(f_ptr->left_tree_ || f_ptr->right_tree_)
+        {
+            if (f_ptr->right_tree_)
+            {
+                stack.push(f_ptr->right_tree_);
+            }
+
+            stream << f_ptr->data_ << " "; // 非叶子节点
+
+            if (f_ptr->left_tree_)
+            {
+                f_ptr = f_ptr->left_tree_;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (f_ptr->right_tree_ == nullptr && f_ptr->left_tree_ == nullptr)
+            stream << f_ptr->data_ << " "; // 叶子结点
+
+        if (!stack.empty())
+        {
+            f_ptr = stack.top();
+            stack.pop();
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+/*
+    写代码的每一行都要有依据，决不能让过程成为黑盒子，因为只有每一步都有依据
+    才能不断做到迭代提升
+*/
+template<typename T>
+void BinaryTree<T>::my_nice_in_order(Node* ptr)
+{
+    if (!ptr) return;
+
+    Node* f_ptr = ptr;   // 遍历伴随指针
+    Node* p_ptr = nullptr; // 记录当前遍历指针的父节点
+    tools::Stack<Node*> stack;
+    while(true)
+    {
+        if (p_ptr) // 只要从堆栈中取出，直接使用不需要再判断, 一定是f_ptr的父节点
+        {
+            f_ptr = p_ptr; // p_ptr 更新f_ptr
+            p_ptr = nullptr; // 清理
+            stream << f_ptr->data_ << " ";  // 打印子树的根节点
+        }
+        else
+        {
+            while(nullptr != f_ptr->left_tree_)
+            {
+                stack.push(f_ptr);
+                f_ptr = f_ptr->left_tree_;
+            }
+
+            stream << f_ptr->data_ << " ";  // 左子树为空的节点
+        }
+
+        if (f_ptr->right_tree_)
+        {
+            f_ptr = f_ptr->right_tree_;
+            continue;
+        }
+
+        if (!stack.empty())
+        {
+            p_ptr = stack.top();
+            stack.pop();
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+template<typename T>
+void BinaryTree<T>::my_nice_last_order(Node* ptr)
+{
+    if (!ptr) return;
+
+    Node* f_ptr = ptr;
+    Node* p_ptr = nullptr;
+    tools::Stack<Node*> stack;
+    while(true)
+    {
+        if (p_ptr)
+        {
+            if (p_ptr->right_tree_)
+            {
+                if (f_ptr != p_ptr->right_tree_)
+                {
+                    f_ptr = p_ptr->right_tree_;
+                    p_ptr = nullptr;
+                    continue;
+                }
+                else
+                {
+                    stream << p_ptr->data_ << "1 "; //
+                    f_ptr = p_ptr;
+                    p_ptr = nullptr;
+                }
+            }
+            else
+            {
+                stream << p_ptr->data_ << "2 "; //
+                f_ptr = p_ptr;
+                p_ptr = nullptr;
+            }
+        }
+        else
+        {
+            while(f_ptr->left_tree_)
+            {
+                stack.push(f_ptr);
+                f_ptr = f_ptr->left_tree_;
+            }
+
+            if (f_ptr->right_tree_)
+            {
+                stack.push(f_ptr);
+                f_ptr = f_ptr->right_tree_;
+                continue;
+            }
+            else
+            {
+                stream << f_ptr->data_ << "3 ";  // 左子树为空的节点
+            }
+        }
+
+        if (!stack.empty())
+        {
+            p_ptr = stack.top();
+            // 如果右子树没有遍历过，则遍历，否则直接出栈
+            if (p_ptr->right_tree_ != nullptr && f_ptr != p_ptr->right_tree_)
+            {
+                f_ptr = p_ptr->right_tree_; // 出栈一个右子树
+                p_ptr = nullptr;
+            }
+            else
+            {
+                stack.pop();
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+template<typename T>
+void BinaryTree<T>::create_tree(T* str, OrderType type)
 {
     if (str != nullptr)
     {
         Root node = nullptr;
         switch(type)
         {
-            case CreateType::PreOrder:
+            case OrderType::PreOrder:
             {
                 node = build_tree_pre_order(str);
                 break;
             }
-            case CreateType::InOrder:
+            case OrderType::InOrder:
             {
                 node = build_tree_in_order(str);
                 break;
             }
-            case CreateType::LastOrder:
+            case OrderType::LastOrder:
             {
                 node = build_tree_last_order(str);
                 break;
@@ -378,23 +706,31 @@ void BinaryTree<T>::create_tree(T* str, CreateType type)
 }
 
 template<typename T>
-void BinaryTree<T>::print_tree(CreateType type)
+void BinaryTree<T>::print_tree(OrderType type)
 {
     switch(type)
     {
-        case CreateType::PreOrder:
+        case OrderType::PreOrder:
         {
-            PreOrder(root_);
+            nice_pre_order(root_);
+            //PreOrder(root_);
             break;
         }
-        case CreateType::InOrder:
+        case OrderType::InOrder:
         {
-            InOrder(root_);
+            nice_in_order(root_);
+            //InOrder(root_);
             break;
         }
-        case CreateType::LastOrder:
+        case OrderType::LastOrder:
         {
-            LastOrder(root_);
+            nice_last_order(root_);
+            //LastOrder(root_);
+            break;
+        }
+        case OrderType::LevelOrder:
+        {
+            level_order(root_);
             break;
         }
         default:
