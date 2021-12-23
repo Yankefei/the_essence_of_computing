@@ -88,9 +88,9 @@ public:
         destory_tree(root_);
     }
 
-    bool find_val(const T& x)
+    bool find_val(const T& x, Node*& ptr)
     {
-        Node* ptr = nullptr;
+        ptr = nullptr;
         ptr = find_val(root_, x);
 
         return ptr != nullptr;
@@ -452,7 +452,7 @@ private:
     {
         if (!ptr) return;
         Stack<Node*> stack;
-        Node* f_ptr = nullptr;  // 一个记录状态的指针
+        Node* f_ptr = nullptr;  // 一个记录指针，时刻记录着已经遍历的最后一个节点
         while(ptr || !stack.empty())
         {
             while(ptr)
@@ -467,12 +467,12 @@ private:
                 ptr->right_tree_ == f_ptr)
             {
                 stream << ptr->data_ << " ";
-                f_ptr = ptr;
-                ptr = nullptr;
+                f_ptr = ptr;             // 记录指针赋值
+                ptr = nullptr;           // 每次将指针置空, 很关键已经后面需要出栈
             }
             else
             {
-                stack.push(ptr);
+                stack.push(ptr);  // 重新入栈
                 ptr = ptr->right_tree_;
             }
         }
@@ -552,47 +552,90 @@ void BinaryTree<T>::my_nice_pre_order(Node* ptr)
     写代码的每一行都要有依据，决不能让过程成为黑盒子，因为只有每一步都有依据
     才能不断做到迭代提升
 */
+// template<typename T>
+// void BinaryTree<T>::my_nice_in_order(Node* ptr)
+// {
+//     if (!ptr) return;
+
+//     Node* f_ptr = ptr;   // 遍历伴随指针
+//     Node* p_ptr = nullptr; // 记录当前遍历指针的父节点
+//     tools::Stack<Node*> stack;
+//     while(true)
+//     {
+//         if (p_ptr) // 只要从堆栈中取出，直接使用不需要再判断, 一定是f_ptr的父节点
+//         {
+//             f_ptr = p_ptr; // p_ptr 更新f_ptr
+//             p_ptr = nullptr; // 清理
+//             stream << f_ptr->data_ << " ";  // 打印子树的根节点
+//         }
+//         else
+//         {
+//             while(nullptr != f_ptr->left_tree_)
+//             {
+//                 stack.push(f_ptr);
+//                 f_ptr = f_ptr->left_tree_;
+//             }
+
+//             stream << f_ptr->data_ << " ";  // 左子树为空的节点
+//         }
+
+//         if (f_ptr->right_tree_)
+//         {
+//             f_ptr = f_ptr->right_tree_;
+//             continue;
+//         }
+
+//         if (!stack.empty())
+//         {
+//             p_ptr = stack.top();
+//             stack.pop();
+//         }
+//         else
+//         {
+//             break;
+//         }
+//     }
+// }
+
 template<typename T>
 void BinaryTree<T>::my_nice_in_order(Node* ptr)
 {
-    if (!ptr) return;
+    // Node* p = ptr; // 使用一个指针记录当前的根节点
+    // tools::Stack<Node*> stack;
 
-    Node* f_ptr = ptr;   // 遍历伴随指针
-    Node* p_ptr = nullptr; // 记录当前遍历指针的父节点
+    // while(p || !stack.empty())
+    // {
+    //     if (p)
+    //     {
+    //         stack.push(p);
+    //         p = p->left_tree_;  
+    //     }
+    //     else
+    //     {
+    //         p = stack.top();
+    //         stack.pop();
+    //         stream << p->data_ << " ";
+    //         p = p->right_tree_;
+    //     }
+    // }
+
     tools::Stack<Node*> stack;
-    while(true)
+    Node* p = nullptr;
+    stack.push(ptr);
+    while(!stack.empty())
     {
-        if (p_ptr) // 只要从堆栈中取出，直接使用不需要再判断, 一定是f_ptr的父节点
+        while(!stack.empty() && (p = stack.top()))
         {
-            f_ptr = p_ptr; // p_ptr 更新f_ptr
-            p_ptr = nullptr; // 清理
-            stream << f_ptr->data_ << " ";  // 打印子树的根节点
+            stack.push(p->left_tree_);
         }
-        else
-        {
-            while(nullptr != f_ptr->left_tree_)
-            {
-                stack.push(f_ptr);
-                f_ptr = f_ptr->left_tree_;
-            }
-
-            stream << f_ptr->data_ << " ";  // 左子树为空的节点
-        }
-
-        if (f_ptr->right_tree_)
-        {
-            f_ptr = f_ptr->right_tree_;
-            continue;
-        }
+        stack.pop();
 
         if (!stack.empty())
         {
-            p_ptr = stack.top();
+            p = stack.top();
             stack.pop();
-        }
-        else
-        {
-            break;
+            stream << p->data_ << " ";
+            stack.push(p->right_tree_);
         }
     }
 }
@@ -718,7 +761,8 @@ void BinaryTree<T>::print_tree(OrderType type)
         }
         case OrderType::InOrder:
         {
-            nice_in_order(root_);
+            my_nice_in_order(root_);
+            //nice_in_order(root_);
             //InOrder(root_);
             break;
         }

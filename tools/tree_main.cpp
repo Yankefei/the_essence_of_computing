@@ -10,18 +10,44 @@ using namespace tools;
 
 int main()
 {
-#if 0
+#if 1
     {
         stream << "my_tree" << std::endl;
         BinaryTree<> my_tree('#');
 
-        char str[] = "ABCD###EF##GH###I#JK#L###";
+        //char str[] = "ABCD###EF##GH###I#JK#L###";
+        char str[] = "ABCD##E##F##G##";
+        //char str[] = "ABD##E##CF###";
+        //char str[] = "ABD##E##CF##G##";
         my_tree.create_tree(str, OrderType::PreOrder);
         my_tree.print_tree(OrderType::PreOrder);
         my_tree.print_tree(OrderType::InOrder);
         my_tree.print_tree(OrderType::LastOrder);
+
+        stream << "deep: "<< my_tree.max_deep_len() << std::endl;
+        stream << "size: "<< my_tree.size() << std::endl;
+
+        // bool full = Is_Full_Binary_Tree1(my_tree.size(), my_tree.max_deep_len());
+        // stream <<"full: "<< (full ? "true" : "false") << std::endl;
+    
+        bool full = Is_Full_Binary_Tree2(my_tree.get_root());
+        stream <<"full: "<< (full ? "true" : "false") << std::endl;
+    
+        bool comp = Is_Comp_Binary_Tree(my_tree.get_root());
+        stream << "comp: " << (comp ? "true" : "false") << std::endl;
+    
+        BtNode<char>* f_ptr = nullptr;
+        assert(my_tree.find_val('F', f_ptr));
+        BtNode<char>* d_ptr = nullptr;
+        assert(my_tree.find_val('D', d_ptr));
+        BtNode<char>* com_parent =
+            FindComParent(my_tree.get_root(), f_ptr, d_ptr);
+        assert(com_parent != nullptr);
+        stream << "F D comParent: "<< com_parent->data_ << std::endl;
     }
 #endif
+
+#if 0
     {
         stream << "my_tree2" << std::endl;
         BinaryTree<> my_tree2('#');
@@ -30,7 +56,7 @@ int main()
         my_tree2.create_tree_pre_in(pre_str, in_str, 12);
         // my_tree2.print_tree(OrderType::PreOrder);
         // // // D C B F E H G A I K L J
-        // my_tree2.print_tree(OrderType::InOrder);
+        my_tree2.print_tree(OrderType::InOrder);
 
         // my_tree2.print_tree(OrderType::LastOrder);
 
@@ -38,11 +64,10 @@ int main()
 
         //tools::level_order_retrace<char>(my_tree2.get_root());
 
-        my_tree2.StkNicePastOrder(my_tree2.get_root());
-        my_tree2.StkNiceInOrder(my_tree2.get_root());
+        //my_tree2.StkNicePastOrder(my_tree2.get_root());
+        //my_tree2.StkNiceInOrder(my_tree2.get_root());
     }
 
-#if 0
     {
         stream << "my_tree3" << std::endl;
         BinaryTree<> my_tree3;
