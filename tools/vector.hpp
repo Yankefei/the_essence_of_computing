@@ -20,12 +20,10 @@ public:
     typedef  T*           _Ptr;
     typedef  const T*     _Cptr;
 
-
-    class Iterator : public RandomIterator<T>
+    class Iterator : public _Ranit<T, ptrdiff_t>
     {
     public:
-        typedef ptrdiff_t  Distance;
-
+        typedef ptrdiff_t  Distance; // TODO
     public:
         Iterator(T* ptr = nullptr): ptr_(ptr) {}
 
@@ -59,7 +57,7 @@ public:
             ++*this;
             return temp;
         }
-        Iterator operator+(Distance n)
+        Iterator operator+(Distance n) const
         {
             return ptr_ + n;
         }
@@ -73,7 +71,7 @@ public:
             return ptr_ - n;
         }
 
-        Distance operator-(const Iterator& val)
+        Distance operator-(const Iterator& val) const
         {
             return ptr_ - val.ptr_;
         }
@@ -113,6 +111,13 @@ public:
 
 public:
     Vector() = default;
+
+    Vector(std::initializer_list<T> list)
+    {
+        for(auto p = list.begin(); p != list.end(); p ++)
+            emplace_back(*p);
+    }
+
     ~Vector()
     {
         free();
@@ -139,34 +144,38 @@ public:
         return *(element_[n]);
     }
 
-    _It begin()
+    _It begin() const
     {
         return _It(element_);
     }
 
-    _It end()
+    _It end() const
     {
         return _It(first_free_);
     }
 
     void push_back(const_reference val)
     {
+        push_back(T(val));
+    }
+
+    void push_back(T&& val)
+    {
         check_n_alloc();
-        *first_free_ = val;
-        first_free_ ++;
+        alloc_.construct(first_free_++, std::move(val));
     }
 
     template<typename... Args>
     void emplace_back(Args&&... args)
     {
         check_n_alloc();
-        *first_free_ = std::move(T(std::forward<Args>(args)...));
+        alloc_.construct(first_free_++, std::move(T(std::forward<Args>(args)...)));
     }
 
     void pop_back()
     {
         if (first_free_ == element_) return;
-        first_free_ --;
+        alloc_.destroy(-- first_free_);
     }
 
     reference back()
@@ -200,6 +209,7 @@ public:
 
     _It insert(_It pos, const_reference val);
 
+    // 若 first 和 last 是指向 *this 中的迭代器，则行为未定义
     _It insert(_It pos, _It first, _It last);
 
     _It erase(_It pos);
@@ -275,7 +285,7 @@ private:
     }
 
     std::pair<value_type*, value_type*>
-        alloc_n_copy(const value_type* begin, const value_type* end)
+        alloc_n_copy(const _It begin, const _It end)
     {
         auto data = alloc_.allocate(end - begin);
         return {data, std::uninitialized_copy(begin, end, data)};
@@ -295,7 +305,7 @@ private:
 
     T* element_{nullptr};
     T* first_free_{nullptr};
-    T*cap_{nullptr};
+    T* cap_{nullptr};
 };
 
 
@@ -305,16 +315,19 @@ Vector<T>::insert(_It pos, const_reference val)
 {
     if (pos < element_ || pos > first_free_) return pos;
 
+    auto insert_index = pos - element_; // 在内存可能变更之前记录待插入的位置
+
     check_n_alloc();
+    auto cpy_ptr = first_free_ - 1;
+    alloc_.construct(first_free_++, T());  // 先构造一个空值
 
-    _Ptr dst = element_ + (pos - element_);
+    _Ptr dst = element_ + insert_index;
 
-    for (auto ptr = first_free_; ptr != dst; ptr--)
+    for (auto ptr = cpy_ptr; ptr != dst - 1; ptr--)
     {
         *(ptr + 1) = *ptr;
     }
     *dst = val;
-    first_free_ ++;
 
     return _It(dst);
 }
@@ -324,20 +337,30 @@ typename Vector<T>::_It
 Vector<T>::insert(_It pos, _It first, _It last)
 {
     if (pos < element_ || pos > first_free_) return pos;
-    if (last <= first) return pos;
+    if (first > last || first == last) return last;
 
+    auto insert_index = pos - element_;
     auto num = last - first;
+
     while(capacity() - size() < num)
         check_n_alloc();
 
-    _Ptr dst = element_ + (pos - element_);
-
-    for (auto ptr = first_free_; ptr != dst; ptr--)
-    {
-        *(ptr + num) = *ptr;
-    }
-    std::uninitialized_copy(dst, first, last);
+    auto cpy_ptr =  first_free_ - 1;
+    std::uninitialized_fill_n(first_free_, num, T()); // 先构造一些空值
     first_free_ += num;
+
+    _Ptr dst = element_ + insert_index;
+
+    for (; cpy_ptr >= dst; cpy_ptr--)
+    {
+        *(cpy_ptr + num) = *cpy_ptr;  // 挪动数据
+    }
+
+    cpy_ptr = dst; // 还原指针
+    while(first < last)
+    {
+        *cpy_ptr++ = *first ++;   // 拷贝数据
+    }
 
     return _It(dst);
 }
@@ -355,7 +378,7 @@ Vector<T>::erase(_It pos)
     {
         *dst_t = *ptr;
     }
-    first_free_ --;
+    alloc_.destroy(-- first_free_);
 
     return _It(dst);
 }
@@ -365,7 +388,7 @@ typename Vector<T>::_It
 Vector<T>::erase(_It first, _It last)
 {
     if (first < element_ || last > first_free_) return last;
-    if (first >= last) return last;
+    if (first > last || first == last) return last;
 
     _Ptr dst = element_ + (first - element_);
     auto num = last - first;
@@ -375,7 +398,11 @@ Vector<T>::erase(_It first, _It last)
     {
         *dst_t = *ptr;
     }
-    first_free_ -= num;
+
+    while(num-- > 0)
+    {
+        alloc_.destroy(-- first_free_);
+    }
 
     return _It(dst);
 }
