@@ -277,7 +277,8 @@ BtNode<T> * FindComParent(BtNode<T> *ptr, BtNode<T> *child1, BtNode<T> *child2)
 template<typename T = char>
 int MaxPath(BtNode<T> *ptr, BtNode<T> *&p1, BtNode<T> *&p2)
 {
-
+    // 先建立所有叶子节点的缓存信息
+    
     return 0;
 }
 
