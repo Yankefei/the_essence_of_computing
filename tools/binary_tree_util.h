@@ -10,9 +10,8 @@
 
 namespace tools
 {
-
 template<typename T = char>
-using BtNode = typename BinaryTree<T>::Node;
+using BtNode = _Node<T>;
 
 // 回旋广度遍历
 template<typename T = char>
@@ -804,6 +803,37 @@ void BinaryTreeToList(BtNode<T> *ptr, BtNode<T>* dst, size_t size)
             f_dst ++;
         }
     }
+}
+
+// 遍历 层序建立的完全二叉树数组
+void PreOrder(char *ar,int i,int n)
+{
+	if(ar != NULL && i<n)
+	{
+		stream << ar[i] << " ";
+		PreOrder(ar,i*2+1,n);
+		PreOrder(ar,i*2+2,n);
+	}
+}
+
+void InOrder(char *ar,int i,int n)
+{
+	if(ar != NULL && i<n)
+	{
+		InOrder(ar,i*2+1,n);
+		stream << ar[i] << " ";
+		InOrder(ar,i*2+2,n);
+	}
+}
+
+void LastOrder(char *ar,int i,int n)
+{
+	if(ar != NULL && i<n)
+	{
+		LastOrder(ar,i*2+1,n);
+		LastOrder(ar,i*2+2,n);
+		stream << ar[i] << " ";
+	}
 }
 
 }

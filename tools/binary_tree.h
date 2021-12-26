@@ -20,20 +20,23 @@ enum class OrderType : uint8_t
 };
 
 template<typename T = char>
+struct _Node
+{
+    _Node() = default;
+    _Node(const T&val) : data_(val) {}
+
+    _Node* left_tree_{nullptr};
+    _Node* right_tree_{nullptr};
+    T data_;
+};
+
+template<typename T = char>
 class BinaryTree
 {
 public:
-    struct Node
-    {
-        Node() = default;
-        Node(const T&val) : data_(val) {}
+    typedef  _Node<T>*  Root;
 
-        Node* left_tree_{nullptr};
-        Node* right_tree_{nullptr};
-        T data_;
-    };
-
-    using Root = Node*;
+    typedef  _Node<T>   Node;
 
 public:
     BinaryTree() = default;

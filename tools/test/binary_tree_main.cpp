@@ -267,6 +267,20 @@ int main()
         Link(test5, 3, 5, -1);
         bool test5_flag = IsBalance_BinaryTree(test5);
         stream << "test5: " << (test5_flag ? "true": "false") << std::endl;
+    
+
+        char ar[12] = {0};
+        int n = sizeof(ar)/sizeof(ar[0]);
+        for (int i = 0; i < n; i++)
+            ar[i] = 'A' + i;
+        InOrder(ar,0,n);
+        stream << std::endl;
+
+        PreOrder(ar, 0, n);
+        stream << std::endl;
+
+        LastOrder(ar, 0, n);
+        stream << std::endl;
     }
 
     return 0;
