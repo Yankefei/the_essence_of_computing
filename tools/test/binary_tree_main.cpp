@@ -4,7 +4,7 @@
 #include "queue.h"
 
 #include "binary_tree.h"
-#include "tree_util.h"
+#include "binary_tree_util.h"
 
 #include <cstring>
 

@@ -9,8 +9,8 @@ link_directories(../tools)
 add_executable(queue_main  queue_main.cpp)
 target_link_libraries(queue_main  tools)
 
-add_executable(tree_main  tree_main.cpp)
-target_link_libraries(tree_main  tools)
+add_executable(binary_tree_main  binary_tree_main.cpp)
+target_link_libraries(binary_tree_main  tools)
 
 add_executable(stack_main  stack_main.cpp)
 target_link_libraries(stack_main  tools)

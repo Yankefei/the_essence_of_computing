@@ -1,5 +1,5 @@
-#ifndef _TOOLS_TREE_UTIL_H_
-#define _TOOLS_TREE_UTIL_H_
+#ifndef _TOOLS_BINARY_TREE_UTIL_H_
+#define _TOOLS_BINARY_TREE_UTIL_H_
 
 #include <memory>
 #include <cassert>
