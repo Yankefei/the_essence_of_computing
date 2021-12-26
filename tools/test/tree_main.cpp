@@ -6,6 +6,8 @@
 #include "binary_tree.h"
 #include "tree_util.h"
 
+#include <cstring>
+
 using namespace tools;
 
 int main()
@@ -55,6 +57,24 @@ int main()
 
         assert(begin_path != nullptr && end_path != nullptr);
         stream << "max_len: " << len <<" "<< begin_path->data_ << " to " << end_path->data_ << std::endl;
+    
+        {
+            size_t node_num = my_tree.size();
+            BtNode<char>* array = new BtNode<char>[node_num];
+            ::memset(array, 0, sizeof(BtNode<char>) * node_num);
+
+            BinaryTreeToList(my_tree.get_root(), array, node_num);
+
+            BtNode<char>* _begin_path = nullptr;
+            BtNode<char>* _end_path = nullptr;
+            int _len = MaxPath3(array, _begin_path, _end_path);
+
+            assert(_begin_path != nullptr && _end_path != nullptr);
+            stream << "array_tree max_len: " << _len <<" "<< _begin_path->data_
+                   << " to " << _end_path->data_ << std::endl;
+
+            delete[] array;
+        }
     }
 #endif
 
@@ -112,7 +132,7 @@ int main()
 #endif
 
     {
-#if 1
+#if 0
         BtNode<char>* begin_path = nullptr;
         BtNode<char>* end_path = nullptr;
 
@@ -179,6 +199,74 @@ int main()
         assert(begin_path != nullptr && end_path != nullptr);
         stream << "max_len: " << len <<" "<< begin_path->data_ << " to " << end_path->data_ << std::endl;
 #endif
+    }
+
+    {
+        BtNode<> test1[7] = {0};
+        for (int i = 0; i < 7; i ++)
+            test1[i].data_ = 'A' + i;
+        
+        Link(test1, 0, 1, 2);
+        Link(test1, 1, 3, 4);
+        Link(test1, 2, 5, 6);
+
+        PrintCompBTree(test1, 2);
+
+        BtNode<> test2[12] = {0};
+        for (int i = 0; i < 12; i ++)
+            test2[i].data_ = 'A' + i;
+        
+        Link(test2, 0, 1, 2);
+        Link(test2, 1, 3, 4);
+        Link(test2, 2, -1, 5);
+        Link(test2, 3, 6, -1);
+        Link(test2, 4, 7, 8);
+        Link(test2, 5, 9, -1);
+        Link(test2, 8, 10, -1);
+        Link(test2, 9, -1, 11);
+
+        stream << "level: "<< GetBinaryTreeLevel(test2, 4) << std::endl; 
+    
+        bool test1_flag = IsBalance_BinaryTree(test1);
+        stream << "test1: " << (test1_flag ? "true": "false") << std::endl;
+
+        bool test2_flag = IsBalance_BinaryTree(test2);
+        stream << "test2: " << (test2_flag ? "true": "false") << std::endl;
+
+
+        BtNode<> test3[8] = {0};
+        for (int i = 0; i < 7; i ++)
+            test3[i].data_ = 'A' + i;
+        
+        Link(test3, 0, 1, 2);
+        Link(test3, 1, 3, 4);
+        Link(test3, 2, 5, 6);
+        Link(test3, 3, 7, -1);
+        bool test3_flag = IsBalance_BinaryTree(test3);
+        stream << "test3: " << (test3_flag ? "true": "false") << std::endl;
+
+
+        BtNode<> test4[7] = {0};
+        for (int i = 0; i < 6; i ++)
+            test4[i].data_ = 'A' + i;
+        
+        Link(test4, 0, 1, 2);
+        Link(test4, 1, 3, 4);
+        Link(test4, 2, 5, -1);
+        Link(test4, 3, 6, -1);
+        bool test4_flag = IsBalance_BinaryTree(test4);
+        stream << "test4: " << (test4_flag ? "true": "false") << std::endl;
+
+
+        BtNode<> test5[6] = {0};
+        for (int i = 0; i < 5; i ++)
+            test5[i].data_ = 'A' + i;
+        
+        Link(test5, 0, 1, 2);
+        Link(test5, 1, 3, 4);
+        Link(test5, 3, 5, -1);
+        bool test5_flag = IsBalance_BinaryTree(test5);
+        stream << "test5: " << (test5_flag ? "true": "false") << std::endl;
     }
 
     return 0;

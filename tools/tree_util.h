@@ -75,6 +75,7 @@ void level_order_retrace(BtNode<T>* ptr)
 // 2 ^ k
 size_t power(size_t a, int k)
 {
+    if (k == 0) return 1;
     if (k == 1) return a;
 
     if (k % 2 == 0)
@@ -461,7 +462,7 @@ Result<T> max_path_3(BtNode<T>* ptr)
         l_info = max_path_3(ptr->left_tree_);
     else
     {
-        // 叶子节点需要初始化记录指针
+        // 子树为空的节点需要初始化记录指针
         l_info.second.path_old_t = ptr;
         l_info.second.path_new_t = ptr;
     }
@@ -473,7 +474,7 @@ Result<T> max_path_3(BtNode<T>* ptr)
         r_info = max_path_3(ptr->right_tree_);
     else
     {
-        // 叶子节点需要初始化记录指针
+        // 子树为空的节点需要初始化记录指针
         r_info.second.path_old_t = ptr;
         r_info.second.path_new_t = ptr;
     }
@@ -569,29 +570,240 @@ void Link(BtNode<T>* nodes, int parent, int left, int right)
 }
 
 
-// 打印完全二叉树前几个值
+// 打印完全二叉树第k层
 template<typename T = char>
 void PrintCompBTree(BtNode<T> *ptr, int k)
 {
+    if (!ptr || k < 1) return;
 
+    // 左开右闭区间
+    int print_begin_index = power(2, k - 1) - 1;
+    int print_end_index = power(2, k) - 1;
+
+    int index = 1;
+
+    tools::Queue<BtNode<T>*> queue;
+    queue.push(ptr);
+    while(!queue.empty())
+    {
+        ptr = queue.front();
+        queue.pop_front();
+
+        if (index > print_begin_index && index <= print_end_index) 
+        {
+            stream << ptr->data_ << " ";
+            if (index == print_end_index)
+                break;
+        }
+        index ++;
+
+        if (ptr->left_tree_)
+            queue.push_back(ptr->left_tree_);
+
+        if (ptr->right_tree_)
+            queue.push_back(ptr->right_tree_);
+    }
+
+    stream << std::endl;
 }
 
+// 返回第一个遇到的层节点数为k的层数
 template<typename T = char>
 int GetBinaryTreeLevel(BtNode<T> *ptr, int k)
 {
-    return 0;
+    if (!ptr) return -1;
+
+    int level = 1;
+
+    tools::Queue<BtNode<T>*> queue1;
+    tools::Queue<BtNode<T>*> queue2;
+    queue1.push(ptr);
+    while(!queue1.empty() || !queue2.empty())
+    {
+        if (queue1.size() == k)
+            break;
+
+        while(!queue1.empty())
+        {
+            ptr = queue1.front();
+            queue1.pop_front();
+
+            if (ptr->left_tree_)
+                queue2.push_back(ptr->left_tree_);
+
+            if (ptr->right_tree_)
+                queue2.push_back(ptr->right_tree_);
+        }
+        level ++;
+        if (queue2.size() == k)
+            break;
+
+        while(!queue2.empty())
+        {
+            ptr = queue2.front();
+            queue2.pop_front();
+
+            if (ptr->left_tree_)
+                queue1.push_back(ptr->left_tree_);
+
+            if (ptr->right_tree_)
+                queue1.push_back(ptr->right_tree_);
+        }
+        level ++;
+    }
+
+    return level;
+}
+
+// 是否为平衡树
+/*
+    满足以下两点的就是平衡二叉树:
+    1.左右子树的高度差不能超过1
+    2.左右子树也是平衡二叉树
+
+    空树也是平衡二叉树
+*/
+// 关键点：递归函数需要同时返回左右子树的高度以及左右子树是否为平衡树的bool类型
+using BalancePair = std::pair<bool, int>;
+
+template<typename T = char>
+BalancePair is_balance_binary_tree(BtNode<T>* ptr)
+{
+    BalancePair res{true, 0};
+    BalancePair left_flag;
+    BalancePair right_flag;
+
+    if (ptr->left_tree_)
+        left_flag = is_balance_binary_tree(ptr->left_tree_);
+    else
+    {
+        left_flag = {true, 0};
+    }
+
+    if (ptr->right_tree_)
+        right_flag = is_balance_binary_tree(ptr->right_tree_);
+    else
+    {
+        right_flag = {true, 0};
+    }
+
+    res.second = std::max(left_flag.second + 1, right_flag.second +1);
+    if (!(left_flag.first && right_flag.first))
+    {
+        res.first = false;
+    }
+    else
+    {
+        if (left_flag.second > right_flag.second)
+        {
+            if (left_flag.second - right_flag.second > 1)
+                res.first = false;
+        }
+        else
+        {
+            if (right_flag.second - left_flag.second> 1)
+                res.first = false;
+        }
+    }
+
+    return res;
 }
 
 template<typename T = char>
-int IsBalance_BinaryTree(BtNode<T> *ptr)
+bool IsBalance_BinaryTree(BtNode<T> *ptr)
 {
-    return 0;
+    return is_balance_binary_tree(ptr).first;
 }
 
+// 保存到列表中
+// 按照二叉树的层序遍历的顺序保存到数组中，数组的组织形式见上面的函数：Link
 template<typename T = char>
-void BinaryTreeToList(BtNode<T> *ptr)
+void BinaryTreeToList(BtNode<T> *ptr, BtNode<T>* dst, size_t size)
 {
+    if (ptr == nullptr || size == 0) return;
 
+    BtNode<T>* f_dst = dst;
+    BtNode<T>* next_level_ptr = nullptr; // 指向下一层二叉树的头部指针
+    BtNode<T>* end_ptr = dst + size;     // 二叉数组的尾部边界，超过需要将子树指针置为nullptr
+
+    // 这里使用两个队列，因为需要确切知道每层二叉树的节点个数
+    tools::Queue<BtNode<T>*> queue1;
+    tools::Queue<BtNode<T>*> queue2;
+    queue1.push_back(ptr);
+    while(!queue1.empty() || !queue2.empty())
+    {
+        next_level_ptr = f_dst + queue1.size();
+        while(!queue1.empty())
+        {
+            ptr = queue1.front();
+            queue1.pop_front();
+            *f_dst = *ptr;
+
+            if (ptr->left_tree_)
+            {
+                queue2.push_back(ptr->left_tree_);
+                if (next_level_ptr >= end_ptr)
+                {
+                    f_dst->left_tree_ = nullptr;
+                }
+                else
+                    f_dst->left_tree_ = next_level_ptr ++;
+            }
+            else
+                f_dst->left_tree_ = nullptr;
+
+            if (ptr->right_tree_)
+            {
+                queue2.push_back(ptr->right_tree_);
+                if (next_level_ptr >= end_ptr)
+                {
+                    f_dst->right_tree_ = nullptr;
+                }
+                else
+                    f_dst->right_tree_ = next_level_ptr ++;
+            }
+            else
+                f_dst->right_tree_ = nullptr;
+            
+            f_dst ++;
+        }
+
+        next_level_ptr = f_dst + queue2.size();
+        while(!queue2.empty())
+        {
+            ptr = queue2.front();
+            queue2.pop_front();
+            *f_dst = *ptr;
+
+            if (ptr->left_tree_)
+            {
+                queue1.push_back(ptr->left_tree_);
+                if (next_level_ptr >= end_ptr)
+                {
+                    f_dst->left_tree_ = nullptr;
+                }
+                else
+                    f_dst->left_tree_ = next_level_ptr ++;
+            }
+            else
+                f_dst->left_tree_ = nullptr;
+
+            if (ptr->right_tree_)
+            {
+                queue1.push_back(ptr->right_tree_);
+                if (next_level_ptr >= end_ptr)
+                {
+                    f_dst->right_tree_ = nullptr;
+                }
+                else
+                    f_dst->right_tree_ = next_level_ptr ++;
+            }
+            else
+                f_dst->right_tree_ = nullptr;
+
+            f_dst ++;
+        }
+    }
 }
 
 }
