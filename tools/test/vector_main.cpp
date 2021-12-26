@@ -18,6 +18,7 @@ void Print(const tools::Vector<T>& a)
 
 int main()
 {
+#if 0
     {
         tools::Vector<int> a;
         a.push_back(1);
@@ -67,8 +68,21 @@ int main()
         Print(b);
     }
 
-    {
+#endif
 
+    {
+        tools::Vector<int> a{1,2,3,4,5,6,7};
+        tools::Vector<int> b{10, 11, 12};
+
+        b = std::move(a);
+
+        Print(a);
+        Print(b);
+
+        tools::Vector<tools::Vector<int>> v_a;
+        v_a.emplace_back(b);
+
+        stream << v_a.size() << " " << v_a.capacity() << std::endl;
     }
 
     return 0;

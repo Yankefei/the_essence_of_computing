@@ -130,6 +130,17 @@ public:
         first_free_ = cap_ = new_data.second;
     }
 
+    Vector(Vector&& val)
+    {
+        this->first_free_ = val.first_free_;
+        this->element_ = val.element_;
+        this->cap_ = val.cap_;
+
+        val.first_free_ = nullptr;
+        val.element_ = nullptr;
+        val.cap_ = nullptr;
+    }
+
     Vector& operator=(const Vector&val)
     {
         auto data = alloc_n_copy(val.begin(), val.end());
@@ -139,9 +150,25 @@ public:
         return *this;
     }
 
+    Vector& operator=(Vector&& val)
+    {
+        if (this != &val)
+        {
+            free();
+            this->first_free_ = val.first_free_;
+            this->element_ = val.element_;
+            this->cap_ = val.cap_;
+
+            val.first_free_ = nullptr;
+            val.element_ = nullptr;
+            val.cap_ = nullptr;
+        }
+        return *this;
+    }
+
     reference operator[](size_type n)
     {
-        return *(element_[n]);
+        return element_[n];
     }
 
     _It begin() const
@@ -185,7 +212,7 @@ public:
 
     reference at(size_type n)
     {
-        return *(element_[n - 1]);
+        return element_ + n - 1;
     }
 
     void assign(size_type n, const_reference val)
