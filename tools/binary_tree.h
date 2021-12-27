@@ -35,7 +35,6 @@ class BinaryTree
 {
 public:
     typedef  _Node<T>*  Root;
-
     typedef  _Node<T>   Node;
 
 public:

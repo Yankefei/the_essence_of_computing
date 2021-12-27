@@ -1,6 +1,7 @@
 #include "stream.h"
 
 #include "vector.hpp"
+#include <vector>
 
 using namespace tools;
 
@@ -18,7 +19,7 @@ void Print(const tools::Vector<T>& a)
 
 int main()
 {
-#if 0
+#if 1
     {
         tools::Vector<int> a;
         a.push_back(1);
@@ -83,6 +84,12 @@ int main()
         v_a.emplace_back(b);
 
         stream << v_a.size() << " " << v_a.capacity() << std::endl;
+
+        // 空类
+        stream << "sizeof alloc: " << sizeof(std::allocator<char>) << std::endl;
+
+        stream << "sizeof Vector     : " << sizeof(tools::Vector<int>) << std::endl;
+        stream << "sizeof std::vector: " << sizeof(std::_Vector_base<int, std::allocator<int>>) << std::endl;
     }
 
     return 0;

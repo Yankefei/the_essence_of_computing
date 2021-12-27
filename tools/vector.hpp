@@ -9,7 +9,7 @@
 namespace tools
 {
 
-template<typename T>
+template<typename T, typename Alloc = std::allocator<T>>
 class Vector
 {
 public:
@@ -20,94 +20,7 @@ public:
     typedef  T*           _Ptr;
     typedef  const T*     _Cptr;
 
-    class Iterator : public _Ranit<T, ptrdiff_t>
-    {
-    public:
-        typedef ptrdiff_t  Distance; // TODO
-    public:
-        Iterator(T* ptr = nullptr): ptr_(ptr) {}
-
-        reference operator*()
-        {
-            return *ptr_;
-        }
-        _Cptr operator->()
-        {
-            return &**this;
-        }
-        Iterator& operator++()
-        {
-            ++ ptr_;
-            return *this;
-        }
-        Iterator operator++(int)
-        {
-            Iterator temp = *this;
-            ++*this;
-            return temp;
-        }
-        Iterator& operator--()
-        {
-            -- ptr_;
-            return *this;
-        }
-        Iterator operator--(int)
-        {
-            Iterator temp = *this;
-            ++*this;
-            return temp;
-        }
-        Iterator operator+(Distance n) const
-        {
-            return ptr_ + n;
-        }
-        Iterator& operator+=(Distance n)
-        {
-            ptr_ = ptr_ + n;
-            return *this;
-        }
-        Iterator operator-(Distance n)
-        {
-            return ptr_ - n;
-        }
-
-        Distance operator-(const Iterator& val) const
-        {
-            return ptr_ - val.ptr_;
-        }
-
-        Iterator& operator-=(Distance n)
-        {
-            ptr_ = ptr_ - n;
-            return *this;
-        }
-        reference operator[](Distance n)
-        {
-            return *(ptr_ + n);
-        }
-        bool operator ==(const Iterator& val)
-        {
-            return ptr_ == val.ptr_;
-        }
-        bool operator !=(const Iterator& val)
-        {
-            return !(*this == val);
-        }
-
-        bool operator<(const Iterator& val)
-        {
-            return ptr_ < val.ptr_;
-        }
-
-        bool operator>(const Iterator& val)
-        {
-            return !(*this == val || *this < val); 
-        }
-	protected:
-		_Ptr ptr_;
-    };
-
-    typedef Iterator _It;
+    typedef RIterator<T>  _It;
 
 public:
     Vector() = default;
@@ -132,13 +45,8 @@ public:
 
     Vector(Vector&& val)
     {
-        this->first_free_ = val.first_free_;
-        this->element_ = val.element_;
-        this->cap_ = val.cap_;
-
-        val.first_free_ = nullptr;
-        val.element_ = nullptr;
-        val.cap_ = nullptr;
+        set_status_null();
+        swap_data(val);
     }
 
     Vector& operator=(const Vector&val)
@@ -155,13 +63,8 @@ public:
         if (this != &val)
         {
             free();
-            this->first_free_ = val.first_free_;
-            this->element_ = val.element_;
-            this->cap_ = val.cap_;
-
-            val.first_free_ = nullptr;
-            val.element_ = nullptr;
-            val.cap_ = nullptr;
+            set_status_null();
+            swap_data(val);
         }
         return *this;
     }
@@ -327,8 +230,27 @@ private:
         }
     }
 
+    void set_status_null()
+    {
+        this->element_ = nullptr;
+        this->first_free_ = nullptr;
+        this->cap_ = nullptr;
+    }
+
+    void swap_data(Vector& x) noexcept
+    {
+        std::swap(this->element_, x.element_);
+        std::swap(this->first_free_, x.first_free_);
+        std::swap(this->cap_, x.cap_);
+    }
+
 private:
-    static std::allocator<T> alloc_; // static 静态
+    // static std::allocator<T> alloc_; // static 静态
+
+    // 如果这里不设置为静态，即使std::allocator类为空类，也有1位的内存占用
+    // 导致类中为了字节对齐，类总大小为结构体最宽基本类型成员的整数倍，额外占用8字节空间
+    // 想隐藏这1位大小的占用，可以让类继承该结构体， MString 的实现将使用该方式
+    static Alloc        alloc_;
 
     T* element_{nullptr};
     T* first_free_{nullptr};
@@ -336,9 +258,9 @@ private:
 };
 
 
-template<typename T>
-typename Vector<T>::_It
-Vector<T>::insert(_It pos, const_reference val)
+template<typename T, typename Alloc>
+typename Vector<T, Alloc>::_It
+Vector<T, Alloc>::insert(_It pos, const_reference val)
 {
     if (pos < element_ || pos > first_free_) return pos;
 
@@ -359,9 +281,9 @@ Vector<T>::insert(_It pos, const_reference val)
     return _It(dst);
 }
 
-template<typename T>
-typename Vector<T>::_It
-Vector<T>::insert(_It pos, _It first, _It last)
+template<typename T, typename Alloc>
+typename Vector<T, Alloc>::_It
+Vector<T, Alloc>::insert(_It pos, _It first, _It last)
 {
     if (pos < element_ || pos > first_free_) return pos;
     if (first > last || first == last) return last;
@@ -392,9 +314,9 @@ Vector<T>::insert(_It pos, _It first, _It last)
     return _It(dst);
 }
 
-template<typename T>
-typename Vector<T>::_It
-Vector<T>::erase(_It pos)
+template<typename T, typename Alloc>
+typename Vector<T, Alloc>::_It
+Vector<T, Alloc>::erase(_It pos)
 {
     if (pos < element_ || pos > first_free_) return pos;
 
@@ -410,9 +332,9 @@ Vector<T>::erase(_It pos)
     return _It(dst);
 }
 
-template<typename T>
-typename Vector<T>::_It
-Vector<T>::erase(_It first, _It last)
+template<typename T, typename Alloc>
+typename Vector<T, Alloc>::_It
+Vector<T, Alloc>::erase(_It first, _It last)
 {
     if (first < element_ || last > first_free_) return last;
     if (first > last || first == last) return last;
@@ -434,8 +356,11 @@ Vector<T>::erase(_It first, _It last)
     return _It(dst);
 }
 
-template<typename T>
-std::allocator<T> Vector<T>::alloc_;
+template<typename T, typename Alloc>
+Alloc Vector<T, Alloc>::alloc_;
+
+// template<typename T>
+// std::allocator<T> Vector<T>::alloc_;
 
 }
 

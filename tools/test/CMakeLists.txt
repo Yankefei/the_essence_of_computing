@@ -20,3 +20,6 @@ target_link_libraries(vector_main  tools)
 
 add_executable(binary_tree2_main  binary_tree2_main.cpp)
 target_link_libraries(binary_tree2_main  tools)
+
+add_executable(string_main  string_main.cpp)
+target_link_libraries(string_main  tools)

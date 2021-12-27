@@ -675,16 +675,12 @@ BalancePair is_balance_binary_tree(BtNode<T>* ptr)
     if (ptr->left_tree_)
         left_flag = is_balance_binary_tree(ptr->left_tree_);
     else
-    {
         left_flag = {true, 0};
-    }
 
     if (ptr->right_tree_)
         right_flag = is_balance_binary_tree(ptr->right_tree_);
     else
-    {
         right_flag = {true, 0};
-    }
 
     res.second = std::max(left_flag.second + 1, right_flag.second +1);
     if (!(left_flag.first && right_flag.first))
@@ -742,27 +738,27 @@ void BinaryTreeToList(BtNode<T> *ptr, BtNode<T>* dst, size_t size)
             {
                 queue2.push_back(ptr->left_tree_);
                 if (next_level_ptr >= end_ptr)
-                {
                     f_dst->left_tree_ = nullptr;
-                }
                 else
                     f_dst->left_tree_ = next_level_ptr ++;
             }
             else
+            {
                 f_dst->left_tree_ = nullptr;
+            }
 
             if (ptr->right_tree_)
             {
                 queue2.push_back(ptr->right_tree_);
                 if (next_level_ptr >= end_ptr)
-                {
                     f_dst->right_tree_ = nullptr;
-                }
                 else
                     f_dst->right_tree_ = next_level_ptr ++;
             }
             else
+            {
                 f_dst->right_tree_ = nullptr;
+            }
             
             f_dst ++;
         }
@@ -778,27 +774,27 @@ void BinaryTreeToList(BtNode<T> *ptr, BtNode<T>* dst, size_t size)
             {
                 queue1.push_back(ptr->left_tree_);
                 if (next_level_ptr >= end_ptr)
-                {
                     f_dst->left_tree_ = nullptr;
-                }
                 else
                     f_dst->left_tree_ = next_level_ptr ++;
             }
             else
+            {
                 f_dst->left_tree_ = nullptr;
+            }
 
             if (ptr->right_tree_)
             {
                 queue1.push_back(ptr->right_tree_);
                 if (next_level_ptr >= end_ptr)
-                {
                     f_dst->right_tree_ = nullptr;
-                }
                 else
                     f_dst->right_tree_ = next_level_ptr ++;
             }
             else
+            {
                 f_dst->right_tree_ = nullptr;
+            }
 
             f_dst ++;
         }

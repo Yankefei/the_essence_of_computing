@@ -7,7 +7,76 @@
 using namespace tools;
 using namespace std;
 
-int main() { return 0; }
+
+// 位段的类型只能是int，unsigned int，signed int三种类型，不能是char型或者浮点型；
+// 无名位段不能被访问，但是会占据空间
+
+union U
+{
+	unsigned  int aa;
+	struct 
+	{
+		unsigned int bb1 : 7;
+		unsigned int bb2 : 7;
+		unsigned int bb3 : 1;
+		unsigned char bb4 : 1;
+	};
+};
+
+
+typedef struct{
+    unsigned int a:1; //存在一个非0位的位段，则至少占4Byte,注意是至少
+}s;
+typedef struct {
+    uint64_t a:33;  //这个占8字节
+}ss;
+typedef struct {
+    unsigned int :0;  //存在一个0位的位段，C编译器占0字节，C++编译器占1字节
+}s1;
+typedef struct {
+    unsigned int a:1;
+    unsigned :0;          //下一个位段放在一个新的位段存储单元 ，所以占4+4=8Byte
+    unsigned int b:2;
+}s2;
+typedef struct {
+    unsigned int a:4;
+    unsigned int b:32;  //由于4+32》32，所以b放在一个新的位段中 4+4=8字节
+}s3;
+typedef struct {
+    unsigned int a:1;
+    char b;  //这个加起来总共不超过4字节，占一个位段
+    unsigned int : 1;
+    unsigned int d:2;
+    unsigned int e:2;
+}S4;
+extern int testBit()
+{
+    S4 s4;
+    //s4.a=1;
+    s4.b='a';
+    s4.d=2;
+    s4.e=2;
+    cout<<s4.a<<"\t"<<s4.b<<"\t"<<s4.d<<"\t"<<s4.e<<endl;
+    printf("sizeof(s)=%d\nsizeof(s1)=%d\nsizeof(s2)=%d\nsizeof(s3)=%d\nsizeof(s4)=%d\n",
+        sizeof(s),sizeof(s1),sizeof(s2),sizeof(s3),sizeof(s4));
+    cout<<sizeof(ss)<<endl;
+    return 0;
+}
+
+int main() 
+{ 
+	stream << "sizeof(U): "<< sizeof(U) << std::endl;
+	U a;
+	a.bb1 = 1;
+	a.bb2 = 1;
+	a.bb3 = 1;
+
+	stream << "sizeof(U): "<< sizeof(U) << std::endl;
+	return 0;
+}
+
+
+
 #if 0
 
 struct Node
