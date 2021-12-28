@@ -251,6 +251,7 @@ private:
     // 导致类中为了字节对齐，类总大小为结构体最宽基本类型成员的整数倍，额外占用8字节空间
     // 想隐藏这1位大小的占用，可以让类继承该结构体， MString 的实现将使用该方式
     static Alloc        alloc_;
+    // alloc 将调用 __gnu_cxx::new_allocator<_Tp> 里面的申请和释放函数
 
     T* element_{nullptr};
     T* first_free_{nullptr};

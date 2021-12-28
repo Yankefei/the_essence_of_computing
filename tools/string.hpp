@@ -9,7 +9,7 @@
 namespace tools
 {
 
-// 分析过 std::string的实现逻辑，发现内部实现过于复杂
+// 分析过 std::string 的实现逻辑，发现内部实现过于复杂
 // 这个版本就以 tools::Vector 和 std::vector 方案为蓝本进行优化实现
 
 template<typename T, typename Alloc>
@@ -17,37 +17,58 @@ struct BString_Base
 {
     typedef typename std::allocator_traits<Alloc>::template
         rebind_alloc<T>  _Tp_alloc_type;
-
-    typedef typename std::allocator_traits<_Tp_alloc_type>::pointer
-        pointer;
     
+    // alloc_traits.h中已经有过定义，这里重复是为了代码更清晰
+    /*
+    template<typename _Alloc>
+    struct allocator_traits: xxx
+    {
+    ...
+      template<typename _Tp>
+	using rebind_alloc = __alloc_rebind<_Alloc, _Tp>;
+          template<typename _Tp>
+	using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
+    ...
+    };
+    */
+    // 实际使用的就是 rebind_traits 类中的成员和函数
+    typedef typename std::allocator_traits<_Tp_alloc_type>
+        rebind_traits;
+
+    // same as
+    // typedef typename std::allocator_traits<Alloc>::template
+    //     rebind_traits<T>::pointer  pointer;
+    //typedef typename std::allocator_traits<_Tp_alloc_type>::pointer pointer;
+    typedef typename rebind_traits::pointer pointer;
+
+    // 继承是为了将该类的指针作为allocate或deallocate的第一个参数
     struct _BString_impl : public _Tp_alloc_type
     {
         _BString_impl()
-        : _Tp_alloc_type(), _m_start(), _m_finish(), _m_end_of_storage()
+        : _Tp_alloc_type(), _m_start(), _m_finish(), _m_cap_()
         {}
         
         ~_BString_impl() {}
 
         _BString_impl(_Tp_alloc_type const& _a) noexcept
-        : _Tp_alloc_type(_a), _m_start(), _m_finish(), _m_end_of_storage()
+        : _Tp_alloc_type(_a), _m_start(), _m_finish(), _m_cap_()
         {}
 
         _BString_impl(_Tp_alloc_type&& _a) noexcept
         : _Tp_alloc_type(std::move(_a)),
-          _m_start(), _m_finish(), _m_end_of_storage()
+          _m_start(), _m_finish(), _m_cap_()
         {}
 
         void _swap_data(_BString_impl& _x) noexcept
         {
             std::swap(_m_start, _x._m_start);
             std::swap(_m_finish, _x._m.finish);
-            std::swap(_m_end_of_storage, _x._m_end_of_storage);
+            std::swap(_m_cap_, _x._m_cap_);
         }
 
         pointer _m_start;
         pointer _m_finish;
-        pointer _m_end_of_storage;
+        pointer _m_cap_;
     };
 
 public:
@@ -70,7 +91,11 @@ public:
     }
 
     BString_Base() : _m_impl() {}
-    ~BString_Base() {}
+
+    ~BString_Base()
+    {
+        _m_free();
+    }
 
     BString_Base(const allocator_type& _a) noexcept
     : _m_impl(_a) {}
@@ -106,29 +131,66 @@ public:
 
     pointer _m_allocate(size_t _n)
     {
-        return _n != 0 ? _Tp_alloc_type::allocate(_m_impl, _n) : pointer();
+        return _n != 0 ? rebind_traits::allocate(_m_impl, _n) : pointer();
     }
 
     void _m_deallocate(pointer _p, size_t _n)
     {
         if (_p)
-            _Tp_alloc_type::deallocate(_m_impl, _p, _n);
+            rebind_traits::deallocate(_m_impl, _p, _n);
     }
 
-    void check_n_alloc()
+    void _m_free()
     {
+        _m_deallocate(_m_impl._m_start, _m_size());
+    }
 
+    size_t _m_size()
+    {
+        return _m_impl._m_finish - _m_impl._m_start;
     }
 
     void _m_reallocate(size_t _size = 0)
-    {}
+    {
+        size_t newcapacity = 0;
+        size_t orig_size = _m_size();
+        size_t cpy_data_size = orig_size;
+        if (_size == 0)
+        {
+            newcapacity = orig_size ? 2 * orig_size : 1;
+        }
+        else
+        {
+            if (orig_size == _size) return;
+
+            if (_size < cpy_data_size)
+            {
+                cpy_data_size = _size;
+            }
+            newcapacity = _size;
+        }
+
+        auto newdata = _m_allocate(newcapacity);
+        auto dest = newdata;
+        auto ele = _m_impl._m_start;
+
+        for (size_t i = 0; i != cpy_data_size; i++)
+        {
+            _Tp_alloc_type::construct(dest++, std::move(*ele ++));
+        }
+
+        _m_free();
+        _m_impl._m_start = newdata;
+        _m_impl._m_finish = dest;
+        _m_impl._m_cap_ = _m_impl._m_start + newcapacity;
+    }
 
 private:
     void _m_create_storage(size_t _n)
     {
         this->_m_impl._m_start = this->_m_allocate(_n);
         this->_m_impl._m_finish = this->_m_impl._m_start;
-        this->_m_impl._m_end_of_storage = this->_m_impl._m_start + _n;
+        this->_m_impl._m_cap_ = this->_m_impl._m_start + _n;
     }
 };
 
@@ -140,6 +202,8 @@ private:
 (效果，将类的使用者无法访问基类内部变量，但派生类本身可见)
 */
 
+// 使用Alloc模板参数，这样的最终目的还是调用了 std::allocator中的
+// __gnu_cxx::new_allocator 构造器
 template<typename T, typename Alloc = std::allocator<T>>
 class BString : protected BString_Base<T, Alloc>
 {
@@ -184,17 +248,18 @@ public:
 
     size_type size()
     {
-
+        // 必须携带_Base的作用域符
+        return _Base::_m_size();
     }
 
     size_type length()
     {
-        return size();
+        return _Base::_m_size();
     }
 
     bool empty()
     {
-        return size() == 0;
+        return _Base::_m_size() == 0;
     }
 
     size_type capacity() const
@@ -271,12 +336,22 @@ public:
     size_type find( value_type ch, size_type pos = 0 ) const;
 
 private:
+    void check_n_alloc()
+    {
+        if (size() == capacity())
+            _Base::_m_reallocate();
+    }
+
     std::pair<T*, T*>
         alloc_n_copy(const _It begin, const _It end)
     {
 
     }
 
+    _It uninitialized_copy(const _It begin, const _It end, pointer)
+    {
+        
+    }
 };
 
 
