@@ -95,7 +95,7 @@ int main()
         tools::BString<char, NAlloc<char>> a_other("123");
 
         a_other += "456";
-
+        a_other.print();
 
         //Print(a_other);
         // stream << "a_other, size: "<< a_other.size() << ": "

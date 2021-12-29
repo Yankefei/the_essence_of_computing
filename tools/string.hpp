@@ -134,13 +134,14 @@ public:
 
     pointer _m_allocate(size_t _n)
     {
-        return _n != 0 ? rebind_traits::allocate(_m_impl, _n) : pointer();
+        // add \0
+        return _n != 0 ? rebind_traits::allocate(_m_impl, _n + 1) : pointer();
     }
 
     void _m_deallocate(pointer _p, size_t _n)
     {
         if (_p)
-            rebind_traits::deallocate(_m_impl, _p, _n);
+            rebind_traits::deallocate(_m_impl, _p, _n + 1);
     }
 
     void _m_free()
@@ -178,7 +179,13 @@ public:
 
         _m_impl._m_start = newdata;
         _m_impl._m_finish = newdata + cpy_data_size;
+        _m_add_str_end();
         _m_impl._m_cap = _m_impl._m_start + newcapacity;
+    }
+
+    void _m_add_str_end()
+    {
+        *_m_impl._m_finish = '\0';
     }
 
 private:
@@ -192,6 +199,7 @@ private:
         this->_m_impl._m_start = this->_m_allocate(_n);
         this->_m_impl._m_finish = this->_m_impl._m_start;
         this->_m_impl._m_cap = this->_m_impl._m_start + _n;
+        _m_add_str_end();
     }
 };
 
@@ -221,6 +229,7 @@ public:
     typedef std::size_t                     size_type;
     typedef ptrdiff_t                       difference_type;
     typedef RIterator<T>                    _It;
+    typedef CRIterator<T>                   _CIt;
 
     static const size_type npos = static_cast<size_type>(-1); 
 
@@ -247,6 +256,7 @@ public:
         auto pair = alloc_n_copy(data, data + len);
         _m_impl._m_start = pair.first;
         _m_impl._m_finish = _m_impl._m_cap = pair.second;
+        _Base::_m_add_str_end();
     }
 
     BString(const BString& rhs)
@@ -254,6 +264,7 @@ public:
         auto pair = alloc_n_copy(rhs.begin(), rhs.end());
         _m_impl._m_start = pair.first;
         _m_impl._m_finish = _m_impl._m_cap = pair.second;
+        _Base::_m_add_str_end();
     }
 
     BString& operator=(const BString& rhs)
@@ -264,6 +275,7 @@ public:
             auto pair = alloc_n_copy(rhs.begin(), rhs.end());
             _m_impl._m_start = pair.first;
             _m_impl._m_finish = _m_impl._m_cap = pair.second;
+            _Base::_m_add_str_end();
         }
         return *this;
     }
@@ -352,6 +364,7 @@ public:
     void clear()
     {
         _m_impl._m_finish = _m_impl._m_start;
+        _Base::_m_add_str_end();
     }
 
     void push_back(value_type val)
@@ -376,14 +389,24 @@ public:
         std::swap(lhs._m_impl._m_cap, rhs._m_impl._m_cap);
     }
 
-    _It begin() const
+    _It begin()
     {
         return _It(_data());
     }
 
-    _It end() const
+    _It end()
     {
         return _It(_data() + _size());
+    }
+
+    _CIt begin() const
+    {
+        return _CIt(_data());
+    }
+
+    _CIt end() const
+    {
+        return _CIt(_data() + _size());
     }
 
     BString& insert(size_type index, value_type val);
@@ -443,13 +466,15 @@ private:
         check_n_alloc(n);
         memcpy(_data() + _size(), ptr, n);
         _m_impl._m_finish += n;
+        _Base::_m_add_str_end();
     }
 
     void append(value_type val)
     {
         check_n_alloc(1);
         *(_data() + _size()) = val;
-        _m_impl._m_finish ++; 
+        _m_impl._m_finish ++;
+        _Base::_m_add_str_end();
     }
 
     // 一次内存增大至少一倍
@@ -467,14 +492,7 @@ private:
     }
 
     std::pair<T*, T*>
-        alloc_n_copy(const _It begin, const _It end)
-    {
-        auto data = _Base::_m_allocate(end - begin);
-        return {data, std::uninitialized_copy(begin, end, data)};  // 刚好用完
-    }
-
-    std::pair<T*, T*>
-        alloc_n_copy(_Cptr begin, _Cptr end)
+        alloc_n_copy(_CIt begin, _CIt end)
     {
         auto data = _Base::_m_allocate(end - begin);
         return {data, std::uninitialized_copy(begin, end, data)};  // 刚好用完
