@@ -35,7 +35,34 @@ struct TestClass
     };
 };
 
-// #define _GLIBCXX_USE_CXX11_ABI
+// 带调试输出的最小 C++11 分配器
+template <class Tp>
+struct NAlloc {
+    typedef Tp value_type;
+    NAlloc() = default;
+    template <class T> NAlloc(const NAlloc<T>&) {}
+    Tp* allocate(std::size_t n)
+    {
+        n *= sizeof(Tp);
+        std::cout << "allocating " << n << " bytes\n";
+        return static_cast<Tp*>(::operator new(n));
+    }
+    void deallocate(Tp* p, std::size_t n)
+    {
+        std::cout << "deallocating " << n*sizeof(Tp) << " bytes\n";
+        ::operator delete(p);
+    }
+};
+
+
+template <class T, class U>
+bool operator==(const NAlloc<T>&, const NAlloc<U>&)
+{ return true; }
+template <class T, class U>
+bool operator!=(const NAlloc<T>&, const NAlloc<U>&)
+{ return false; }
+
+
 
 int main()
 {
@@ -47,6 +74,33 @@ int main()
 
     tools::String a;
     stream << "sizeof tools::String : "<< sizeof(tools::String) << std::endl;
+
+    {
+        tools::String  test("123");
+        test.print();
+
+        test += "456";
+        test.print();
+
+        tools::String test1(test);
+        test1.print();
+
+
+        test1 += "789";
+        test = test1;
+        test.print();
+    }
+
+    {
+        tools::BString<char, NAlloc<char>> a_other("123");
+
+        a_other += "456";
+
+
+        //Print(a_other);
+        // stream << "a_other, size: "<< a_other.size() << ": "
+        //        << a_other << std::endl;
+    }
 
     return 0;
 }

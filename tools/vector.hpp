@@ -180,6 +180,7 @@ private:
             reallocate();
     }
 
+    // 默认参数时，容积将扩大一倍. 在指定参数时，强制将容积设置到该数值
     void reallocate(size_type _size = 0)
     {
         size_type newcapacity = 0;
@@ -191,8 +192,6 @@ private:
         }
         else
         {
-            if (orig_size == _size) return;
-
             if (_size < cpy_data_size)
             {
                 cpy_data_size = _size;
@@ -204,7 +203,7 @@ private:
         auto dest = newdata;
         auto ele = element_;
 
-        for (size_type i = 0; i != cpy_data_size; i++)
+        for (size_type i = 0; i < cpy_data_size; i++)
         {
             alloc_.construct(dest++, std::move(*ele ++));
         }

@@ -3,6 +3,9 @@
 
 #include <memory>
 #include <cassert>
+#include <cstring>
+
+#include "stream.h"
 
 #include "iterator_base.h"
 
@@ -45,30 +48,30 @@ struct BString_Base
     struct _BString_impl : public _Tp_alloc_type
     {
         _BString_impl()
-        : _Tp_alloc_type(), _m_start(), _m_finish(), _m_cap_()
+        : _Tp_alloc_type(), _m_start(), _m_finish(), _m_cap()
         {}
         
         ~_BString_impl() {}
 
         _BString_impl(_Tp_alloc_type const& _a) noexcept
-        : _Tp_alloc_type(_a), _m_start(), _m_finish(), _m_cap_()
+        : _Tp_alloc_type(_a), _m_start(), _m_finish(), _m_cap()
         {}
 
         _BString_impl(_Tp_alloc_type&& _a) noexcept
         : _Tp_alloc_type(std::move(_a)),
-          _m_start(), _m_finish(), _m_cap_()
+          _m_start(), _m_finish(), _m_cap()
         {}
 
         void _swap_data(_BString_impl& _x) noexcept
         {
             std::swap(_m_start, _x._m_start);
             std::swap(_m_finish, _x._m.finish);
-            std::swap(_m_cap_, _x._m_cap_);
+            std::swap(_m_cap, _x._m_cap);
         }
 
         pointer _m_start;
         pointer _m_finish;
-        pointer _m_cap_;
+        pointer _m_cap;
     };
 
 public:
@@ -143,26 +146,25 @@ public:
     void _m_free()
     {
         _m_deallocate(_m_impl._m_start, _m_size());
+        _m_impl._m_start = nullptr;
+        _m_impl._m_finish = nullptr;
+        _m_impl._m_cap = nullptr;
     }
 
-    size_t _m_size()
-    {
-        return _m_impl._m_finish - _m_impl._m_start;
-    }
-
+    // 适用于 string 容器的自增长逻辑
+    // 默认将容积扩大一倍
+    // 否则将容积修改到参数制定的大小
     void _m_reallocate(size_t _size = 0)
     {
         size_t newcapacity = 0;
-        size_t orig_size = _m_size();
-        size_t cpy_data_size = orig_size;
+        size_t orig_size = _m_impl._m_cap - _m_impl._m_start;
+        size_t cpy_data_size = _m_size();
         if (_size == 0)
         {
             newcapacity = orig_size ? 2 * orig_size : 1;
         }
         else
         {
-            if (orig_size == _size) return;
-
             if (_size < cpy_data_size)
             {
                 cpy_data_size = _size;
@@ -171,26 +173,25 @@ public:
         }
 
         auto newdata = _m_allocate(newcapacity);
-        auto dest = newdata;
-        auto ele = _m_impl._m_start;
-
-        for (size_t i = 0; i != cpy_data_size; i++)
-        {
-            _Tp_alloc_type::construct(dest++, std::move(*ele ++));
-        }
-
+        memcpy(newdata, _m_impl._m_start, cpy_data_size);
         _m_free();
+
         _m_impl._m_start = newdata;
-        _m_impl._m_finish = dest;
-        _m_impl._m_cap_ = _m_impl._m_start + newcapacity;
+        _m_impl._m_finish = newdata + cpy_data_size;
+        _m_impl._m_cap = _m_impl._m_start + newcapacity;
     }
 
 private:
+    size_t _m_size()
+    {
+        return this->_m_impl._m_finish - _m_impl._m_start;
+    }
+
     void _m_create_storage(size_t _n)
     {
         this->_m_impl._m_start = this->_m_allocate(_n);
         this->_m_impl._m_finish = this->_m_impl._m_start;
-        this->_m_impl._m_cap_ = this->_m_impl._m_start + _n;
+        this->_m_impl._m_cap = this->_m_impl._m_start + _n;
     }
 };
 
@@ -204,6 +205,8 @@ private:
 
 // 使用Alloc模板参数，这样的最终目的还是调用了 std::allocator中的
 // __gnu_cxx::new_allocator 构造器
+// 如果使用自定义的Alloc, 本方法可支持内部逻辑融洽, 且支持默认构造器和自定义构造器
+// 的相互赋值和构造
 template<typename T, typename Alloc = std::allocator<T>>
 class BString : protected BString_Base<T, Alloc>
 {
@@ -226,59 +229,166 @@ protected:
 
 public:
     BString() {}
-    ~BString() {}
+
+    ~BString()
+    {
+        _Base::_m_free();
+    }
 
     BString(std::initializer_list<value_type> list)
     {
-        // for(auto p = list.begin(); p != list.end(); p ++)
-        //     emplace_back(*p);
+        for(auto p = list.begin(); p != list.end(); p ++)
+            push_back(*p);
+    }
+
+    BString(_Cptr data)
+    {
+        size_type len = strlen(data);
+        auto pair = alloc_n_copy(data, data + len);
+        _m_impl._m_start = pair.first;
+        _m_impl._m_finish = _m_impl._m_cap = pair.second;
     }
 
     BString(const BString& rhs)
-    {}
+    {
+        auto pair = alloc_n_copy(rhs.begin(), rhs.end());
+        _m_impl._m_start = pair.first;
+        _m_impl._m_finish = _m_impl._m_cap = pair.second;
+    }
 
     BString& operator=(const BString& rhs)
-    {}
+    {
+        if (this != &rhs)
+        {
+            _Base::_m_free();
+            auto pair = alloc_n_copy(rhs.begin(), rhs.end());
+            _m_impl._m_start = pair.first;
+            _m_impl._m_finish = _m_impl._m_cap = pair.second;
+        }
+        return *this;
+    }
 
-    BString(BString&& rhs)
-    {}
 
     BString& operator=(BString&& rhs)
-    {}
+    {
+        if (this != rhs)
+        {
+            swap(rhs);
+        }
+
+        return *this;
+    }
 
     size_type size()
     {
-        // 必须携带_Base的作用域符
-        return _Base::_m_size();
+        return _size();
     }
 
     size_type length()
     {
-        return _Base::_m_size();
+        return _size();
     }
 
     bool empty()
     {
-        return _Base::_m_size() == 0;
+        return _size() == 0;
     }
 
     size_type capacity() const
     {
+        return _Base::_m_capacity();
     }
 
     void resize(size_type count)
     {
-        // reallocate(count);
+        return _Base::_m_reallocate(count);
     }
 
     void reserve(size_type new_cap)
     {
-        // if (new_cap <= size()) return;
+        if (new_cap <= size()) return;
 
-        // reallocate(new_cap);
+        _Base::_m_reallocate(new_cap);
     }
 
-    _It insert(_It pos, value_type val);
+    _Cptr c_str()
+    {
+        return _data();
+    }
+
+    _Cptr data()
+    {
+        return c_str();
+    }
+
+    value_type operator[](size_type n)
+    {
+        return *(_Base::_m_data() + n);
+    }
+
+    value_type front() const
+    {
+        return *_Base::_m_data();
+    }
+
+    value_type back() const
+    {
+        return *(_Base::_m_data + size() - 1);
+    }
+
+    BString& append(const BString& rhs)
+    {
+        append(rhs.data(), rhs.size());
+        return *this;
+    }
+
+    BString& append(_Cptr data)
+    {
+        size_type data_len = strlen(data);
+        append(data, data_len);
+        return *this;
+    }
+
+    void clear()
+    {
+        _m_impl._m_finish = _m_impl._m_start;
+    }
+
+    void push_back(value_type val)
+    {
+        append(val);
+    }
+
+    void pop_back()
+    {
+
+    }
+
+    void swap(BString& val)
+    {
+        _m_impl._swap_data(val);
+    }
+
+    static void swap(BString& lhs, BString& rhs)
+    {
+        std::swap(lhs._m_impl._m_start, rhs._m_impl._m_start);
+        std::swap(lhs._m_impl._m_finish, rhs._m_impl._m_finish);
+        std::swap(lhs._m_impl._m_cap, rhs._m_impl._m_cap);
+    }
+
+    _It begin() const
+    {
+        return _It(_data());
+    }
+
+    _It end() const
+    {
+        return _It(_data() + _size());
+    }
+
+    BString& insert(size_type index, value_type val);
+
+    BString& insert(size_type index, const BString& val);
 
     // 若 first 和 last 是指向 *this 中的迭代器，则行为未定义
     _It insert(_It pos, _It first, _It last);
@@ -287,72 +397,141 @@ public:
 
     _It erase(_It first, _It last);
 
-    _Cptr* c_str()
-    {
-    }
-
-    _Cptr* data()
-    {}
-
-    value_type operator[](size_type)
-    {
-
-    }
-
-    value_type front() const
-    {}
-
-    value_type back() const
-    {}
-
-    BString& append(BString& rhs)
-    {
-        return *this;
-    }
-
-    void clear()
-    {
-    }
-
-    void push_back(value_type val)
-    {}
-
-    void pop_back()
-    {}
-
-    void swap(BString& val)
-    {
-
-    }
-
-    static void swap(BString& lhs, BString& rhs)
-    {
-
-    }
-
-
     size_type find( const BString& str, size_type pos = 0 ) const;
 
     size_type find( value_type ch, size_type pos = 0 ) const;
 
-private:
-    void check_n_alloc()
+
+    BString& operator+=(const BString& str)
     {
-        if (size() == capacity())
-            _Base::_m_reallocate();
+        return this->append(str);
+    }
+
+    BString& operator+=(_Cptr ptr)
+    {
+        return this->append(ptr);
+    }
+
+    BString& operator+=(T c)
+    {
+        return this->push_back(c);
+    }
+
+    void print()
+    {
+        stream <<_data() << std::endl;
+    }
+
+private:
+    size_t _size() const
+    {
+        return _m_impl._m_finish - _m_impl._m_start;
+    }
+
+    size_t _capacity() const
+    {
+        return _m_impl._m_cap - _m_impl._m_start;
+    }
+
+    T* _data() const
+    {
+        return static_cast<T*>(_m_impl._m_start);
+    }
+
+    void append(_Cptr ptr, size_type n)
+    {
+        check_n_alloc(n);
+        memcpy(_data() + _size(), ptr, n);
+        _m_impl._m_finish += n;
+    }
+
+    void append(value_type val)
+    {
+        check_n_alloc(1);
+        *(_data() + _size()) = val;
+        _m_impl._m_finish ++; 
+    }
+
+    // 一次内存增大至少一倍
+    void check_n_alloc(size_type n)
+    {
+        size_type left_space = _capacity() - _size();
+        // 需要申请内存
+        if (left_space < n)
+        {
+            if (n < _capacity())
+                _Base::_m_reallocate();  // double
+            else
+                _Base::_m_reallocate(_capacity() + n);
+        }
     }
 
     std::pair<T*, T*>
         alloc_n_copy(const _It begin, const _It end)
     {
-
+        auto data = _Base::_m_allocate(end - begin);
+        return {data, std::uninitialized_copy(begin, end, data)};  // 刚好用完
     }
 
-    _It uninitialized_copy(const _It begin, const _It end, pointer)
+    std::pair<T*, T*>
+        alloc_n_copy(_Cptr begin, _Cptr end)
     {
-        
+        auto data = _Base::_m_allocate(end - begin);
+        return {data, std::uninitialized_copy(begin, end, data)};  // 刚好用完
     }
 };
+
+template<typename T, typename Alloc>
+BString<T, Alloc>&
+BString<T, Alloc>::insert(size_type index, const BString& val)
+{
+    
+}
+
+template<typename T, typename Alloc>
+BString<T, Alloc>&
+BString<T, Alloc>::insert(size_type index, value_type val)
+{
+}
+
+template<typename T, typename Alloc>
+typename BString<T, Alloc>::_It
+BString<T, Alloc>::insert(_It pos, _It first, _It last)
+{
+
+}
+
+template<typename T, typename Alloc>
+typename BString<T, Alloc>::_It
+BString<T, Alloc>::erase(_It pos)
+{
+
+}
+
+template<typename T, typename Alloc>
+typename BString<T, Alloc>::_It
+BString<T, Alloc>::erase(_It first, _It last)
+{
+
+}
+
+
+// https://blog.csdn.net/lyyslsw1230_163com/article/details/8453539
+// https://blog.csdn.net/xhj_enen/article/details/80914360
+
+// template<typename T, typename Alloc>
+// Stream& operator<<(Stream& __os, const BString<T, Alloc>& __str)
+// {
+//     __os << __str.data();
+//     return __os;
+// }
+
+// template<typename T, typename Alloc>
+// void Print(const BString<T, Alloc>& str)
+// {
+//     stream << str.data() << std::endl;
+// }
+
 
 
 using String = BString<char>;
