@@ -87,7 +87,84 @@ struct _Ranit :
 
 
 ///////////////////////////
-// todo
+// Input Iterator
+template<typename _Ty, typename _Dis = ptrdiff_t>
+class CRIterator : public _Ranit<_Ty, _Dis>
+{
+public:
+    typedef _Dis            Distance;
+    typedef const _Ty&      const_reference;
+    typedef  const _Ty*     _Cptr;
+
+public:
+    CRIterator(const _Ty* ptr = nullptr): ptr_(const_cast<_Ty*>(ptr)) {}
+    const_reference operator*() const
+    {
+        return *ptr_;
+    }
+
+    _Cptr operator->() const
+    {
+        return &**this;
+    }
+
+    CRIterator& operator++()
+    {
+        ++ ptr_;
+        return *this;
+    }
+
+    CRIterator operator++(int)
+    {
+        CRIterator temp = *this;
+        ++*this;
+        return temp;
+    }
+    CRIterator& operator--()
+    {
+        -- ptr_;
+        return *this;
+    }
+    CRIterator operator--(int)
+    {
+        CRIterator temp = *this;
+        --*this;
+        return temp;
+    }
+
+    CRIterator operator+(Distance n) const
+    {
+        return ptr_ + n;
+    }
+
+    Distance operator-(const CRIterator& val) const
+    {
+        return ptr_ - val.ptr_;
+    }
+
+    CRIterator operator-(Distance n) const
+    {
+        return ptr_ - n;
+    }
+
+    const_reference operator[](Distance n) const
+    {
+        return *(ptr_ + n);
+    }
+
+    bool operator ==(const CRIterator& val) const
+    {
+        return ptr_ == val.ptr_;
+    }
+    bool operator !=(const CRIterator& val) const
+    {
+        return !(*this == val);
+    }
+
+protected:
+    _Ty* ptr_;
+};
+
 template<typename _Ty, typename _Dis = ptrdiff_t>
 class RIterator : public _Ranit<_Ty, _Dis>
 {
@@ -100,11 +177,11 @@ public:
 public:
     RIterator(_Ty* ptr = nullptr): ptr_(ptr) {}
 
-    reference operator*()
+    reference operator*() const
     {
         return *ptr_;
     }
-    _Cptr operator->()
+    _Cptr operator->() const
     {
         return &**this;
     }
@@ -127,21 +204,13 @@ public:
     RIterator operator--(int)
     {
         RIterator temp = *this;
-        ++*this;
+        --*this;
         return temp;
     }
+
     RIterator operator+(Distance n) const
     {
-        return ptr_ + n;
-    }
-    RIterator& operator+=(Distance n)
-    {
-        ptr_ = ptr_ + n;
-        return *this;
-    }
-    RIterator operator-(Distance n)
-    {
-        return ptr_ - n;
+        return RIterator(ptr_ + n);
     }
 
     Distance operator-(const RIterator& val) const
@@ -149,20 +218,28 @@ public:
         return ptr_ - val.ptr_;
     }
 
+    RIterator operator-(Distance n) const
+    {
+        return RIterator(ptr_ - n);
+    }
+
+    RIterator& operator+=(Distance n)
+    {
+        ptr_ = ptr_ + n;
+        return *this;
+    }
+
     RIterator& operator-=(Distance n)
     {
         ptr_ = ptr_ - n;
         return *this;
     }
-    reference operator[](Distance n)
-    {
-        return *(ptr_ + n);
-    }
-    bool operator ==(const RIterator& val)
+
+    bool operator ==(const RIterator& val) const
     {
         return ptr_ == val.ptr_;
     }
-    bool operator !=(const RIterator& val)
+    bool operator !=(const RIterator& val) const
     {
         return !(*this == val);
     }
@@ -176,8 +253,18 @@ public:
     {
         return !(*this == val || *this < val); 
     }
+
+    bool operator>=(const RIterator& val)
+    {
+        return *this > val || *this == val;
+    }
+
+    bool operator<=(const RIterator& val)
+    {
+        return *this < val || *this == val;
+    }
 protected:
-  _Ty* ptr_;
+    _Ty* ptr_;
 };
 
 }

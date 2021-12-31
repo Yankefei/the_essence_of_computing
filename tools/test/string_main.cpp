@@ -66,29 +66,78 @@ bool operator!=(const NAlloc<T>&, const NAlloc<U>&)
 
 int main()
 {
-    // stream << "sizeof TestClass  : "<< sizeof(TestClass) << std::endl;
+    {
+        stream << "sizeof std::string   : "<< sizeof(std::string) << std::endl;
 
-    std::string str = "123";
-
-    stream << "sizeof std::string   : "<< sizeof(std::string) << std::endl;
-
-    tools::String a;
-    stream << "sizeof tools::String : "<< sizeof(tools::String) << std::endl;
+        tools::String a;
+        stream << "sizeof tools::String : "<< sizeof(tools::String) << std::endl;
+    }
 
     {
         tools::String  test("123");
         test.print();
 
         test += "456";
+        test += '7';
         test.print();
 
         tools::String test1(test);
-        test1.print();
+        //test1.print();
 
-
-        test1 += "789";
+        stream <<"1 size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
+        
         test = test1;
-        test.print();
+        test1 += "abc";
+
+        //test.print();
+        stream <<"size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
+        test += '0';
+        stream <<"size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
+
+        test.pop_back();
+        stream <<"size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
+
+        test.swap(test1);
+        stream <<"after swap size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
+
+    }
+
+    {
+        tools::String test1("1");
+        test1.push_back('2');
+        test1 += "345";
+
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+        test1.insert(3, 'z');
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+        test1.insert(1, "abc");
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+        stream << "after erase" << std::endl;
+        test1.erase(test1.begin());
+        test1.erase(test1.begin() + 1);
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+        test1.erase(test1.begin() + 2, test1.begin() + 5);
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+
+        test1.append("mnbvc");
+        stream <<"test1: size: "<< test1.size() <<", cap: "<< test1.capacity() <<" "<< test1.c_str() << std::endl;
+
+        auto index = test1.find('m');
+        stream << "index of m : "<< index << std::endl;
+
+        index = test1.find_kmp("mnb");
+        stream << "index of mnb: "<< index << std::endl;
+
+        index = test1.find_kmp("mnbvc");
+        if (index == tools::String::npos)
+            stream << "index of mnbvc: failed" << std::endl;
+        else
+            stream << "index of mnbvc: "<< index << std::endl;
     }
 
     {

@@ -8,6 +8,7 @@
 #include "stream.h"
 
 #include "iterator_base.h"
+#include "algorithm.hpp"
 
 namespace tools
 {
@@ -65,7 +66,7 @@ struct BString_Base
         void _swap_data(_BString_impl& _x) noexcept
         {
             std::swap(_m_start, _x._m_start);
-            std::swap(_m_finish, _x._m.finish);
+            std::swap(_m_finish, _x._m_finish);
             std::swap(_m_cap, _x._m_cap);
         }
 
@@ -188,6 +189,16 @@ public:
         *_m_impl._m_finish = '\0';
     }
 
+    void _m_add_finish_ptr(size_t n = 1)
+    {
+        _m_impl._m_finish += n;
+    }
+
+    void _m_sub_finish_ptr(size_t n = 1)
+    {
+        _m_impl._m_finish -= n;
+    }
+
 private:
     size_t _m_size()
     {
@@ -261,10 +272,15 @@ public:
 
     BString(const BString& rhs)
     {
-        auto pair = alloc_n_copy(rhs.begin(), rhs.end());
+        auto pair = alloc_n_copy(rhs.cbegin(), rhs.cend());
         _m_impl._m_start = pair.first;
         _m_impl._m_finish = _m_impl._m_cap = pair.second;
         _Base::_m_add_str_end();
+    }
+
+    BString(BString&& rhs)
+    {
+        swap(rhs);
     }
 
     BString& operator=(const BString& rhs)
@@ -272,7 +288,7 @@ public:
         if (this != &rhs)
         {
             _Base::_m_free();
-            auto pair = alloc_n_copy(rhs.begin(), rhs.end());
+            auto pair = alloc_n_copy(rhs.cbegin(), rhs.cend());
             _m_impl._m_start = pair.first;
             _m_impl._m_finish = _m_impl._m_cap = pair.second;
             _Base::_m_add_str_end();
@@ -291,24 +307,24 @@ public:
         return *this;
     }
 
-    size_type size()
+    size_type size() const
     {
         return _size();
     }
 
-    size_type length()
+    size_type length() const
     {
         return _size();
     }
 
-    bool empty()
+    bool empty() const
     {
         return _size() == 0;
     }
 
     size_type capacity() const
     {
-        return _Base::_m_capacity();
+        return _capacity();
     }
 
     void resize(size_type count)
@@ -323,41 +339,47 @@ public:
         _Base::_m_reallocate(new_cap);
     }
 
-    _Cptr c_str()
+    _Cptr c_str() const
     {
         return _data();
     }
 
-    _Cptr data()
+    _Cptr data() const
     {
         return c_str();
     }
 
     value_type operator[](size_type n)
     {
-        return *(_Base::_m_data() + n);
+        return *(_data() + n);
     }
 
     value_type front() const
     {
-        return *_Base::_m_data();
+        return *_data();
     }
 
     value_type back() const
     {
-        return *(_Base::_m_data + size() - 1);
+        return *(_data + size() - 1);
     }
 
     BString& append(const BString& rhs)
     {
-        append(rhs.data(), rhs.size());
+        _append(end(), rhs.data(), rhs.size());
         return *this;
     }
 
     BString& append(_Cptr data)
     {
         size_type data_len = strlen(data);
-        append(data, data_len);
+        _append(end(), data, data_len);
+        return *this;
+    }
+
+    BString& append(const value_type& data)
+    {
+        _append(end(), data);
         return *this;
     }
 
@@ -367,19 +389,23 @@ public:
         _Base::_m_add_str_end();
     }
 
-    void push_back(value_type val)
+    void push_back(const value_type& val)
     {
         append(val);
     }
 
     void pop_back()
     {
-
+        if (_size() > 0)
+        {
+            _Base::_m_sub_finish_ptr();
+            _Base::_m_add_str_end();
+        }
     }
 
     void swap(BString& val)
     {
-        _m_impl._swap_data(val);
+        _m_impl._swap_data(val._m_impl);
     }
 
     static void swap(BString& lhs, BString& rhs)
@@ -399,30 +425,109 @@ public:
         return _It(_data() + _size());
     }
 
-    _CIt begin() const
+    _CIt cbegin() const
     {
         return _CIt(_data());
     }
 
-    _CIt end() const
+    _CIt cend() const
     {
         return _CIt(_data() + _size());
     }
 
-    BString& insert(size_type index, value_type val);
+    // 在index的位置插入
+    BString& insert(size_type index, value_type val)
+    {
+        if (index > size() + 1) return *this;
 
-    BString& insert(size_type index, const BString& val);
+        _append(begin() + index, val);
+        return *this;
+    }
+
+    BString& insert(size_type index, const BString& val)
+    {
+        if (index > size() + 1) return *this;
+
+        _append(begin() + index, val.c_str(), val.size());
+        return *this;
+    }
 
     // 若 first 和 last 是指向 *this 中的迭代器，则行为未定义
-    _It insert(_It pos, _It first, _It last);
+    _It insert(_It pos, _CIt first, _CIt last)
+    {
+        if (pos > end() + 1 || pos < begin()) return pos;
+
+        size_type begin_index = pos - begin();
+        _append(pos, &*first, last - first);
+
+        return begin() + begin_index;
+    }
 
     _It erase(_It pos);
 
+    // 左闭右开
     _It erase(_It first, _It last);
 
-    size_type find( const BString& str, size_type pos = 0 ) const;
+    // kmp 算法
+    size_type find_kmp( const BString& str, size_type pos = 0 )
+    {
+        if (pos >= size()) return pos;
 
-    size_type find( value_type ch, size_type pos = 0 ) const;
+        return kmp_find<value_type>(this->_data() + pos, this->size() - pos,
+                                              str.c_str(), str.size());
+    }
+
+    // 暴力匹配
+    // https://zhuanlan.zhihu.com/p/83334559
+    size_type find( const BString& str, size_type pos = 0 )
+    {
+        if (pos >= size()) return pos;
+
+        size_type find = npos;
+
+        _Cptr src = this->_data() + pos;
+        _Cptr dst = str.c_str();
+
+        size_type src_len = this->length() - pos;
+        size_type dst_len = str.length();
+        for (int i = 0; i <= src_len - dst_len; i ++)
+        {
+            int j;
+            for (j = 0; j < dst_len; j++)
+            {
+                if (dst[j] != src[i + j])
+                    break;
+            }
+
+            // 全部能匹配上
+            if (j == dst_len)
+            {
+                find = i;
+                break;
+            }
+        }
+
+        return find;
+    }
+
+    size_type find( value_type ch, size_type pos = 0 )
+    {
+        if (pos >= size()) return pos;
+
+        size_type find = npos;
+
+        auto it = begin() + pos;
+        for (; it != end(); it ++)
+        {
+            if (*it == ch)
+            {
+                find = it - begin();
+                break;
+            }
+        }
+
+        return find;
+    }
 
 
     BString& operator+=(const BString& str)
@@ -435,9 +540,9 @@ public:
         return this->append(ptr);
     }
 
-    BString& operator+=(T c)
+    BString& operator+=(const value_type& c)
     {
-        return this->push_back(c);
+        return this->append(c);
     }
 
     void print()
@@ -456,24 +561,39 @@ private:
         return _m_impl._m_cap - _m_impl._m_start;
     }
 
-    T* _data() const
+    value_type* _data() const
     {
-        return static_cast<T*>(_m_impl._m_start);
+        return static_cast<value_type*>(_m_impl._m_start);
     }
 
-    void append(_Cptr ptr, size_type n)
+    void _append(_It pos, _Cptr ptr, size_type n)
     {
+        size_type begin_num = pos - begin();
+        // 可能导致pos失效
         check_n_alloc(n);
-        memcpy(_data() + _size(), ptr, n);
-        _m_impl._m_finish += n;
+        
+        auto e_it = begin() + begin_num - 1;
+        for (auto it = end() - 1; it != e_it; it --)
+            *(it + n) = *it;
+
+        memcpy(&*(begin() + begin_num), ptr, n);
+        _Base::_m_add_finish_ptr(n);
         _Base::_m_add_str_end();
     }
 
-    void append(value_type val)
+    void _append(_It pos, const value_type& val)
     {
+        size_type begin_num = pos - begin();
+        // 可能导致pos失效
         check_n_alloc(1);
-        *(_data() + _size()) = val;
-        _m_impl._m_finish ++;
+
+        auto e_it = begin() + begin_num - 1;
+        for (auto it = end() - 1; it != e_it; it --)
+            *(it + 1) = *it;
+
+        *(begin() + begin_num) = val;
+
+        _Base::_m_add_finish_ptr();
         _Base::_m_add_str_end();
     }
 
@@ -500,37 +620,44 @@ private:
 };
 
 template<typename T, typename Alloc>
-BString<T, Alloc>&
-BString<T, Alloc>::insert(size_type index, const BString& val)
-{
-    
-}
-
-template<typename T, typename Alloc>
-BString<T, Alloc>&
-BString<T, Alloc>::insert(size_type index, value_type val)
-{
-}
-
-template<typename T, typename Alloc>
-typename BString<T, Alloc>::_It
-BString<T, Alloc>::insert(_It pos, _It first, _It last)
-{
-
-}
-
-template<typename T, typename Alloc>
 typename BString<T, Alloc>::_It
 BString<T, Alloc>::erase(_It pos)
 {
+    if (pos < begin() || pos >= end()) return pos;
 
+    for (auto it = pos; it != end() - 1; it ++)
+        *it = *(it + 1);
+
+    _Base::_m_sub_finish_ptr();
+    _Base::_m_add_str_end();
+
+    return pos;
 }
 
 template<typename T, typename Alloc>
 typename BString<T, Alloc>::_It
 BString<T, Alloc>::erase(_It first, _It last)
 {
+    if (last < first) return _It();
 
+    if (first < begin() || last > end()) return _It();
+
+    size_type erase_num = last - first;
+
+    auto it = first;
+    for (auto num = erase_num; num > 0; num --)
+        *it++ = *last++;
+
+    _Base::_m_sub_finish_ptr(erase_num);
+    _Base::_m_add_str_end();
+
+    return first;
+}
+
+template<typename T, typename Alloc>
+inline bool operator<(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rhs)
+{
+    return true;
 }
 
 
