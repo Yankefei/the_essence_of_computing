@@ -26,7 +26,7 @@ int main()
     }
 
     sort_bean(array);
-    stream << "aster sort" << std::endl;
+    stream << "after sort" << std::endl;
     for (int i = 0; i < 6; i ++)
     {
         for (int j = 0; j < 9; j ++)
