@@ -9,4 +9,7 @@ namespace tools
 
 Stream stream{/*&of,*/ &std::cout};
 
+void Boolalpha(Stream& os)   { Stream::set_boolalpha(os, true); }
+void NoBoolalpha(Stream& os) { Stream::set_boolalpha(os, false); }
+
 }

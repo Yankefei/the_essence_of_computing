@@ -700,6 +700,11 @@ inline bool operator==(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rh
     return lhs.compare(rhs) == 0;
 }
 
+template<typename T, typename Alloc>
+inline bool operator!=(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rhs)
+{
+    return lhs.compare(rhs) != 0;
+}
 
 template<typename T, typename Alloc>
 std::ostream& operator<<(std::ostream& stream, const BString<T, Alloc>& __str)

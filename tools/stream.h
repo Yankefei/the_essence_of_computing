@@ -34,13 +34,32 @@ public:
         return *this;
     }
 
-    template<typename T>
-    Stream& operator<<(T&& data)
+    Stream& operator <<(bool val)
     {
-        for (auto& os : os_)
-            *os<< std::forward<T>(data);
+        for (auto&os : os_)
+        {
+            if (is_set_boolalpha_)
+            {
+                if (val)
+                    *os << "true";
+                else
+                    *os << "false";
+            }
+            else
+            {
+                *os << val;
+            }
+        }
         return *this;
     }
+
+    // template<typename T>
+    // Stream& operator<<(T&& data)
+    // {
+    //     for (auto& os : os_)
+    //         *os<< std::forward<T>(data);
+    //     return *this;
+    // }
 
     Stream& operator<<(const std::string& str)
     {
@@ -58,9 +77,24 @@ public:
         return *this;
     }
 
+    // << Boolalpha or << NoBoolalpha
+    Stream& operator<<(void(*func)(Stream&))
+    {
+        func(*this);
+        return *this;
+    }
+
+    static void set_boolalpha(Stream& os, bool val) { os.is_set_boolalpha_ = val; }
+
 private:
     std::vector<std::ostream*> os_;
+
+    bool is_set_boolalpha_{false};
 };
+
+
+extern void Boolalpha(Stream& os);
+extern void NoBoolalpha(Stream& os);
 
 extern Stream stream;
 

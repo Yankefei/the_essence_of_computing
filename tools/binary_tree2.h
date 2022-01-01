@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BINARY_TREE_HPP_
-#define _TOOLS_BINARY_TREE_HPP_
+#ifndef _TOOLS_BINARY_TREE2_HPP_
+#define _TOOLS_BINARY_TREE2_HPP_
 
 #include <memory>
 #include <cassert>
@@ -9,6 +9,7 @@
 #include "queue.h"
 
 #include "binary_tree.h"
+#include "binary_tree2_iterator.h"
 
 namespace tools
 {
@@ -17,8 +18,9 @@ template<typename T = char>
 class BinaryTree2
 {
 public:
-    typedef  _Node<T>*      Root;
-    typedef  _Node<T>       Node;
+    typedef  _Node<T>*       Root;
+    typedef  const _Node<T>* CRoot;
+    typedef  _Node<T>        Node;
 
 public:
     BinaryTree2() = default;
@@ -45,28 +47,17 @@ public:
         }
     }
 
-    // static bool operator==(const BinaryTree2& lhs, const BinaryTree2& rhs)
-    // {
-    //     return true;
-    // }
-
-    // static bool operator!=(const BinaryTree2& lhs, const BinaryTree2& rhs)
-    // {
-    //     return true;
-    // }
-
 public:
     void set_end_val(const T& val) { end_ = val; }
 
-    Root get_root()
-    {
-        return root_;
-    }
+    Root get_root() { return root_; }
+
+    CRoot get_root() const { return root_; }
 
     // 使用输入的完整字符串来创建树
     void create_tree(T* str, OrderType type);
 
-    void print_tree(OrderType type);
+    // void print_tree(OrderType type);
 
     bool is_empty()
     {
@@ -88,7 +79,27 @@ public:
         destory_tree(root_);
     }
 
+    static bool is_equal(const BinaryTree2& lhs, const BinaryTree2& rhs)
+    {
+        return _is_equal(lhs.get_root(), rhs.get_root());
+    }
+
 private:
+    static bool _is_equal(const Node* lhs, const Node* rhs)
+    {
+        if (lhs == nullptr && rhs == nullptr) return true;
+        if (lhs == nullptr || rhs == nullptr) return false;
+
+        if (lhs->data_ == rhs->data_ &&
+            _is_equal(lhs->right_tree_, rhs->right_tree_) &&
+            _is_equal(lhs->left_tree_, rhs->left_tree_))
+        {
+            return true;
+        }
+        else
+            return false;
+    }
+
     Node* copy(Node* ptr)
     {
         if (nullptr == ptr) return ptr;
@@ -97,11 +108,6 @@ private:
         new_ptr->left_tree_ = copy(ptr->left_tree_);
         new_ptr->right_tree_ = copy(ptr->right_tree_);
         return new_ptr;
-    }
-
-    static bool is_equal(const BinaryTree2& lhs, const BinaryTree2& rhs)
-    {
-
     }
 
     Node* buy_node(const T& val = T())
@@ -180,10 +186,10 @@ private:
         return ptr;
     }
 
-    void nice_pre_order(Node*);
-    void nice_in_order(Node*);
-    void nice_last_order(Node*);
-    void level_order(Node*);
+    // void nice_pre_order(Node*);
+    // void nice_in_order(Node*);
+    // void nice_last_order(Node*);
+    // void level_order(Node*);
 
 private:
     Root  root_{nullptr};
@@ -224,36 +230,30 @@ void BinaryTree2<T>::create_tree(T* str, OrderType type)
 }
 
 template<typename T>
-void BinaryTree2<T>::print_tree(OrderType type)
+inline bool operator==(const BinaryTree2<T>& lhs, const BinaryTree2<T>& rhs)
 {
-    switch(type)
-    {
-        case OrderType::PreOrder:
-        {
-            nice_pre_order(root_);
-            break;
-        }
-        case OrderType::InOrder:
-        {
-            nice_in_order(root_);
-            break;
-        }
-        case OrderType::LastOrder:
-        {
-            nice_last_order(root_);
-            break;
-        }
-        case OrderType::LevelOrder:
-        {
-            level_order(root_);
-            break;
-        }
-        default:
-        {
-            assert(false);
-            break;
-        }
-    }
+    return is_equal(lhs, rhs);
+}
+
+template<typename T>
+inline bool operator!=(const BinaryTree2<T>& lhs, const BinaryTree2<T>& rhs)
+{
+    return !is_equal(lhs, rhs);
+}
+
+// Iterator
+template<typename T = char>
+using BTNPreIterator = NicePreIterator<T, BinaryTree2>;
+
+template<typename T = char>
+using BTNInIterator = NiceInIterator<T, BinaryTree2>;
+
+template<typename T = char>
+using BTNPastIterator = NicePastIterator<T, BinaryTree2>;
+
+template<typename T = char, template<typename T1> class Tree = BinaryTree2>
+void Print(TreeIterator<T, Tree> &it)
+{
     stream << std::endl;
 }
 

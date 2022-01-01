@@ -75,6 +75,31 @@ int main()
 
             delete[] array;
         }
+
+        {
+            BinaryTree2<> my_tree_copy = my_tree;
+            stream << "my_tree_copy deep: "<< my_tree_copy.max_deep_len() << std::endl;
+            stream << "my_tree_copy size: "<< my_tree_copy.size() << std::endl;
+
+            my_tree_copy = my_tree;
+            stream << "my_tree_copy deep: "<< my_tree_copy.max_deep_len() << std::endl;
+            stream << "my_tree_copy size: "<< my_tree_copy.size() << std::endl;
+        
+
+            stream << Boolalpha << BinaryTree2<>::is_equal(my_tree_copy, my_tree) << std::endl;
+
+
+            BinaryTree2<> my_tree2('#');
+
+            char str[] = "ABCD###EF##GH###I#JK#L###";
+            my_tree2.create_tree(str, OrderType::PreOrder);
+            stream << BinaryTree2<>::is_equal(my_tree_copy, my_tree2) << std::endl;
+
+            stream << NoBoolalpha;
+
+            BTNInIterator<> ni(my_tree2);
+            Print(ni);
+        }
     }
 #endif
 }
