@@ -2,6 +2,8 @@
 
 namespace tools
 {
+namespace alg
+{
 
 /*
 kmp算法： 核心在于不回溯原始字符串的指针，而仅仅移动模式字符串
@@ -83,4 +85,79 @@ size_t kmp_find(const T* src_str,  size_t src_len, const T* dst_str, size_t dst_
     return find;
 }
 
+
+// 二维数组内部保存的状态机的状态，表示如果遇到了某些T, 则对应转移到哪个状态中
+template<typename T>
+void get_next2(const T* dst_str, size_t dst_len, T** next_array)
+{
+    // 第一行的状态从0转移到1， 而且也只有遇到*dst_str, 才会从0转移到1
+    // 其他字符都停留在0
+    next_array[0][*dst_str] = 1;
+    int X = 0;
+
+    // 构建状态转移图, 从已经初始化的第一个状态图的1状态，走到最后一个状态，就说明匹配结束了
+    for (int j = 1; j < dst_len; j ++)
+    {
+        for (int c = 0; c < 256; c++)
+        {
+            if (dst_str[j] == static_cast<T>(c))
+            {
+                // 状态推进
+                // next_array[状态][字符] = 下个状态
+                next_array[j][c] = j + 1;
+            }
+            else
+            {
+                // 状态重启
+                // 委托X计算重启位置
+                next_array[j][c] = next_array[X][c];
+            }
+        }
+
+        // 更新影子状态, 也就是X永远落后j一个状态
+        X = next_array[X][dst_str[j]];
+    }
+}
+
+
+// 动态规划的版本：动态规划算法: 是利用过去的结果解决现在的问题
+// 使用动态规划的角度解释了KMP算法的精华内容, 这个视角非常独特, 值得好好学习
+template<typename T>
+size_t kmp_find2(const T* src_str,  size_t src_len, const T* dst_str, size_t dst_len)
+{
+    size_t find = static_cast<size_t>(-1); 
+
+    T** array = new T*[dst_len];  // not new (T*)[dst_len]
+    for (int i = 0; i < dst_len; i++)
+    {
+        array[i] = new T[256];
+        memset(array[i], 0, sizeof(T)*256);
+    }
+
+    get_next2(dst_str, dst_len, array);
+
+    size_t i = 0;
+    size_t j = 0;
+
+    for (; i < src_len; i++)
+    {
+        j = array[j][src_str[i]];
+
+        if (j == dst_len)
+        {
+            find = i - dst_len + 1;
+            break;
+        }
+    }
+
+    for (int i = 0; i < dst_len; i++)
+    {
+        delete[] array[i];
+    }
+    delete[] array;
+
+    return find;
+}
+
+}
 }

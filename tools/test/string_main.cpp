@@ -130,21 +130,33 @@ int main()
         auto index = test1.find('m');
         stream << "index of m : "<< index << std::endl;
 
-        index = test1.find_kmp("mnb");
+        index = test1.find("mnb");
         stream << "index of mnb: "<< index << std::endl;
 
-        index = test1.find_kmp("mnbvc");
+        index = test1.find("mnbvc");
         if (index == tools::String::npos)
             stream << "index of mnbvc: failed" << std::endl;
         else
             stream << "index of mnbvc: "<< index << std::endl;
+
+        tools::String test2 = test1;
+        test2[5] = 'p';
+        stream <<"test2: size: "<< test2.size() <<", cap: "<< test2.capacity() <<" "<< test2.c_str() << std::endl;
+
+        stream <<"is > :"<< ( test2 > test1 ? "true": "false") << std::endl;
+
+        tools::String test3 = test1;
+
+        stream << "is same: "<< (test3 == test1 ? "true": "false") << std::endl;
+   
+        stream << test3 << std::endl;
     }
 
     {
         tools::BString<char, NAlloc<char>> a_other("123");
 
         a_other += "456";
-        a_other.print();
+        stream << "a_other: " << a_other << std::endl;
 
         //Print(a_other);
         // stream << "a_other, size: "<< a_other.size() << ": "

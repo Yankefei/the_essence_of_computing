@@ -235,6 +235,7 @@ class BString : protected BString_Base<T, Alloc>
 public:
     typedef typename _Base::pointer         pointer;
     typedef T                               value_type;
+    typedef T&                              value_reference;
     typedef T*                              _Ptr;
     typedef const T*                        _Cptr;
     typedef std::size_t                     size_type;
@@ -349,7 +350,7 @@ public:
         return c_str();
     }
 
-    value_type operator[](size_type n)
+    value_reference operator[](size_type n)
     {
         return *(_data() + n);
     }
@@ -469,17 +470,19 @@ public:
     _It erase(_It first, _It last);
 
     // kmp 算法
-    size_type find_kmp( const BString& str, size_type pos = 0 )
+    size_type find( const BString& str, size_type pos = 0 ) const
     {
         if (pos >= size()) return pos;
 
-        return kmp_find<value_type>(this->_data() + pos, this->size() - pos,
+        return alg::kmp_find<value_type>(this->_data() + pos, this->size() - pos,
                                               str.c_str(), str.size());
+        // return alg::kmp_find2<value_type>(this->_data() + pos, this->size() - pos,
+        //                                       str.c_str(), str.size());
     }
 
     // 暴力匹配
     // https://zhuanlan.zhihu.com/p/83334559
-    size_type find( const BString& str, size_type pos = 0 )
+    size_type find_fd( const BString& str, size_type pos = 0 ) const
     {
         if (pos >= size()) return pos;
 
@@ -510,18 +513,18 @@ public:
         return find;
     }
 
-    size_type find( value_type ch, size_type pos = 0 )
+    size_type find( value_type ch, size_type pos = 0 ) const
     {
         if (pos >= size()) return pos;
 
         size_type find = npos;
 
-        auto it = begin() + pos;
-        for (; it != end(); it ++)
+        auto it = cbegin() + pos;
+        for (; it != cend(); it ++)
         {
             if (*it == ch)
             {
-                find = it - begin();
+                find = it - cbegin();
                 break;
             }
         }
@@ -545,9 +548,34 @@ public:
         return this->append(c);
     }
 
-    void print()
+    int compare(const BString& val) const
     {
-        stream <<_data() << std::endl;
+        int res = 0;
+        auto it = cbegin();
+        auto v_it = val.cbegin();
+        while(it != cend() && v_it != val.cend())
+        {
+            if (*it != *v_it)
+            {
+                return *it < *v_it ? -1 : 1;
+            }
+            else
+            {
+                it ++;
+                v_it ++;
+            }
+        }
+
+        if (v_it != val.cend()) return -1;
+
+        if (it != cend()) return 1;
+
+        return 0;
+    }
+
+    void print() const
+    {
+        stream << *this << std::endl;
     }
 
 private:
@@ -657,27 +685,28 @@ BString<T, Alloc>::erase(_It first, _It last)
 template<typename T, typename Alloc>
 inline bool operator<(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rhs)
 {
-    return true;
+    return lhs.compare(rhs) < 0;
+}
+
+template<typename T, typename Alloc>
+inline bool operator>(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rhs)
+{
+    return lhs.compare(rhs) > 0;
+}
+
+template<typename T, typename Alloc>
+inline bool operator==(const BString<T, Alloc>& lhs, const BString<T, Alloc>& rhs)
+{
+    return lhs.compare(rhs) == 0;
 }
 
 
-// https://blog.csdn.net/lyyslsw1230_163com/article/details/8453539
-// https://blog.csdn.net/xhj_enen/article/details/80914360
-
-// template<typename T, typename Alloc>
-// Stream& operator<<(Stream& __os, const BString<T, Alloc>& __str)
-// {
-//     __os << __str.data();
-//     return __os;
-// }
-
-// template<typename T, typename Alloc>
-// void Print(const BString<T, Alloc>& str)
-// {
-//     stream << str.data() << std::endl;
-// }
-
-
+template<typename T, typename Alloc>
+std::ostream& operator<<(std::ostream& stream, const BString<T, Alloc>& __str)
+{
+    stream << __str.data();
+    return stream;
+}
 
 using String = BString<char>;
 

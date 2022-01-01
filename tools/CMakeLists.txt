@@ -4,7 +4,10 @@ project(tools)
 
 include_directories(.)
 
-add_library(tools STATIC stream.cpp  util.cpp)
+aux_source_directory(. SRCS)
+
+#add_executable(part9  ${SRCS})
+add_library(tools STATIC ${SRCS})
 
 target_link_libraries(tools  pthread)
 
