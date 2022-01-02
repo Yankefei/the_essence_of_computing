@@ -19,6 +19,9 @@ void Print(const tools::Vector<T>& a)
 
 int main()
 {
+    {
+        std::vector<int> tmp;
+    }
 #if 1
     {
         tools::Vector<int> a;

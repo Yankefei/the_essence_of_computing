@@ -57,8 +57,6 @@ public:
     // 使用输入的完整字符串来创建树
     void create_tree(T* str, OrderType type);
 
-    // void print_tree(OrderType type);
-
     bool is_empty()
     {
         return root_ == nullptr;
@@ -186,11 +184,6 @@ private:
         return ptr;
     }
 
-    // void nice_pre_order(Node*);
-    // void nice_in_order(Node*);
-    // void nice_last_order(Node*);
-    // void level_order(Node*);
-
 private:
     Root  root_{nullptr};
     T     end_;
@@ -251,9 +244,26 @@ using BTNInIterator = NiceInIterator<T, BinaryTree2>;
 template<typename T = char>
 using BTNPastIterator = NicePastIterator<T, BinaryTree2>;
 
+template<typename T = char>
+using BTLevelIterator = LevelIterator<T, BinaryTree2>;
+
+template<typename T = char>
+using BTSPasIterator = StPastIterator<T, BinaryTree2>;
+
+template<typename T = char>
+using BTSInIterator = StInIterator<T, BinaryTree2>;
+
 template<typename T = char, template<typename T1> class Tree = BinaryTree2>
 void Print(TreeIterator<T, Tree> &it)
 {
+    it.First();
+    stream << it.Remark() << " ";
+
+    while(!it.IsDone())
+    {
+        stream << *it << " ";
+        ++it;
+    }
     stream << std::endl;
 }
 

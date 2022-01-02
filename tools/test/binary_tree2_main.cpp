@@ -97,8 +97,23 @@ int main()
 
             stream << NoBoolalpha;
 
-            BTNInIterator<> ni(my_tree2);
-            Print(ni);
+            BTNPreIterator<> pri(my_tree2);
+            Print(pri);
+
+            BTNInIterator<> ini(my_tree2);
+            Print(ini);
+
+            BTNPastIterator<> pasti(my_tree2);
+            Print(pasti);
+
+            BTLevelIterator<> leveli(my_tree2);
+            Print(leveli);
+
+            BTSPasIterator<> spasti(my_tree2);
+            Print(spasti);
+
+            BTSInIterator<> sini(my_tree2);
+            Print(sini);
         }
     }
 #endif

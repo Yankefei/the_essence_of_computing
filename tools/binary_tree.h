@@ -185,7 +185,7 @@ public:
 private:
     Node* parent(Node* ptr, const T& child)
     {
-        if (nullptr == ptr) return ptr;
+        if (nullptr == ptr) return ptr;    // 为空也需要返回，这个是递归的一个精髓
 
         if ((nullptr != ptr->left_tree_ && child == ptr->left_tree_->data_) ||
             (nullptr != ptr->right_tree_ && child == ptr->right_tree_->data_))
@@ -222,7 +222,7 @@ private:
 
     Node* find_val(Node* ptr, const T& x)
     {
-        if (nullptr == ptr || ptr->data_ == x) return ptr;
+        if (nullptr == ptr || ptr->data_ == x) return ptr;  // 为空也需要返回，这个是递归的一个精髓
 
         auto find = find_val(ptr->left_tree_, x);
         if (nullptr == find)

@@ -300,7 +300,7 @@ public:
 
     BString& operator=(BString&& rhs)
     {
-        if (this != rhs)
+        if (this != &rhs)
         {
             swap(rhs);
         }
