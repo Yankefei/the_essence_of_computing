@@ -8,6 +8,234 @@ using namespace tools;
 using namespace std;
 
 
+class Test
+{
+private:
+	int value;
+public:
+	Test()
+	{
+		memset(this,0,sizeof(Test));
+	}
+	~Test() {}
+	virtual void fun() { cout<<"Test::fun"<<endl;}
+	void print() { cout<<"Test::print: "<<value<<endl;}
+};
+int main()
+{
+	Test t1;
+	t1.fun();
+	t1.print();
+	Test *p = &t1;
+	p->print();
+	p->fun();   // core
+}
+
+
+#if 0
+
+class Object
+{
+	int value;
+public:
+	Object(int x=0):value(x) 
+	{
+
+	}
+	Object()
+	{
+	}
+	virtual void add() { cout<<"Object::add"<<endl;}
+	virtual void fun() const { cout<<"Object::fun"<<endl;}
+	virtual void print() { cout<<"Object::print"<<endl;}
+};
+class Base : public Object
+{
+	int max;
+public:
+	Base(int x=0):max(x+10),Object(x)
+	{
+		
+	}
+	~Base()
+	{
+	}
+
+	void lfq() // this
+	{
+
+	}
+	virtual void add() { cout<<"Base::add"<<endl;}
+	virtual void fun() const { cout<<"Base::fun"<<endl;}
+	virtual void yhp() { cout<<"Base::print"<<endl;}
+};
+
+class Test : public Base
+{
+	int num;
+public:
+	Test(int x=0):Base(x),num(x+10)
+	{
+	}
+	~Test()
+	{
+	}
+	virtual void add() { cout<<"Test::add"<<endl;}
+	virtual void print() { cout<<"Test::print"<<endl;}
+	virtual void yhp() { cout<<"Test::yhp"<<endl;}
+};
+
+int main()
+{
+	Test t1(10);
+
+	Object obj1(10);
+
+	Object *op1 = &t1;   // yhp
+	Object *op2 = &obj1; 
+	((Test*)op1)->yhp();  // yhp
+	((Test*)op2)->yhp();  // core   无效的向下转换类型
+}
+
+class Test
+{
+private:
+	int value;
+public:
+	Test(int x=0):value(x)
+	{
+	}
+	void fun() { cout<<"Test::fun"<<endl;}
+	void print() const 
+	{
+		cout<<"Test::parint value: "<<value<<endl;
+	}
+};
+
+int main()
+{
+	Test t1;
+	Test *p = (Test*)malloc(sizeof(Test));
+	p->fun();
+	//p->print();
+
+	t1.print();
+	// *p = t1;         // 没有依存一个合格的对象，但是没有使用到虚函数表，只要开辟了内存，就安全了
+	p->fun(); // fun(p);
+	p->print(); // print(p);
+}
+
+#endif
+#if 0
+
+class Test
+{
+private:
+	int value;
+public:
+	Test(int x=0):value(x)
+	{
+	}
+	void fun() { cout<<"Test::fun"<<endl;}
+	virtual void print() const 
+	{
+		cout<<"Test::parint value: "<<value<<endl;
+	}
+};
+
+int main()
+{
+	Test t1;
+	Test *p = nullptr;
+	//Test *p = (Test*)malloc(sizeof(Test));
+	
+	p->fun();
+	//p->print();
+
+	t1.print();
+	// *p = t1;         // 没有依存一个合格的对象， 即使malloc了空间，还是会core, 虚函数表为空
+	//new(p) Test(t1);  // 使用定位new就没事
+	p = &t1;           // 即使是是一个空指针，指向了一个完整对象就可以
+	p->fun(); // fun(p);
+	p->print(); // print(p);
+}
+
+
+#endif
+#if 0
+
+class Test
+{
+private:
+	int value;
+public:
+	Test(int x=0):value(x)
+	{
+		//memset(this,0,sizeof(Test));
+	}
+    //void fun(Test * const this)
+	void fun() { cout<<"Test::fun"<<endl;}
+	//void print(const Test * const this)
+	virtual void print() const 
+	{
+		cout<<"Test::parint value: "<<value<<endl;
+	}
+};
+
+// int main()
+// {
+// 	Test t1;
+// 	Test *p = &t1;//(Test*)malloc(sizeof(Test));
+// 	t1.print();
+// //	p->fun(); // fun(p);
+// 	p->print(); // print(p);
+// }
+
+// int  main()
+// {
+// 	Test *p = NULL;
+// 	p->fun(); // fun(p);
+// 	p->print(); // print(p);
+// }
+
+
+class Test
+{
+	int value;
+	int num;
+public:
+	Test(int x = 0):num(x),value(num) {} // 类成员变量按照定义的顺序构造，而不是初始化列表定义的顺序构造
+	void print() const
+	{
+		cout<<"num: "<<num<<endl;      // 10
+		cout<<"value: "<<value<<endl;  // value: 32767  无效值
+	}
+};
+
+class Object
+{
+};
+class Base 
+{
+};
+class Test2
+{
+public:
+	Base b1;
+	Object obj1;
+};
+
+int main()
+{
+	stream << sizeof(Test2) << std::endl;
+
+	Test t1(10);
+	t1.print();
+
+	return 0;
+}
+
+
 // 位段的类型只能是int，unsigned int，signed int三种类型，不能是char型或者浮点型；
 // 无名位段不能被访问，但是会占据空间
 
@@ -77,7 +305,7 @@ int main()
 
 
 
-#if 0
+
 
 struct Node
 {

@@ -23,3 +23,10 @@ target_link_libraries(binary_tree2_main  tools)
 
 add_executable(string_main  string_main.cpp)
 target_link_libraries(string_main  tools)
+
+add_executable(list_main  list_main.cpp)
+target_link_libraries(list_main  tools)
+
+add_executable(bt_tree_main  bt_tree_main.cpp)
+target_link_libraries(bt_tree_main  tools)
+
