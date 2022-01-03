@@ -167,9 +167,11 @@ private:
 
         ptr = nullptr;
         MakeThread(_m_impl._root, ptr);
+        // 设置中序遍历第一个叶子节点的左子树指向header节点
         auto first_p = first(_m_impl._root);
         first_p->left_tree_ = _m_impl._root;
 
+        // header节点的右子树指针指向实际中序遍历的最后一个叶子节点
         auto real_end_p = last(_m_impl._root->left_tree_);
         _m_impl._root->right_tree_ = real_end_p;
     }
