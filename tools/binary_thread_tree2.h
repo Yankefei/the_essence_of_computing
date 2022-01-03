@@ -159,13 +159,22 @@ public:
 private:
     void MakeThreadTree()
     {
-        // 不设置虚拟头部节点
-        Node ptr = nullptr;
+        // 设置一个额外的header节点
+        Node ptr = buy_node(T());
+        ptr->left_tree_ = _m_impl._root;
+        ptr->l_tag = PointerTag::LINK;
+        _m_impl._root = ptr;
+
+        ptr = nullptr;
         MakeThread(_m_impl._root, ptr);
-        ptr->right_tree_ = nullptr;
-        ptr->r_tag = PointerTag::THREAD;
+        auto first_p = first(_m_impl._root);
+        first_p->left_tree_ = _m_impl._root;
+
+        auto real_end_p = last(_m_impl._root->left_tree_);
+        _m_impl._root->right_tree_ = real_end_p;
     }
 
+    // 该算法不是很清晰，待优化
     void MakeThread(Node p, Node& ptr)
     {
         if (p != nullptr)
@@ -196,6 +205,12 @@ private:
         }
 
         return ptr;
+    }
+
+    // 直接获取线索的右端点
+    Node last()
+    {
+        return _m_impl._root->right_tree_;
     }
 
     Node last(Node ptr)
@@ -240,10 +255,12 @@ private:
     void destory(Node ptr)
     {
         auto it_ptr = first(ptr);
-        for(; it_ptr != nullptr; it_ptr = next(it_ptr))
+        for(; it_ptr != ptr; it_ptr = next(it_ptr))
         {
             free_node(it_ptr);
         }
+
+        free_node(ptr);
     }
 
     Node _create_tree_by_pre(const T*& array)
@@ -262,7 +279,7 @@ private:
 
     void _ThreadInOrder(Node ptr)
     {
-        for (auto it_ptr = first(ptr); it_ptr != nullptr; it_ptr = next(it_ptr))
+        for (auto it_ptr = first(ptr); it_ptr != ptr; it_ptr = next(it_ptr))
         {
             stream << it_ptr->data_ << " ";
         }
@@ -270,7 +287,7 @@ private:
 
     void _ResThreadInOrder(Node ptr)
     {
-        for (auto it_ptr = last(ptr); it_ptr != nullptr; it_ptr = prev(it_ptr))
+        for (auto it_ptr = last(); it_ptr != ptr; it_ptr = prev(it_ptr))
         {
             stream << it_ptr->data_ << " ";
         }
@@ -300,12 +317,13 @@ public:
 
     T& operator*() { return ptr_->data_;}
     const T& operator*() const { return ptr_->data;}
-    bool IsDone() const { return ptr_ == nullptr;}
+    bool IsDone() const { return ptr_ == tree_.get_root();}
 
     void First()
     {
         ptr_ = tree_.first(tree_.get_root());
     }
+
     void operator++()
     {
         ptr_ = tree_.next(ptr_);
@@ -313,7 +331,7 @@ public:
 
     void Last()
     {
-        ptr_ = tree_.last(tree_.get_root());
+        ptr_ = tree_.last();
     }
 
     void operator--()

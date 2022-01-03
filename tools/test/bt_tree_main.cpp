@@ -1,6 +1,7 @@
 #include "stream.h"
 
-#include "binary_thread_tree.h"
+#include "binary_thread_tree2.h"
+//#include "binary_thread_tree.h"
 
 using namespace tools;
 
