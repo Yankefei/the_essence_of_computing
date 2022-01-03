@@ -6,13 +6,8 @@ using namespace tools;
 
 int main()
 {
-    #if 1
+    #if 0
     {
-        BtTree<> test;
-
-        auto p = test.new_node('A');
-        test.free_node(p);
-
         stream << sizeof(BtTree<>) << std::endl;
 
         stream << sizeof(BtTree_Base<char, std::allocator<char>>) << std::endl;
@@ -26,7 +21,17 @@ int main()
     #endif
 
     {
+        BtTree<> test('#');
 
+        char str[] = "ABCD###EF##GH###I#JK#L###";
+
+        test.create_tree_by_pre(str);
+        test.InOrder();
+        test.ResInOrder();
+
+        BtTInIterator<> tini(test);
+        Print(tini);
+        ResPrint(tini);
     }
 
     return 0;
