@@ -1,11 +1,15 @@
 #include "stream.h"
 #include "stack.h"
 
+#include <stack>
 
 using namespace tools;
 
 int main()
 {
+    {
+        stream << "sizeof stack : " << sizeof(std::stack<char>) << std::endl;
+    }
     {
         stream << "Stack" << std::endl;
         Stack<int>  stack_int;

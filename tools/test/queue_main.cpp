@@ -3,11 +3,15 @@
 #include "ring_queue.h"
 #include "queue.h"
 
+#include <queue>
 
 using namespace tools;
 
 int main()
 {
+    {
+        stream << "queue: "<< sizeof(std::queue<int>) << std::endl;
+    }
     {
         NQueue<int>  r_queue;
 

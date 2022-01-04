@@ -1,3 +1,6 @@
+#ifndef _TOOLS_ALGORITHM_HPP_
+#define _TOOLS_ALGORITHM_HPP_
+
 #include "stream.h"
 
 namespace tools
@@ -5,6 +8,7 @@ namespace tools
 namespace alg
 {
 
+namespace detail{
 /*
 kmp算法： 核心在于不回溯原始字符串的指针，而仅仅移动模式字符串
 
@@ -53,38 +57,6 @@ void get_next(const T* dst_str, size_t dst_len, T next[])
     }
 }
 
-template<typename T>
-size_t kmp_find(const T* src_str,  size_t src_len, const T* dst_str, size_t dst_len)
-{
-    size_t find = static_cast<size_t>(-1); 
-
-    T* next = new T[dst_len];
-    get_next(dst_str, dst_len, next);
-
-    size_t i = 0;
-    size_t j = 0;
-    while(i < src_len && j < dst_len)
-    {
-        if (src_str[i] == dst_str[j] || j == 0)
-        {
-            i++; j++;
-        }
-        else
-        {
-            j = next[j] - 1;  // next 的序号从0开始
-        }
-
-        if (j == dst_len)
-        {
-            find = i - dst_len;
-            break;
-        }
-    }
-
-    delete[] next;
-    return find;
-}
-
 
 // 二维数组内部保存的状态机的状态，表示如果遇到了某些T, 则对应转移到哪个状态中
 template<typename T>
@@ -119,6 +91,40 @@ void get_next2(const T* dst_str, size_t dst_len, T** next_array)
     }
 }
 
+} // detail
+
+template<typename T>
+size_t kmp_find(const T* src_str,  size_t src_len, const T* dst_str, size_t dst_len)
+{
+    size_t find = static_cast<size_t>(-1); 
+
+    T* next = new T[dst_len];
+    detail::get_next(dst_str, dst_len, next);
+
+    size_t i = 0;
+    size_t j = 0;
+    while(i < src_len && j < dst_len)
+    {
+        if (src_str[i] == dst_str[j] || j == 0)
+        {
+            i++; j++;
+        }
+        else
+        {
+            j = next[j] - 1;  // next 的序号从0开始
+        }
+
+        if (j == dst_len)
+        {
+            find = i - dst_len;
+            break;
+        }
+    }
+
+    delete[] next;
+    return find;
+}
+
 
 // 动态规划的版本：动态规划算法: 是利用过去的结果解决现在的问题
 // 使用动态规划的角度解释了KMP算法的精华内容, 这个视角非常独特, 值得好好学习
@@ -134,7 +140,7 @@ size_t kmp_find2(const T* src_str,  size_t src_len, const T* dst_str, size_t dst
         memset(array[i], 0, sizeof(T)*256);
     }
 
-    get_next2(dst_str, dst_len, array);
+    detail::get_next2(dst_str, dst_len, array);
 
     size_t i = 0;
     size_t j = 0;
@@ -159,5 +165,51 @@ size_t kmp_find2(const T* src_str,  size_t src_len, const T* dst_str, size_t dst
     return find;
 }
 
+
+template<typename T>
+bool eq(const T& lhs, const T& rhs)
+{
+    if (lhs == rhs) return true;
+    else return false;
+}
+
+template<typename T>
+bool gt(const T& lhs, const T& rhs)
+{
+    if (lhs > rhs) return true;
+    else return false;
+}
+
+template<typename T>
+bool gt_eq(const T& lhs, const T& rhs)
+{
+    return eq(lhs, rhs) || gt(lhs, rhs);
+}
+
+template<typename T>
+bool le(const T& lhs, const T& rhs)
+{
+    return !gt_eq(lhs, rhs);
+}
+
+template<typename T>
+bool le_eq(const T& lhs, const T& rhs)
+{
+    return !ge(lhs, rhs);
+}
+
+template<typename T>
+bool neq(const T& lhs, const T& rhs)
+{
+    return !eq(lhs, rhs);
+}
+
+template<typename T>
+void sort(const T* src, size_t src_size, T* dst)
+{
+}
+
 }
 }
+
+#endif
