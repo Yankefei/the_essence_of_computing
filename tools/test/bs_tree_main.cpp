@@ -14,16 +14,19 @@ int main()
         stream << Boolalpha;
         for(int i = 0; i<n; ++i)
         {
-            stream <<ar[i] <<" "<< my_tree.insert(ar[i]) << std::endl;
+            stream <<ar[i] <<" "<< my_tree.insert2(ar[i]) << std::endl;
         }
 
         my_tree.InOrder();
         //my_tree.NiceInOrder();
 
+        stream << (my_tree.find(87) != nullptr) << std::endl;
+        stream << (my_tree.find(86) != nullptr) << std::endl;
+
         int kx;
         while(std::cin>>kx, kx != -1)
         {
-            stream <<my_tree.remove(kx) << " ";
+            stream <<my_tree.remove2(kx) << " ";
             my_tree.InOrder();
         }
     }
