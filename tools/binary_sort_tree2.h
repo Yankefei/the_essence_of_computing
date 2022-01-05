@@ -10,13 +10,14 @@ namespace tools
 {
 
 template<typename T>
-struct _SNode
+struct _SNode2
 {
-    _SNode() = default;
-    _SNode(const T&val) : data_(val) {}
+    _SNode2() = default;
+    _SNode2(const T&val) : data_(val) {}
 
-    _SNode* left_tree_{nullptr};
-    _SNode* right_tree_{nullptr};
+    _SNode2* left_tree_{nullptr};
+    _SNode2* right_tree_{nullptr};
+    _SNode2* parent_{nullptr};
     T data_;
 };
 
@@ -26,14 +27,14 @@ class BsTree_Base
 {
 public:
     typedef typename std::allocator_traits<Alloc>::template
-        rebind_alloc<_SNode<T>> _SNode_alloc_type;
+        rebind_alloc<_SNode2<T>> _SNode_alloc_type;
 
     typedef typename std::allocator_traits<_SNode_alloc_type>
         rebind_traits;
 
     typedef typename rebind_traits::pointer  pointer;
 
-    typedef _SNode<T>        Node;
+    typedef _SNode2<T>        Node;
 
 public:
     struct Base_Impl : public _SNode_alloc_type
@@ -88,16 +89,9 @@ public:
     BsTree() {}
     ~BsTree() { destory(_m_impl._root); }
 
-    // 插入重复数据则使用替换操作
     bool insert(const T& val)
     {
         return insert(_m_impl._root, val);
-    }
-
-    // 非递归
-    bool insert2(const T& val)
-    {
-        return insert2(_m_impl._root, val);
     }
 
     bool remove(const T& val)
@@ -105,15 +99,19 @@ public:
         return remove(_m_impl._root, val);
     }
 
-    // 非递归
-    bool remove2(const T& val)
-    {
-        return remove2(_m_impl._root, val);
-    }
-
     void InOrder()
     {
         _InOrder(_m_impl._root);
+        stream << std::endl;
+    }
+
+    void NiceInOrder()
+    {
+        auto ptr = first();
+        for (; ptr != nullptr; ptr = next(ptr))
+        {
+            stream << ptr->data_ << " ";
+        }
         stream << std::endl;
     }
 
@@ -124,31 +122,6 @@ public:
 
 private:
     bool insert(Node*& ptr, const T& val)
-    {
-        if(ptr == nullptr)
-        {
-            ptr = buy_node(val);
-        }
-        else
-        {
-            if (alg::gt(ptr->data_, val))
-            {
-                insert(ptr->left_tree_, val);
-            }
-            else if (alg::le(ptr->data_, val))
-            {
-                insert(ptr->right_tree_, val);
-            }
-            else
-            {
-                ptr->data_ = val;
-            }
-        }
-        return true;
-    }
-
-    // 第一个参数采用引用少不了
-    bool insert2(Node*& ptr, const T& val)
     {
         if (ptr == nullptr)
         {
@@ -167,7 +140,9 @@ private:
 
                     if (tmp == nullptr)
                     {
-                        f_ptr->left_tree_ = buy_node(val);
+                        auto new_node = buy_node(val);
+                        f_ptr->left_tree_ = new_node;
+                        f_ptr->left_tree_->parent_ = f_ptr;
                         break;
                     }
                 }
@@ -178,7 +153,9 @@ private:
 
                     if (tmp == nullptr)
                     {
-                        f_ptr->right_tree_ = buy_node(val);
+                        auto new_node = buy_node(val);
+                        f_ptr->right_tree_ = new_node;
+                        f_ptr->right_tree_->parent_ = f_ptr;
                         break;
                     }
                 }
@@ -193,67 +170,17 @@ private:
         return true;
     }
 
-
+    // 删除的过程需要维护 parent_ 指针
     bool remove(Node*& ptr, const T& val)
     {
         if (ptr == nullptr) return false;
 
-        if (alg::gt(ptr->data_, val))
-        {
-            return remove(ptr->left_tree_, val);
-        }
-        else if (alg::le(ptr->data_, val))
-        {
-            return remove(ptr->right_tree_, val);
-        }
-        else
-        {
-            // 2种情况，一种是左右子树均在，一种是其他
-            if (ptr->left_tree_ && ptr->right_tree_)
-            {
-                // auto r_min = find_min(ptr->right_tree_);
-                // ptr->data_ = r_min->data_;
-                // remove(ptr->right_tree_, r_min->data_);
-
-                // 查找和删除同步进行
-                // 可以查找右子树的最小一个，或者左子树的最大一个
-                //auto r_min = remove_min(ptr->right_tree_);
-                auto r_min = remove_max(ptr->left_tree_);
-                ptr->data_ = r_min->data_;
-                free_node(r_min);
-            }
-            else
-            {
-                auto temp = ptr;
-                if (ptr->left_tree_ == nullptr)
-                {
-                    ptr = ptr->right_tree_;
-                }
-                else if (ptr->right_tree_ == nullptr)
-                {
-                    ptr = ptr->left_tree_;
-                }
-
-                free_node(temp);
-            }
-            
-            return true;
-        }
-    }
-
-    // 第一个参数采用引用少不了
-    bool remove2(Node*& ptr, const T& val)
-    {
-        if (ptr == nullptr) return false;
-
         Node* tmp = ptr;
-        Node* f_ptr = nullptr;   // 充当父节点
-        int desc = 0;     // 记录遍历的方向0:未知，1：左， 2：右
+        int desc = 0; // 记录遍历的方向0:未知，1：左， 2：右
         for (;;)
         {
             if (alg::gt(tmp->data_, val))
             {
-                f_ptr = tmp;
                 tmp = tmp->left_tree_;
                 desc = 1;
 
@@ -262,7 +189,6 @@ private:
             }
             else if (alg::le(tmp->data_, val))
             {
-                f_ptr = tmp;
                 tmp = tmp->right_tree_;
                 desc = 2;
 
@@ -279,7 +205,6 @@ private:
                 }
                 else
                 {
-
                     if (tmp->left_tree_ == nullptr)
                     {
                         switch(desc)
@@ -287,16 +212,22 @@ private:
                             case 0:
                             {
                                 ptr = ptr->right_tree_;
+                                if (ptr)
+                                    ptr->parent_ = nullptr;
                                 break;
                             }
                             case 1:
                             {
-                                f_ptr->left_tree_ = tmp->right_tree_;
+                                tmp->parent_->left_tree_ = tmp->right_tree_;
+                                if (tmp->right_tree_)
+                                    tmp->right_tree_->parent_ = tmp->parent_;
                                 break;
                             }
                             case 2:
                             {
-                                f_ptr->right_tree_ = tmp->right_tree_;
+                                tmp->parent_->right_tree_ = tmp->right_tree_;
+                                if (tmp->right_tree_)
+                                    tmp->right_tree_->parent_ = tmp->parent_;
                                 break;
                             }
                             default:
@@ -311,16 +242,21 @@ private:
                             case 0:
                             {
                                 ptr = ptr->left_tree_;
+                                ptr->parent_ = nullptr;
                                 break;
                             }
                             case 1:
                             {
-                                f_ptr->left_tree_ = tmp->left_tree_;
+                                tmp->parent_->left_tree_ = tmp->left_tree_;
+                                if (tmp->left_tree_)
+                                    tmp->left_tree_->parent_ = tmp->parent_;
                                 break;
                             }
                             case 2:
                             {
-                                f_ptr->right_tree_ = tmp->left_tree_;
+                                tmp->parent_->right_tree_ = tmp->left_tree_;
+                                if (tmp->left_tree_)
+                                    tmp->left_tree_->parent_ = tmp->parent_;
                                 break;
                             }
                             default:
@@ -337,57 +273,57 @@ private:
         }
     }
 
-    // 查找到子树最小的一个，删除并返回
     Node* remove_min(Node*& ptr)
     {
         Node* tmp = nullptr;
         tmp = ptr;
 
-        if (!tmp) return tmp;
+        if (tmp == nullptr) return tmp;
 
         if (tmp->left_tree_)
         {
-            Node* f_ptr = tmp;  // 作为一个临时的parent节点
-
             while(tmp->left_tree_)
             {
-                f_ptr = tmp;
                 tmp = tmp->left_tree_;
             }
-
-            f_ptr->left_tree_ = tmp->right_tree_;
+            tmp->parent_->left_tree_ = tmp->right_tree_;
+            if (tmp->right_tree_)
+                tmp->right_tree_->parent_ = tmp->parent_;
         }
         else
         {
             ptr = tmp->right_tree_;
+            //assert(ptr->parent_ != tmp->parent_);
+            if (ptr)
+                ptr->parent_ = tmp->parent_;
         }
 
         return tmp;
     }
 
-    // 查找到子树最大的一个，删除并返回
     Node* remove_max(Node*& ptr)
     {
         Node* tmp = nullptr;
         tmp = ptr;
 
-        if (!tmp) return tmp;
+        if (tmp == nullptr) return tmp;
 
         if (tmp->right_tree_)
         {
-            Node* f_ptr = tmp;  // 作为一个临时的parent节点
-
             while(tmp->right_tree_)
             {
-                f_ptr = tmp;
                 tmp = tmp->right_tree_;
             }
-
-            f_ptr->right_tree_ = tmp->left_tree_;
+            tmp->parent_->right_tree_ = tmp->left_tree_;
+            if (tmp->left_tree_)
+                tmp->left_tree_->parent_ = tmp->parent_;
         }
         else
         {
             ptr = tmp->left_tree_;
+            //assert(ptr->parent_ != tmp->parent_);
+            if (ptr)
+                ptr->parent_ = tmp->parent_;
         }
 
         return tmp;
@@ -438,23 +374,10 @@ private:
         return ptr;
     }
 
-    Node* find_max(Node* ptr)
+    Node* first()
     {
-        // 先判断ptr, 再while循环处理 ptr->right_tree_
-        if (!ptr)
-        {
-            while(ptr->right_tree_)
-            {
-                ptr = ptr->right_tree_;
-            }
-        }
-
-        return ptr;
-    }
-
-    Node* find_min(Node* ptr)
-    {
-        if (!ptr)
+        auto ptr = _m_impl._root;
+        if (ptr)
         {
             while(ptr->left_tree_)
             {
@@ -464,9 +387,57 @@ private:
 
         return ptr;
     }
+
+    Node* next(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+
+        if (ptr->right_tree_)
+        {
+            return find_right_max(ptr->right_tree_);
+        }
+        else
+        {
+            if (ptr->parent_ == nullptr) return nullptr;
+
+            if (alg::gt(ptr->data_, ptr->parent_->data_))
+            {
+                if (ptr->parent_->parent_ == nullptr) return nullptr;
+                
+                if (alg::gt(ptr->data_, ptr->parent_->parent_->data_))
+                {
+                    return nullptr;
+                }
+                else
+                {
+                    return ptr->parent_->parent_;
+                }
+            }
+            else
+            {
+                return ptr->parent_;
+            }
+        }
+    }
+
+    Node* find_right_max(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+        
+        if (ptr)
+        {
+            while(ptr->left_tree_)
+            {
+                ptr = ptr->left_tree_;
+            }
+        }
+
+        return ptr;
+    }
+
 };
 
-
 }
+
 
 #endif
