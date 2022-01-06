@@ -96,18 +96,24 @@ public:
         return insert(&_m_impl._root, val);
     }
 
+    // 递归版本
+    bool insert2(const T& val)
+    {
+        return insert(_m_impl._root, val, nullptr);
+    }
+
     bool remove(const T& val)
     {
         return remove(&_m_impl._root, val);
     }
 
-    void InOrder()
+    void InOrder() const
     {
         _InOrder(_m_impl._root);
         stream << std::endl;
     }
 
-    void NiceInOrder()
+    void NiceInOrder() const
     {
         auto ptr = first();
         for (; ptr != nullptr; ptr = next(ptr))
@@ -117,7 +123,7 @@ public:
         stream << std::endl;
     }
 
-    void ResNiceInOrder()
+    void ResNiceInOrder() const
     {
         auto ptr = last();
         for (; ptr != nullptr; ptr = prev(ptr))
@@ -127,12 +133,33 @@ public:
         stream << std::endl;
     }
 
-    Node* find(const T& val)
+    Node* find(const T& val) const
     {
         return find(_m_impl._root, val);
     }
 
 private:
+    bool insert(Node*& ptr, const T& val, Node* pptr)
+    {
+        bool res = false;
+        if (ptr == nullptr)
+        {
+            ptr = buy_node(val);
+            ptr->parent_ = pptr;
+            res = true;
+        }
+        else if (alg::gt(ptr->data_, val))
+        {
+            return insert(ptr->left_tree_, val, ptr);
+        }
+        else if (alg::le(ptr->data_, val))
+        {
+            return insert(ptr->right_tree_, val, ptr);
+        }
+
+        return res;
+    }
+
     bool insert(Node** pptr, const T& val)
     {
         if (pptr == nullptr) return false;
@@ -212,7 +239,7 @@ private:
         return true;
     }
 
-    void _InOrder(Node* ptr)
+    static void _InOrder(Node* ptr)
     {
         if (ptr)
         {
@@ -233,7 +260,7 @@ private:
     }
 
     // 写代码就像运输，如果你提前把背包打开，那么就要拿着打开的背包赶路了
-    Node* find(Node* ptr, const T& val)
+    static Node* find(Node* ptr, const T& val)
     {
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
@@ -263,13 +290,13 @@ private:
         return ptr;
     }
 
-    Node* first()
+    Node* first() const
     {
         return _first(_m_impl._root);
 
     }
 
-    Node* _first(Node* ptr)
+    static Node* _first(Node* ptr)
     {
         if (ptr)
         {
@@ -282,7 +309,7 @@ private:
         return ptr;
     }
 
-    Node* next(Node* ptr)
+    static Node* next(Node* ptr)
     {
         if (ptr == nullptr) return ptr;
 
@@ -323,12 +350,12 @@ private:
         }
     }
 
-    Node* last()
+    Node* last() const
     {
         return _last(_m_impl._root);
     }
 
-    Node* _last(Node* ptr)
+    static Node* _last(Node* ptr)
     {
         if (ptr)
         {
@@ -341,7 +368,7 @@ private:
         return ptr;
     }
 
-    Node* prev(Node* ptr)
+    static Node* prev(Node* ptr)
     {
         if (ptr == nullptr) return ptr;
 

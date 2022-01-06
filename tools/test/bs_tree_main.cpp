@@ -85,7 +85,7 @@ int main()
         stream << Boolalpha;
         for(int i = 0; i<n; ++i)
         {
-            stream <<ar[i] <<" "<< my_tree.insert(ar[i]) << std::endl;
+            stream <<ar[i] <<" "<< my_tree.insert2(ar[i]) << std::endl;
         }
 
         my_tree.InOrder();

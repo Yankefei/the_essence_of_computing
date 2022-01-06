@@ -205,6 +205,18 @@ bool neq(const T& lhs, const T& rhs)
 }
 
 template<typename T>
+T max(const T& lhs, const T& rhs)
+{
+    return gt(lhs, rhs) ? lhs : rhs;
+}
+
+template<typename T>
+T min(const T& lhs, const T& rhs)
+{
+    return le(lhs, rhs) ? lhs : rhs;
+}
+
+template<typename T>
 void sort(const T* src, size_t src_size, T* dst)
 {
 }
