@@ -226,41 +226,36 @@ private:
             bool need_bal = false;  // 如不需要平衡，则节点自身的高度数据也无需更改
             if (ptr->left_tree_ && ptr->right_tree_)
             {
-                tmp = find_max(ptr->left_tree_);
+                Node* q = ptr;
+                tmp = ptr->left_tree_;
+                while(tmp->right_tree_)
+                {
+                    q = tmp;
+                    tmp = tmp->right_tree_;
+                }
                 ptr->data_ = tmp->data_;
 
-                Node* tmp2 = ptr->left_tree_;
-                if (tmp2->right_tree_ == nullptr)
+                if (q == ptr)
                 {
-                    if (hight(ptr->right_tree_) - hight(tmp2) == 1)
-                    {
-                        need_bal = true;
-                        check = ptr->right_tree_;
-                    }
+                    f_ptr = q;
+                    q->left_tree_ = tmp->left_tree_;
 
-                    f_ptr = ptr;
-                    f_ptr->left_tree_ = tmp->left_tree_;
+                    // 判断是否要旋转
+                    if (hight(q->right_tree_) - hight(q->left_tree_) == 1)
+                        need_bal = true;
+
+                    check = q->right_tree_;
                 }
                 else
                 {
-                    while (tmp2->right_tree_)
-                    {
-                        if (tmp2->right_tree_ == tmp)
-                        {
-                            f_ptr = tmp2;
-                            check = f_ptr->left_tree_;
-                            break;
-                        }
-                        tmp2 = tmp2->right_tree_;
-                    }
+                    f_ptr = q;
+                    q->right_tree_ = tmp->left_tree_;
 
-                    assert(f_ptr != nullptr);
-                    if (hight(f_ptr->left_tree_) - hight(f_ptr->right_tree_) == 1)
-                    {
+                    // 判断是否要旋转
+                    if (hight(q->left_tree_) - hight(q->right_tree_) == 1)
                         need_bal = true;
-                    }
 
-                    f_ptr->right_tree_ = tmp->left_tree_;
+                    check = q->left_tree_;
                 }
             }
             else
