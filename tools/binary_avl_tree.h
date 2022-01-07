@@ -4,8 +4,10 @@
 #include <memory>
 #include <cassert>
 
+#include "vector.hpp"
 #include "queue.h"
 #include "algorithm.hpp"
+#include "binary_avl_tree_util.h"
 
 namespace tools
 {
@@ -103,12 +105,18 @@ public:
 
     bool remove(const T& val)
     {
+        bool res = remove(_m_impl._root, val, nullptr);
+        if (res)
+        {
+            reset_hight(_m_impl._root);
+        }
 
+        return res;
     }
 
     bool remove2(const T& val)
     {
-
+        return remove2(&_m_impl._root, val);
     }
 
     void InOrder()
@@ -125,6 +133,22 @@ public:
     Root get_root()
     {
         return _m_impl._root;
+    }
+
+    int32_t get_hight()
+    {
+        return _get_hight(_m_impl._root);
+    }
+
+    bool is_balance()
+    {
+        //return is_balance2(_m_impl._root);
+        return is_balance(_m_impl._root).second;
+    }
+
+    void print_tree()
+    {
+        draw_tree<Node>(_m_impl._root);
     }
 
 private:
@@ -148,10 +172,14 @@ private:
                 // 1. 保证平衡， 2. 节点高度是正确的
                 if (alg::gt(ptr->left_tree_->data_, val))
                 {
+                    // 这里传递二级指针可以，因为修改函数内部*ptr的信息，就相当于修改外部ptr的值
+                    // 而该值为引用传参
                     signal_rotate_withleft(&ptr);
                 }
                 else
                 {
+                    // 如果把这里和下面双旋转的地方都注释掉，最后的插入结果还是平衡的
+                    // 是因为即使没有直接进行双旋转，但是后面还会使用对应的单旋转逻辑进行矫正
                     double_rotate_withleft(&ptr);
                 }
             }
@@ -183,8 +211,118 @@ private:
         return true;
     }
 
+    bool remove(Node*& ptr, const T& val, Node* f_ptr)
+    {
+        if (ptr == nullptr) return false;
+
+        if (alg::gt(ptr->data_, val))
+        {
+            return remove(ptr->left_tree_, val, ptr);
+        }
+        else if (alg::le(ptr->data_, val))
+        {
+            return remove(ptr->right_tree_, val, ptr);
+        }
+        else
+        {
+            Node* check = nullptr;  // 被删除的节点的对称节点
+            Node* tmp = nullptr;    // 待删除的节点
+            bool need_bal = false;  // 如不需要平衡，则节点自身的高度数据也无需更改
+            if (ptr->left_tree_ && ptr->right_tree_)
+            {
+                tmp = find_max(ptr->left_tree_);
+                ptr->data_ = tmp->data_;
+
+                Node* tmp2 = ptr->left_tree_;
+                if (tmp2->right_tree_ == nullptr)
+                {
+                    if (hight(ptr->right_tree_) - hight(tmp2) == 1)
+                    {
+                        need_bal = true;
+                        check = ptr->right_tree_;
+                    }
+
+                    f_ptr = ptr;
+                }
+                else
+                {
+                    while (tmp2->right_tree_)
+                    {
+                        if (tmp2->right_tree_ == tmp)
+                        {
+                            f_ptr = tmp2;
+                            check = f_ptr->left_tree_;
+                        }
+                        tmp2 = tmp2->right_tree_;
+                    }
+
+                    assert(f_ptr != nullptr);
+                    if (hight(f_ptr->left_tree_) - hight(tmp->right_tree_) == 1)
+                    {
+                        need_bal = true;
+                    }
+                }
+                f_ptr->right_tree_ = tmp->left_tree_;
+            }
+            else
+            {
+                check = f_ptr->left_tree_ == ptr ?
+                                f_ptr->right_tree_ : f_ptr->left_tree_;
+                if (hight(check) - hight(ptr) == 1)
+                {
+                    need_bal = true;
+                }
+
+                Node* tmp = ptr;
+
+                if (ptr->left_tree_ == nullptr)
+                {
+                    ptr = ptr->right_tree_;
+                }
+                else if (ptr->right_tree_ == nullptr) // 判断可省略
+                {
+                    ptr = ptr->left_tree_;
+                }
+            }
+
+            if (need_bal && check != nullptr && !(check->right_tree_ == nullptr && check->left_tree_ == nullptr))
+            {
+                // 再次获取双亲节点
+                Node* p = parent(_m_impl._root, f_ptr);
+                if (alg::gt(check->data_, val))
+                {
+                    if (check->right_tree_ == nullptr && check->left_tree_)
+                    {
+                        double_rotate_withright(&f_ptr);
+                    }
+                    else
+                    {
+                        signal_rotate_withright(&f_ptr);
+                    }
+                    p->right_tree_ = f_ptr;
+                }
+                else
+                {
+                    if (check->right_tree_ && check->left_tree_ == nullptr)
+                    {
+                        double_rotate_withleft(&f_ptr);
+                    }
+                    else
+                    {
+                        signal_rotate_withleft(&f_ptr);
+                    }
+                    p->left_tree_ = f_ptr;
+                }
+            }
+
+            free_node(tmp);
+
+            return true;
+        }
+    }
+
     //  非递归
-    bool insert(Node** pptr, const T& val)
+    bool insert2(Node** pptr, const T& val)
     {
         if (pptr == nullptr) false;
 
@@ -193,6 +331,11 @@ private:
         {
             ptr = alg::gt(ptr->data_, val) ? ptr->left_tree_ : ptr->right_tree_;
         }
+    }
+
+    bool remove2(Node** ptr, const T& val)
+    {
+
     }
 
     void destory(Node* ptr)
@@ -244,9 +387,68 @@ private:
         signal_rotate_withright(pptr);
     }
 
+    static uint32_t reset_hight(Node* ptr)
+    {
+        if (ptr == nullptr) return -1;
+
+        ptr->hight_ = alg::max(reset_hight(ptr->left_tree_), reset_hight(ptr->right_tree_)) + 1;
+
+        return ptr->hight_;
+    }
+
+    static int32_t _get_hight(Node* ptr)
+    {
+        if (ptr == nullptr) return -1;
+
+        return alg::max(_get_hight(ptr->left_tree_), _get_hight(ptr->right_tree_)) + 1;
+    }
+
+    // 判断是否子树是否平衡的函数
+    static std::pair<int32_t, bool> is_balance(Node* ptr)
+    {
+        if (ptr == nullptr) return {-1, true};
+
+        std::pair<int32_t, bool> l_res = {-1, false};
+        l_res = is_balance(ptr->left_tree_);
+
+        std::pair<int32_t, bool> r_res = {-1, false};
+        r_res = is_balance(ptr->right_tree_);
+
+        int32_t diff = l_res.first > r_res.first ?
+                        (l_res.first - r_res.first) :
+                        (r_res.first - l_res.first);
+
+        return {alg::max(l_res.first, r_res.first) + 1,
+                (diff < 2) && l_res.second && r_res.second};
+    }
+
+    static bool is_balance2(Node* ptr)
+    {
+        if (ptr == nullptr) return true;
+
+        int32_t left_h = hight(ptr->left_tree_);
+        int32_t right_h = hight(ptr->right_tree_);
+
+        if (left_h != right_h)
+        {
+            int32_t diff = left_h > right_h ? (left_h - right_h) : (right_h - left_h);
+            if (diff >= 2) return false;
+        }
+
+        return is_balance2(ptr->left_tree_) && is_balance2(ptr->right_tree_);
+    }
+
     static Node* find_max(Node* ptr)
     {
+        if (ptr)
+        {
+            while(ptr->right_tree_)
+            {
+                ptr = ptr->right_tree_;
+            }
+        }
 
+        return ptr;
     }
 
     static Node* find_min(Node* ptr)
@@ -275,6 +477,24 @@ private:
     void _LevelOrder(Node* ptr)
     {
 
+    }
+
+    Node* parent(Node* ptr, Node* child)
+    {
+        if (nullptr == ptr) return ptr;
+
+        if (ptr->left_tree_ == child ||
+            ptr->right_tree_ == child)
+        {
+            return ptr;
+        }
+
+        auto find = parent(ptr->left_tree_, child);
+        if (find == nullptr)
+        {
+            find = parent(ptr->right_tree_, child);
+        }
+        return find;
     }
 };
 
