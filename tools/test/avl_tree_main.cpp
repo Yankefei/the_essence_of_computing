@@ -31,17 +31,16 @@ int main()
         stream <<"root: " << my_tree.get_root()->data_ << " "
                << my_tree.get_root()->hight_ <<" "<< my_tree.get_hight() << " "
                << my_tree.is_balance() << std::endl;
-        
-        //my_tree.LevelOrder();
 
         my_tree.print_tree();
 
-        // int kx;
-        // while(std::cin>>kx, kx != -1)
-        // {
-        //     stream <<my_tree.remove(kx) << " is bal? "<< my_tree.is_balance() << " ";
-        //     my_tree.InOrder();
-        // }
+        int kx;
+        while(std::cin>>kx, kx != -1)
+        {
+            stream <<my_tree.remove(kx) << " is bal? "<< my_tree.is_balance() << std::endl;
+            my_tree.InOrder();
+            my_tree.print_tree();
+        }
     }
 
     {

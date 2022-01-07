@@ -130,6 +130,8 @@ void draw_tree(Node* ptr)
 
     uint32_t line_index = 1;
     uint32_t interval_num = max_line / (power(2, line_index - 1)); // 每一行的间隔数
+    
+    stream << std::endl << std::endl;
     for (auto & node : tree_draw_info)
     {
         if (line_index != node.level_num)

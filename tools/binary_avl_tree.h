@@ -105,13 +105,14 @@ public:
 
     bool remove(const T& val)
     {
-        bool res = remove(_m_impl._root, val, nullptr);
-        if (res)
-        {
-            reset_hight(_m_impl._root);
-        }
+        if (!remove(_m_impl._root, val, nullptr))
+            return false;
 
-        return res;
+        // 如果这个时候， 发生了不平衡问题，则理论上只需要一次转换就可以完成
+        // 因为之前是平衡状态
+        reset_hight(_m_impl._root);
+
+        return true;
     }
 
     bool remove2(const T& val)
@@ -123,11 +124,6 @@ public:
     {
         _InOrder(_m_impl._root);
         stream << std::endl;
-    }
-
-    void LevelOrder()
-    {
-        _LevelOrder(_m_impl._root);
     }
 
     Root get_root()
@@ -243,6 +239,7 @@ private:
                     }
 
                     f_ptr = ptr;
+                    f_ptr->left_tree_ = tmp->left_tree_;
                 }
                 else
                 {
@@ -252,25 +249,30 @@ private:
                         {
                             f_ptr = tmp2;
                             check = f_ptr->left_tree_;
+                            break;
                         }
                         tmp2 = tmp2->right_tree_;
                     }
 
                     assert(f_ptr != nullptr);
-                    if (hight(f_ptr->left_tree_) - hight(tmp->right_tree_) == 1)
+                    if (hight(f_ptr->left_tree_) - hight(f_ptr->right_tree_) == 1)
                     {
                         need_bal = true;
                     }
+
+                    f_ptr->right_tree_ = tmp->left_tree_;
                 }
-                f_ptr->right_tree_ = tmp->left_tree_;
             }
             else
             {
-                check = f_ptr->left_tree_ == ptr ?
-                                f_ptr->right_tree_ : f_ptr->left_tree_;
-                if (hight(check) - hight(ptr) == 1)
+                if (f_ptr != nullptr)
                 {
-                    need_bal = true;
+                    check = f_ptr->left_tree_ == ptr ?
+                                    f_ptr->right_tree_ : f_ptr->left_tree_;
+                    if (hight(check) - hight(ptr) == 1)
+                    {
+                        need_bal = true;
+                    }
                 }
 
                 Node* tmp = ptr;
@@ -299,7 +301,11 @@ private:
                     {
                         signal_rotate_withright(&f_ptr);
                     }
-                    p->right_tree_ = f_ptr;
+                    // f_ptr 可能变为root节点
+                    if (p != nullptr)
+                        p->right_tree_ = f_ptr;
+                    else
+                        _m_impl._root = f_ptr;
                 }
                 else
                 {
@@ -311,7 +317,10 @@ private:
                     {
                         signal_rotate_withleft(&f_ptr);
                     }
-                    p->left_tree_ = f_ptr;
+                    if (p != nullptr)
+                        p->left_tree_ = f_ptr;
+                    else
+                        _m_impl._root = f_ptr;
                 }
             }
 
@@ -387,11 +396,48 @@ private:
         signal_rotate_withright(pptr);
     }
 
-    static uint32_t reset_hight(Node* ptr)
+    static int32_t reset_hight(Node*& ptr)
     {
         if (ptr == nullptr) return -1;
 
-        ptr->hight_ = alg::max(reset_hight(ptr->left_tree_), reset_hight(ptr->right_tree_)) + 1;
+        int32_t left_tree_num = reset_hight(ptr->left_tree_);
+        int32_t right_tree_num = reset_hight(ptr->right_tree_);
+        if (alg::gt(left_tree_num, right_tree_num) && left_tree_num - right_tree_num == 2)
+        {
+            stream << "reset: "<< ptr->data_ << " left: "<<left_tree_num
+                   << "more than right: " << right_tree_num << std::endl;
+            Node* t_ptr = ptr->left_tree_;
+            if (hight(t_ptr->left_tree_) > hight(t_ptr->right_tree_))
+            {
+                signal_rotate_withleft(&ptr);
+            }
+            else
+            {
+                double_rotate_withleft(&ptr);
+            }
+
+            ptr->hight_ = alg::max(hight(ptr->left_tree_), hight(ptr->right_tree_)) + 1;
+            return ptr->hight_;
+        }
+        else if (alg::gt(right_tree_num, left_tree_num) && right_tree_num - left_tree_num == 2)
+        {
+            stream << "reset: "<< ptr->data_ << " right: "<<right_tree_num
+                   << "more than left: " << left_tree_num << std::endl;
+            Node* t_ptr = ptr->right_tree_;
+            if (hight(t_ptr->right_tree_) > hight(t_ptr->left_tree_))
+            {
+                signal_rotate_withright(&ptr);
+            }
+            else
+            {
+                double_rotate_withright(&ptr);
+            }
+
+            ptr->hight_ = alg::max(hight(ptr->left_tree_), hight(ptr->right_tree_)) + 1;
+            return ptr->hight_;
+        }
+
+        ptr->hight_ = alg::max(left_tree_num, right_tree_num) + 1;
 
         return ptr->hight_;
     }
@@ -472,11 +518,6 @@ private:
             stream << ptr->data_ << " ";
             _InOrder(ptr->right_tree_);
         }
-    }
-
-    void _LevelOrder(Node* ptr)
-    {
-
     }
 
     Node* parent(Node* ptr, Node* child)
