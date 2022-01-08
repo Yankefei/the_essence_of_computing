@@ -110,7 +110,7 @@ public:
 
         // 如果这个时候， 发生了不平衡问题，则理论上只需要一次转换就可以完成
         // 因为之前是平衡状态
-        reset_hight(_m_impl._root);
+        // reset_hight(_m_impl._root);
 
         return true;
     }
@@ -213,14 +213,62 @@ private:
 
         if (alg::gt(ptr->data_, val))
         {
-            return remove(ptr->left_tree_, val, ptr);
+            if (!remove(ptr->left_tree_, val, ptr))
+                return false;
+            
+            // 需要重新进行平衡
+            if (hight(ptr->right_tree_) - hight(ptr->left_tree_) == 2)
+            {
+                Node* r_ptr = ptr->right_tree_;
+                if (hight(r_ptr->left_tree_) > hight(r_ptr->right_tree_))
+                {
+                    double_rotate_withright(&ptr);
+                }
+                else
+                {
+                    signal_rotate_withright(&ptr);
+                }
+                // signal_rotate_withright(&ptr);
+            }
+            else
+            {
+
+                // 重新计算
+                ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
+            }
+
+            return true;
         }
         else if (alg::le(ptr->data_, val))
         {
-            return remove(ptr->right_tree_, val, ptr);
+            if (!remove(ptr->right_tree_, val, ptr))
+                return false;
+
+            // 需要重新进行平衡
+            if (hight(ptr->left_tree_) - hight(ptr->right_tree_) == 2)
+            {
+                Node* l_ptr = ptr->left_tree_;
+                if (hight(l_ptr->right_tree_) > hight(l_ptr->left_tree_))
+                {
+                    double_rotate_withleft(&ptr);
+                }
+                else
+                {
+                    signal_rotate_withleft(&ptr);
+                }
+                //signal_rotate_withleft(&ptr);
+            }
+            else
+            {
+                // 重新计算, 应该不需要
+                ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
+            }
+
+            return true;
         }
         else
         {
+            Node* old_ptr = ptr;
             Node* check = nullptr;  // 被删除的节点的对称节点
             Node* tmp = nullptr;    // 待删除的节点
             bool need_bal = false;  // 如不需要平衡，则节点自身的高度数据也无需更改
@@ -237,24 +285,22 @@ private:
 
                 if (q == ptr)
                 {
-                    f_ptr = q;
-                    q->left_tree_ = tmp->left_tree_;
-
                     // 判断是否要旋转
                     if (hight(q->right_tree_) - hight(q->left_tree_) == 1)
                         need_bal = true;
-
+                    
+                    f_ptr = q;
+                    q->left_tree_ = tmp->left_tree_;
                     check = q->right_tree_;
                 }
                 else
                 {
-                    f_ptr = q;
-                    q->right_tree_ = tmp->left_tree_;
-
                     // 判断是否要旋转
                     if (hight(q->left_tree_) - hight(q->right_tree_) == 1)
                         need_bal = true;
 
+                    f_ptr = q;
+                    q->right_tree_ = tmp->left_tree_;
                     check = q->left_tree_;
                 }
             }
@@ -271,7 +317,6 @@ private:
                 }
 
                 Node* tmp = ptr;
-
                 if (ptr->left_tree_ == nullptr)
                 {
                     ptr = ptr->right_tree_;
@@ -282,29 +327,23 @@ private:
                 }
             }
 
-            if (need_bal && check != nullptr && !(check->right_tree_ == nullptr && check->left_tree_ == nullptr))
+            do
             {
-                // 再次获取双亲节点
-                Node* p = parent(_m_impl._root, f_ptr);
-                if (alg::gt(check->data_, val))
+                if (check == nullptr)
                 {
-                    if (check->right_tree_ == nullptr && check->left_tree_)
-                    {
-                        double_rotate_withright(&f_ptr);
-                    }
-                    else
-                    {
-                        signal_rotate_withright(&f_ptr);
-                    }
-                    // f_ptr 可能变为root节点
-                    if (p != nullptr)
-                        p->right_tree_ = f_ptr;
-                    else
-                        _m_impl._root = f_ptr;
+                    break;
                 }
-                else
+
+                int32_t h_l = hight(f_ptr->left_tree_);
+                int32_t h_r = hight(f_ptr->right_tree_);
+
+                if (h_l > h_r && h_l - h_r == 2)
                 {
-                    if (check->right_tree_ && check->left_tree_ == nullptr)
+                    // 再次获取双亲节点
+                    Node* p = parent(_m_impl._root, f_ptr);
+                    check = f_ptr; // 复用check指针
+                    Node* t_check = f_ptr->left_tree_;
+                    if (hight(t_check->right_tree_) > hight(t_check->left_tree_))
                     {
                         double_rotate_withleft(&f_ptr);
                     }
@@ -312,13 +351,52 @@ private:
                     {
                         signal_rotate_withleft(&f_ptr);
                     }
+                    // f_ptr 可能变为root节点
                     if (p != nullptr)
-                        p->left_tree_ = f_ptr;
+                    {
+                        if (p == old_ptr)
+                        {
+                            p->left_tree_ = f_ptr;
+                        }else if(p->left_tree_ == check)
+                            p->left_tree_ = f_ptr;
+                        else
+                            p->right_tree_ = f_ptr;
+                    }
                     else
                         _m_impl._root = f_ptr;
                 }
-            }
 
+                if (h_r > h_l && h_r - h_l == 2)
+                {
+                    // 再次获取双亲节点
+                    Node* p = parent(_m_impl._root, f_ptr);
+                    check = f_ptr;
+                    Node* t_check = f_ptr->right_tree_;
+                    if (hight(t_check->left_tree_) > hight(t_check->right_tree_))
+                    {
+                        double_rotate_withright(&f_ptr);
+                    }
+                    else
+                    {
+                        signal_rotate_withright(&f_ptr);
+                    }
+                    if (p != nullptr)
+                    {
+                        if (p == old_ptr)
+                        {
+                            p->right_tree_ = f_ptr; // 应该不会发生
+                            assert(false);
+                        }else if (p->right_tree_ == check)
+                            p->right_tree_ = f_ptr;
+                        else
+                            p->left_tree_ = f_ptr;
+                    }
+                    else
+                        _m_impl._root = f_ptr;
+                }
+            
+            }while(false);
+            
             free_node(tmp);
 
             return true;
