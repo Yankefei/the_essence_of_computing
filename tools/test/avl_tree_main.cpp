@@ -8,7 +8,7 @@ using namespace tools;
 int main()
 {
     stream << Boolalpha;
-#if 0
+#if 1
     {
         AvlTree<int> my_tree;
         stream <<"sizeof AvlTree:" << sizeof(AvlTree<int>) << std::endl;
@@ -46,7 +46,7 @@ int main()
     }
 #endif
 
-#if 0
+#if 1
     {
         bool res = false;
         AvlTree<int> my_tree;
@@ -122,7 +122,7 @@ int main()
 
 #endif
 
-#if 0
+#if 1
     {
         bool res = false;
         AvlTree<int> my_tree;
@@ -254,6 +254,44 @@ int main()
         }
 
         assert(my_tree.get_root() == nullptr);
+    }
+#endif
+
+#if 1
+    {
+        bool res = false;
+        AvlTree<int> my_tree;
+        for (int i = 1; i < 100; i ++)
+        {
+            res = my_tree.insert(i);
+            if (!res || !my_tree.is_balance())
+            {
+                stream << "insert: "<< i << " failed. " << std::endl;
+            }
+        }
+        
+        for (int i = 200; i >149; i--)
+        {
+            res = my_tree.insert(i);
+            if (!res || !my_tree.is_balance())
+            {
+                stream << "insert: "<< i << " failed. " << std::endl;
+            }
+        }
+
+        for (int i = 100; i < 150; i ++)
+        {
+            res = my_tree.insert(i);
+            if (!res || !my_tree.is_balance())
+            {
+                stream << "insert: "<< i << " failed. " << std::endl;
+            }
+        }
+
+        while(my_tree.get_root() != nullptr)
+        {
+            my_tree.remove(my_tree.get_root()->data_);
+        }
     }
 #endif
 
