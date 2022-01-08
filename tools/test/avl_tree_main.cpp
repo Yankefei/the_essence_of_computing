@@ -35,14 +35,20 @@ int main()
 
         my_tree.print_tree();
 
-        int kx;
-        while(std::cin>>kx, kx != -1)
+        for (int i = 1; i < 17; i++)
         {
-            stream <<my_tree.remove(kx) ;
-            stream << " is bal? "<< my_tree.is_balance() << std::endl;
-            my_tree.InOrder();
-            my_tree.print_tree();
+            my_tree.remove(i);
         }
+        assert(my_tree.get_root() == nullptr);
+
+        // int kx;
+        // while(std::cin>>kx, kx != -1)
+        // {
+        //     stream <<my_tree.remove(kx) ;
+        //     stream << " is bal? "<< my_tree.is_balance() << std::endl;
+        //     my_tree.InOrder();
+        //     my_tree.print_tree();
+        // }
     }
 #endif
 
@@ -158,10 +164,10 @@ int main()
         {
             res = my_tree.remove(i);
 
-            // if (i >= 21 && i < 23)
-            // {
-            //     my_tree.print_tree();
-            // }
+            if (i == 34)
+            {
+                my_tree.print_tree();
+            }
 
             if (!res || !my_tree.is_balance())
             {

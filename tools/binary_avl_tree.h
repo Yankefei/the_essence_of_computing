@@ -105,14 +105,7 @@ public:
 
     bool remove(const T& val)
     {
-        if (!remove(_m_impl._root, val, nullptr))
-            return false;
-
-        // 如果这个时候， 发生了不平衡问题，则理论上只需要一次转换就可以完成
-        // 因为之前是平衡状态
-        // reset_hight(_m_impl._root);
-
-        return true;
+        return remove(_m_impl._root, val, nullptr);
     }
 
     bool remove2(const T& val)
@@ -231,7 +224,7 @@ private:
 
             if (!left_balance_check(&ptr))
             {
-                // 重新计算, 应该不需要
+                // 重新计算
                 ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
             }
 
@@ -241,7 +234,8 @@ private:
         {
             Node* old_ptr = ptr;
             Node* tmp = nullptr;    // 待删除的节点
-            bool need_bal = false;  // 如不需要平衡，则节点自身的高度数据也无需更改
+            bool no_need_bal = true;  // 是否要无需平衡, true 表示无需平衡，false表示不一定
+
             if (ptr->left_tree_ && ptr->right_tree_)
             {
                 Node* q = ptr;
@@ -253,26 +247,25 @@ private:
                 }
                 ptr->data_ = tmp->data_;
 
+                // 下面的f_ptr为真正删除的节点的父节点，非ptr的父节点
                 if (q == ptr)
                 {
                     f_ptr = q;
                     q->left_tree_ = tmp->left_tree_;
-                    //check = q->right_tree_;
-                    need_bal = q->right_tree_ != nullptr;
+                    no_need_bal = q->right_tree_ == nullptr;
                 }
                 else
                 {
                     f_ptr = q;
                     q->right_tree_ = tmp->left_tree_;
-                    //check = q->left_tree_;
-                    need_bal = q->left_tree_ != nullptr;
+                    no_need_bal = q->left_tree_ == nullptr;
                 }
 
                 // 当ptr为根节点，需要额外处理
                 if (ptr == _m_impl._root)
                 {
                     // 单独更新高度变化, 删除节点后，如果节点高度相同，则需要手动更新
-                    if (need_bal && hight(f_ptr->left_tree_) == hight(f_ptr->right_tree_))
+                    if (!no_need_bal && hight(f_ptr->left_tree_) == hight(f_ptr->right_tree_))
                     {
                         f_ptr->hight_ = f_ptr->left_tree_->hight_ + 1;
                     }
@@ -283,10 +276,8 @@ private:
             {
                 if (f_ptr != nullptr)
                 {
-                    // check = f_ptr->left_tree_ == ptr ?
-                    //                 f_ptr->right_tree_ : f_ptr->left_tree_;
-                    need_bal = f_ptr->left_tree_ == ptr ?
-                                (f_ptr->right_tree_ != nullptr) : (f_ptr->left_tree_ != nullptr);
+                    no_need_bal = f_ptr->left_tree_ == ptr ?
+                                (f_ptr->right_tree_ == nullptr) : (f_ptr->left_tree_ == nullptr);
                 }
 
                 Node* tmp = ptr;
@@ -302,42 +293,44 @@ private:
 
             do
             {
-                if (!need_bal)
+                if (no_need_bal)
                     break;
 
-                // 再次获取双亲节点
-                Node* p = parent(_m_impl._root, f_ptr);
-                Node* check = f_ptr; // 复用check指针
-
-                if (left_balance_check(&f_ptr))
+                Node* check = f_ptr;
+                if (left_balance_check(&f_ptr)) // 如果返回true, f_ptr指针会被修改
                 {
+                    // 需要再次获取双亲节点
+                    Node* other_f_ptr = parent(_m_impl._root, check);
+
                     // f_ptr 可能变为root节点
-                    if (p != nullptr)
+                    if (other_f_ptr != nullptr)
                     {
-                        if (p == old_ptr)
+                        if (other_f_ptr == old_ptr)  // 双亲指针和待删除的ptr一致
                         {
-                            p->left_tree_ = f_ptr;
-                        }else if(p->left_tree_ == check)
-                            p->left_tree_ = f_ptr;
+                            other_f_ptr->left_tree_ = f_ptr;
+                        }else if(other_f_ptr->left_tree_ == check)
+                            other_f_ptr->left_tree_ = f_ptr;
                         else
-                            p->right_tree_ = f_ptr;
+                            other_f_ptr->right_tree_ = f_ptr;
                     }
                     else
                         _m_impl._root = f_ptr;
                 }
-
-                if (right_balance_check(&f_ptr))
+                else if (right_balance_check(&f_ptr))
                 {
-                    if (p != nullptr)
+                    // 需要再次获取双亲节点
+                    Node* other_f_ptr = parent(_m_impl._root, check);
+
+                    if (other_f_ptr != nullptr)
                     {
-                        if (p == old_ptr)
+                        if (other_f_ptr == old_ptr)
                         {
-                            p->right_tree_ = f_ptr; // 应该不会发生
+                            other_f_ptr->right_tree_ = f_ptr; // 应该不会发生
                             assert(false);
-                        }else if (p->right_tree_ == check)
-                            p->right_tree_ = f_ptr;
+                        }else if (other_f_ptr->right_tree_ == check)
+                            other_f_ptr->right_tree_ = f_ptr;
                         else
-                            p->left_tree_ = f_ptr;
+                            other_f_ptr->left_tree_ = f_ptr;
                     }
                     else
                         _m_impl._root = f_ptr;
@@ -537,6 +530,7 @@ private:
     Node* parent(Node* ptr, Node* child)
     {
         if (nullptr == ptr) return ptr;
+        if (ptr == child) return nullptr;
 
         if (ptr->left_tree_ == child ||
             ptr->right_tree_ == child)
