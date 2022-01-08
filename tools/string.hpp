@@ -4,6 +4,8 @@
 #include <memory>
 #include <cassert>
 #include <cstring>
+#include <cstdio>
+#include <cstdarg>
 
 #include "stream.h"
 
@@ -263,9 +265,21 @@ public:
     }
 
     BString(_Cptr data)
+        : BString(data, strlen(data))
     {
-        size_type len = strlen(data);
-        auto pair = alloc_n_copy(data, data + len);
+        // 构造函数中不能调用构造函数。。
+        // size_type len = strlen(data);
+        // BString(data, len);
+    }
+
+    BString(_Cptr data, size_type len)
+        : BString(data, data + len)
+    {
+    }
+
+    BString(_Cptr data, _Cptr end_data)
+    {
+        auto pair = alloc_n_copy(data, end_data);
         _m_impl._m_start = pair.first;
         _m_impl._m_finish = _m_impl._m_cap = pair.second;
         _Base::_m_add_str_end();
@@ -714,6 +728,89 @@ std::ostream& operator<<(std::ostream& stream, const BString<T, Alloc>& __str)
 }
 
 using String = BString<char>;
+
+template<typename _String, typename T = char>
+_String _to_String(int(*_convfunc)(T*, std::size_t, const T*, va_list),
+                    std::size_t _n, const T* _fmt, ...)
+{
+    T* array = new T(sizeof(T) * _n);
+
+    va_list _args;
+    va_start(_args, _fmt);
+    const int len = _convfunc(array, _n, _fmt, _args);
+    va_end(_args);
+
+    _String val(array, len);
+    delete[] array;
+
+    return std::move(val);
+}
+
+inline String
+to_String(int __val)
+{
+    return _to_String<String>(std::vsnprintf, 4 * sizeof(int), "%d", __val);
+}
+
+inline String
+to_String(unsigned __val)
+{
+    return _to_String<String>(std::vsnprintf, 4 * sizeof(unsigned), "%u", __val);
+}
+
+inline String
+to_String(long __val)
+{
+    return _to_String<String>(std::vsnprintf, 4 * sizeof(long), "%ld", __val);
+}
+
+inline String
+to_String(unsigned long __val)
+{
+    return _to_String<String>(&std::vsnprintf,
+                    4 * sizeof(unsigned long),
+                    "%lu", __val); }
+
+inline String
+to_String(long long __val)
+{
+    return _to_String<String>(&std::vsnprintf,
+                    4 * sizeof(long long),
+                    "%lld", __val); }
+
+inline String
+to_String(unsigned long long __val)
+{
+    return _to_String<String>(&std::vsnprintf,
+                    4 * sizeof(unsigned long long),
+                    "%llu", __val); }
+
+inline String
+to_String(float __val)
+{
+    const int __n = 
+        __gnu_cxx::__numeric_traits<float>::__max_exponent10 + 20;
+    return _to_String<String>(&std::vsnprintf, __n,
+                    "%f", __val);
+}
+
+inline String
+to_String(double __val)
+{
+    const int __n = 
+        __gnu_cxx::__numeric_traits<double>::__max_exponent10 + 20;
+    return _to_String<String>(&std::vsnprintf, __n,
+                        "%f", __val);
+}
+
+inline String
+to_String(long double __val)
+{
+    const int __n = 
+        __gnu_cxx::__numeric_traits<long double>::__max_exponent10 + 20;
+    return _to_String<String>(&std::vsnprintf, __n,
+                        "%Lf", __val);
+}
 
 }
 

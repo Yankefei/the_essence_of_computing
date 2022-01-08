@@ -37,7 +37,7 @@ void draw_tree(Node* ptr)
     using DrawNode = _DrawNode<Node>;
     if (ptr == nullptr) return;
 
-    uint32_t level_num = 1;
+    uint32_t level_num = 0;
 
     Vector<DrawNode> tree_draw_info;
     Queue<DrawNode> tmp_draw_queue;

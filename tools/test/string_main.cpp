@@ -66,6 +66,7 @@ bool operator!=(const NAlloc<T>&, const NAlloc<U>&)
 
 int main()
 {
+
     {
         stream << "sizeof std::string   : "<< sizeof(std::string) << std::endl;
 
@@ -73,13 +74,16 @@ int main()
         stream << "sizeof tools::String : "<< sizeof(tools::String) << std::endl;
     }
 
+#if 1
+
     {
+        stream << "-------------------" << std::endl;
         tools::String  test("123");
-        test.print();
+        //test.print();
 
         test += "456";
         test += '7';
-        test.print();
+        //test.print();
 
         tools::String test1(test);
         //test1.print();
@@ -101,8 +105,11 @@ int main()
         stream <<"after swap size: "<< test.size() <<", cap: "<< test.capacity() <<" "<< test.c_str() << std::endl;
 
     }
+#endif
 
+#if 1
     {
+        stream << "-------------------" << std::endl;
         tools::String test1("1");
         test1.push_back('2');
         test1 += "345";
@@ -152,7 +159,10 @@ int main()
         stream << test3 << std::endl;
     }
 
+#endif
+
     {
+        stream << "-------------------" << std::endl;
         tools::BString<char, NAlloc<char>> a_other("123");
 
         a_other += "456";
@@ -161,6 +171,13 @@ int main()
         //Print(a_other);
         // stream << "a_other, size: "<< a_other.size() << ": "
         //        << a_other << std::endl;
+    }
+
+    {
+        stream << "-------------------" << std::endl;
+        int a = 100;
+        String a_str = to_String(a);
+        std::cout << "a_str: " << a_str.size() << std::endl;
     }
 
     return 0;
