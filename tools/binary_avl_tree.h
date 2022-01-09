@@ -12,11 +12,18 @@
 namespace tools
 {
 
+enum class Dir
+{
+    Unknown,
+    Left,
+    Right
+};
+
 template<typename T>
 struct _BNode
 {
     _BNode() = default;
-    _BNode(const T&val) : data_(val) {}
+    _BNode(const T&val) : data_(val), hight_(0) {}
 
     _BNode* left_tree_{nullptr};
     _BNode* right_tree_{nullptr};
@@ -95,22 +102,23 @@ public:
     // 重复元素插入失败
     bool insert(const T& val)
     {
-        return insert(_m_impl._root, val);
+        return insert2(&_m_impl._root, val);  // 非递归
     }
 
+    // 重复元素插入失败
     bool insert2(const T& val)
     {
-        return insert2(&_m_impl._root, val);
+        return insert(_m_impl._root, val);
     }
 
     bool remove(const T& val)
     {
-        return remove(_m_impl._root, val, nullptr);
+        return remove2(&_m_impl._root, val);  // 非递归
     }
 
     bool remove2(const T& val)
     {
-        return remove2(&_m_impl._root, val);
+        return remove(_m_impl._root, val, nullptr);
     }
 
     void InOrder()
@@ -147,7 +155,6 @@ private:
         if (ptr == nullptr)
         {
             ptr = buy_node(val);
-            ptr->hight_ = 0;
             return true;
         }
 
@@ -200,6 +207,7 @@ private:
         return true;
     }
 
+    // 递归
     bool remove(Node*& ptr, const T& val, Node* f_ptr)
     {
         if (ptr == nullptr) return false;
@@ -343,21 +351,213 @@ private:
         }
     }
 
+    // 记录遍历过程父节点的指针和遍历方向
+    struct ParentNode
+    {
+        ParentNode(Node* _ptr, Dir _dir) : ptr(_ptr), dir(_dir) {}
+        Node* ptr;
+        Dir   dir{Dir::Unknown};
+    };
+
     //  非递归
     bool insert2(Node** pptr, const T& val)
     {
         if (pptr == nullptr) false;
 
         Node* ptr = *pptr;
+        Stack<ParentNode> st;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            ptr = alg::gt(ptr->data_, val) ? ptr->left_tree_ : ptr->right_tree_;
+            if (alg::gt(ptr->data_, val))
+            {
+                st.push(ParentNode(ptr, Dir::Left));
+                ptr = ptr->left_tree_;
+            }
+            else
+            {
+                st.push(ParentNode(ptr, Dir::Right));
+                ptr = ptr->right_tree_;
+            }
         }
+
+        if (ptr != nullptr) return false;
+
+        ptr = buy_node(val);
+        if (st.empty())
+        {
+            *pptr = ptr;
+            return true;
+        }
+        else
+        {
+            ParentNode node = st.top();
+            st.pop();
+            if (node.dir == Dir::Left)
+                node.ptr->left_tree_ = ptr;
+            else
+                node.ptr->right_tree_ = ptr;
+
+            node.ptr->hight_ = alg::max(hight(node.ptr->left_tree_), hight(node.ptr->right_tree_)) + 1;
+        }
+
+        Node* ready_ptr = nullptr; // 放置一个待修改的指针，只要非nullptr, 说明需要修改节点指针
+        while(!st.empty())
+        {
+            ParentNode node = st.top();
+            st.pop();
+            if (node.dir == Dir::Left)
+            {
+                if (ready_ptr)
+                {
+                    node.ptr->left_tree_ = ready_ptr;
+                    ready_ptr = nullptr;
+                }
+                if (hight(node.ptr->left_tree_) - hight(node.ptr->right_tree_) == 2)
+                {
+                    if (alg::gt(node.ptr->left_tree_->data_, val))
+                    {
+                        signal_rotate_withleft(&node.ptr);
+                        ready_ptr = node.ptr;
+                    }
+                    else
+                    {
+                        double_rotate_withleft(&node.ptr);
+                        ready_ptr = node.ptr;
+                    }
+                }
+            }
+            else
+            {
+                if (ready_ptr)
+                {
+                    node.ptr->right_tree_ = ready_ptr;
+                    ready_ptr = nullptr;
+                }
+                if (hight(node.ptr->right_tree_) - hight(node.ptr->left_tree_) == 2)
+                {
+                    if (alg::le(node.ptr->right_tree_->data_, val))
+                    {
+                        signal_rotate_withright(&node.ptr);
+                        ready_ptr = node.ptr;
+                    }
+                    else
+                    {
+                        double_rotate_withright(&node.ptr);
+                        ready_ptr = node.ptr;
+                    }
+                }
+            }
+
+            node.ptr->hight_ = alg::max(hight(node.ptr->left_tree_), hight(node.ptr->right_tree_)) + 1;
+        }
+
+        if (ready_ptr)
+            *pptr = ready_ptr;
+
+        return true;
     }
 
-    bool remove2(Node** ptr, const T& val)
+    // 非递归
+    bool remove2(Node** pptr, const T& val)
     {
+        if (pptr == nullptr) false;
 
+        Node* ptr = *pptr;
+        Stack<ParentNode> st;
+        while(ptr != nullptr && alg::neq(ptr->data_, val))
+        {
+            if (alg::gt(ptr->data_, val))
+            {
+                st.push(ParentNode(ptr, Dir::Left));
+                ptr = ptr->left_tree_;
+            }
+            else
+            {
+                st.push(ParentNode(ptr, Dir::Right));
+                ptr = ptr->right_tree_;
+            }
+        }
+        if (ptr == nullptr) return false;
+        if (ptr->left_tree_ && ptr->right_tree_)
+        {
+            st.push(ParentNode(ptr, Dir::Left));
+            Node* q = ptr->left_tree_; // 将右子树最大值转移过来
+            while(q->right_tree_)
+            {
+                st.push(ParentNode(q, Dir::Right));
+                q = q->right_tree_;
+            }
+            ptr->data_ = q->data_;
+            ptr = q; // 只需要删除ptr就可以，可以和下面的情况一起处理          
+        }
+
+        Node* child = ptr->left_tree_ == nullptr ? ptr->right_tree_ : ptr->left_tree_;
+        Node* ready_ptr = nullptr;
+        if(st.empty())
+        {
+            *pptr = child;
+            return true;
+        }
+        else
+        {
+            ParentNode node = st.top();
+            st.pop();
+            if (node.dir == Dir::Left)
+            {
+                node.ptr->left_tree_ = child;
+                if (right_balance_check(&node.ptr))
+                {
+                    ready_ptr = node.ptr;
+                }
+            }
+            else
+            {
+                node.ptr->right_tree_ = child;
+                if (left_balance_check(&node.ptr))
+                {
+                    ready_ptr = node.ptr;
+                }
+            }
+
+            node.ptr->hight_ = alg::max(hight(node.ptr->left_tree_), hight(node.ptr->right_tree_)) + 1;
+        }
+
+        while(!st.empty())
+        {
+            ParentNode node = st.top();
+            st.pop();
+            if (node.dir == Dir::Left)
+            {
+                if (ready_ptr)
+                {
+                    node.ptr->left_tree_ = ready_ptr;
+                    ready_ptr = nullptr;
+                }
+                if (right_balance_check(&node.ptr))
+                {
+                    ready_ptr = node.ptr;
+                }
+            }
+            else
+            {
+                if (ready_ptr)
+                {
+                    node.ptr->right_tree_ = ready_ptr;
+                    ready_ptr = nullptr;
+                }
+                if (left_balance_check(&node.ptr))
+                {
+                    ready_ptr = node.ptr;
+                }
+            }
+
+            node.ptr->hight_ = alg::max(hight(node.ptr->left_tree_), hight(node.ptr->right_tree_)) + 1;
+        }
+
+        if (ready_ptr)
+            *pptr = ready_ptr;
+
+        return true;
     }
 
     void destory(Node* ptr)
@@ -489,24 +689,6 @@ private:
         }
 
         return is_balance2(ptr->left_tree_) && is_balance2(ptr->right_tree_);
-    }
-
-    static Node* find_max(Node* ptr)
-    {
-        if (ptr)
-        {
-            while(ptr->right_tree_)
-            {
-                ptr = ptr->right_tree_;
-            }
-        }
-
-        return ptr;
-    }
-
-    static Node* find_min(Node* ptr)
-    {
-
     }
 
     static int32_t hight(Node* ptr)

@@ -213,6 +213,7 @@ private:
             ptr = p;
         }
 
+        // 删除ptr的指针，逻辑一致了
         Node* pa = ptr->parent_;
         Node* child = ptr->left_tree_ == nullptr ? ptr->right_tree_ : ptr->left_tree_;
 
