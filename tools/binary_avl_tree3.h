@@ -410,9 +410,7 @@ private:
         {
             Node* q = ptr->left_tree_; // 将右子树最大值转移
             while(q->right_tree_)
-            {
                 q = q->right_tree_;
-            }
             ptr->data_ = q->data_;
             ptr = q;    // 后面删除ptr即可
             t_val = ptr->data_;
@@ -452,21 +450,11 @@ private:
 
             if (is_rotate)
             {
-                // ready_ptr->parent_ == nullptr 表示ready_ptr已经是根节点了
-                if (ready_ptr->parent_ == nullptr)
+                if (set_status_after_remove(ready_ptr, t_val, pptr))
                 {
-                    if (ready_ptr) *pptr = ready_ptr;  // 最后必须给pptr赋值一次
+                    if (ready_ptr)  *pptr = ready_ptr;  // 最后必须给pptr赋值一次
                     return true;
                 }
-
-                // 设置ready_ptr的父节点如何指向自身, 
-                // 因为存在替换，所以 ready_ptr->parent_->data_ 和 t_val 可能相同
-                Bal _dir = alg::gt_eq(ready_ptr->parent_->data_, t_val) ? Bal::Left : Bal::Right;
-
-                if (_dir == Bal::Left)
-                    ready_ptr->parent_->left_tree_ = ready_ptr;
-                else
-                    ready_ptr->parent_->right_tree_ = ready_ptr;
 
                 pa = ready_ptr; // 修改pa的指针
                 is_rotate = false;
@@ -498,18 +486,8 @@ private:
 
             if (is_rotate)
             {
-                // ready_ptr->parent_ == nullptr 表示ready_ptr已经是根节点了
-                if (ready_ptr->parent_ == nullptr)
+                if (set_status_after_remove(ready_ptr, t_val, pptr))
                     break;
-
-                // 设置ready_ptr的父节点如何指向自身
-                Bal _dir = alg::gt_eq(ready_ptr->parent_->data_, t_val) ? Bal::Left : Bal::Right;
-
-                if (_dir == Bal::Left)
-                    ready_ptr->parent_->left_tree_ = ready_ptr;
-                else
-                    ready_ptr->parent_->right_tree_ = ready_ptr;
-
                 pa = ready_ptr; // 修改pa的指针
                 is_rotate = false;
             }
@@ -518,6 +496,25 @@ private:
         if (ready_ptr)  *pptr = ready_ptr;  // 最后必须给pptr赋值一次
 
         return true;
+    }
+
+    bool set_status_after_remove(Node* ready_ptr, const T& val, Node** pptr)
+    {
+        // ready_ptr->parent_ == nullptr 表示ready_ptr已经是根节点了
+        if (ready_ptr->parent_ == nullptr)
+        {
+            return true;
+        }
+
+        // 设置ready_ptr的父节点如何指向自身
+        Bal _dir = alg::gt_eq(ready_ptr->parent_->data_, val) ? Bal::Left : Bal::Right;
+
+        if (_dir == Bal::Left)
+            ready_ptr->parent_->left_tree_ = ready_ptr;
+        else
+            ready_ptr->parent_->right_tree_ = ready_ptr;
+        
+        return false;
     }
 
     // 删除左子树后的调整
