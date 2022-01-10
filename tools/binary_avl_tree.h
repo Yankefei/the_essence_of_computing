@@ -118,7 +118,8 @@ public:
 
     bool remove2(const T& val)
     {
-        return remove(_m_impl._root, val, nullptr);
+        return _remove(_m_impl._root, val, nullptr);  // 这个递归函数比下面的好很多
+        //return remove(_m_impl._root, val, nullptr);
     }
 
     void InOrder()
@@ -349,6 +350,61 @@ private:
 
             return true;
         }
+    }
+
+    // 递归的另外一个版本, 这才是最简单的版本
+    bool _remove(Node*& ptr, const T& val, Node* f_ptr)
+    {
+        if (ptr == nullptr) return false;
+
+        if (alg::gt(ptr->data_, val))
+        {
+            if (!remove(ptr->left_tree_, val, ptr))
+                return false;
+            
+            if (!right_balance_check(&ptr))
+            {
+                // 重新计算
+                ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
+            }
+        }
+        else if (alg::le(ptr->data_, val))
+        {
+            if (!remove(ptr->right_tree_, val, ptr))
+                return false;
+
+            if (!left_balance_check(&ptr))
+            {
+                // 重新计算
+                ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
+            }
+        }
+        else
+        {
+            if (ptr->left_tree_ && ptr->right_tree_)
+            {
+                Node* q = ptr->left_tree_;
+                while(q->right_tree_)
+                {
+                    q = q->right_tree_;
+                }
+                ptr->data_ = q->data_;
+                remove(ptr->left_tree_, q->data_, ptr);
+
+                if (!right_balance_check(&ptr))
+                {
+                    // 重新计算
+                    ptr->hight_ = alg::max(hight(ptr->right_tree_), hight(ptr->left_tree_)) + 1;
+                }
+            }
+            else
+            {
+                Node* child = ptr->left_tree_ == nullptr ? ptr->right_tree_ : ptr->left_tree_;
+                free_node(ptr);
+                ptr = child;
+            }
+        }
+        return true;
     }
 
     // 记录遍历过程父节点的指针和遍历方向
