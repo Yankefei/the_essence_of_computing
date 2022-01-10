@@ -418,7 +418,7 @@ private:
     //  非递归
     bool insert2(Node** pptr, const T& val)
     {
-        if (pptr == nullptr) false;
+        if (pptr == nullptr) return false;
 
         Node* ptr = *pptr;
         Stack<ParentNode> st;
