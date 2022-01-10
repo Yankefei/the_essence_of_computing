@@ -143,7 +143,13 @@ void draw_tree(Node* ptr)
 
         print_empty(interval_num / 2);
         if (node.ptr)
+        {
+#ifndef HAS_BALANCE
             stream << node.ptr->data_;
+#else
+            stream << node.ptr->data_ << static_cast<int32_t>(node.ptr->balance_);
+#endif
+        }
         else
             stream << " ";
         print_empty(interval_num / 2 - 1);
