@@ -2,6 +2,8 @@
 #include "stream.h"
 
 #include "binary_avl_tree.h"
+#include "rand.h"
+#include "vector.hpp"
 
 using namespace tools;
 
@@ -35,20 +37,20 @@ int main()
 
         my_tree.print_tree();
 
-        // for (int i = 1; i < 17; i++)
-        // {
-        //     my_tree.remove(i);
-        // }
-        // assert(my_tree.get_root() == nullptr);
-
-        int kx;
-        while(std::cin>>kx, kx != -1)
+        for (int i = 1; i < 17; i++)
         {
-            stream <<my_tree.remove(kx) ;
-            stream << " is bal? "<< my_tree.is_balance() << std::endl;
-            my_tree.InOrder();
-            my_tree.print_tree();
+            my_tree.remove(i);
         }
+        assert(my_tree.get_root() == nullptr);
+
+        // int kx;
+        // while(std::cin>>kx, kx != -1)
+        // {
+        //     stream <<my_tree.remove(kx) ;
+        //     stream << " is bal? "<< my_tree.is_balance() << std::endl;
+        //     my_tree.InOrder();
+        //     my_tree.print_tree();
+        // }
     }
 #endif
 
@@ -300,6 +302,40 @@ int main()
         }
     }
 #endif
+
+    int rang_index = 10;
+    while(rang_index -- > 0)
+    {
+        Vector<int> array;
+        Rand<int> rand(1, 10000);
+        for(int i = 0; i < 1000; i++)
+        {
+            array.push_back(rand());
+        }
+
+        bool res = false;
+        AvlTree<int> my_tree;
+        for (auto& i : array)
+        {
+            my_tree.insert2(i);
+            if (!my_tree.is_balance())
+            {
+                stream << "insert: "<< i << " failed. ";
+            }
+        }
+        stream << std::endl;
+        stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+        //my_tree.InOrder();
+        for (auto& i : array)
+        {
+            my_tree.remove2(i);
+            if (!my_tree.is_balance())
+            {
+                stream << "remove: "<< i << " failed. ";
+            }
+        }
+        stream << std::endl;
+    }
 
     return 0;
 }

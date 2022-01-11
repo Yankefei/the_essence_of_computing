@@ -99,27 +99,30 @@ public:
     AvlTree() {}
     ~AvlTree() { destory(_m_impl._root); }
 
-    // 重复元素插入失败
-    bool insert(const T& val)
+      // 非递归
+    bool insert(const T& val)          // pass
     {
-        return insert2(&_m_impl._root, val);  // 非递归
+        return insert2(&_m_impl._root, val);
     }
 
-    // 重复元素插入失败
-    bool insert2(const T& val)
+    // 非递归
+    bool remove(const T& val)          // pass
     {
-        return insert(_m_impl._root, val);
+        return remove2(&_m_impl._root, val);
     }
 
-    bool remove(const T& val)
+    // 递归
+    bool insert2(const T& val)         // pass
     {
-        return remove2(&_m_impl._root, val);  // 非递归
+        return insert(_m_impl._root, val);     
     }
 
-    bool remove2(const T& val)
+    // 递归
+    bool remove2(const T& val)                
     {
-        return _remove(_m_impl._root, val, nullptr);  // 这个递归函数比下面的好很多
-        //return remove(_m_impl._root, val, nullptr);
+        // 正确版本的递归函数
+        return _remove(_m_impl._root, val);   // pass
+        //return remove(_m_impl._root, val, nullptr);  // error
     }
 
     void InOrder()
@@ -209,6 +212,8 @@ private:
     }
 
     // 递归
+    // 事实证明，如果算法没有想明白，直接写，代码总是很扯淡, 会有无情无尽的bug等待着你
+    // 该算法逻辑异常，放弃调试
     bool remove(Node*& ptr, const T& val, Node* f_ptr)
     {
         if (ptr == nullptr) return false;
@@ -249,8 +254,11 @@ private:
             {
                 Node* q = ptr;
                 tmp = ptr->left_tree_;
+                //Node* old_tmp = tmp; // 仅仅用于更新树高
+                //Stack<Node*> right_st; // 用栈来保存遍历路径。。。
                 while(tmp->right_tree_)
                 {
+                    //right_st.push(tmp);
                     q = tmp;
                     tmp = tmp->right_tree_;
                 }
@@ -267,6 +275,17 @@ private:
                 {
                     f_ptr = q;
                     q->right_tree_ = tmp->left_tree_;
+                    // 这里的问题在于，还需要将q到ptr整个链路上所有的节点高度重新计算一遍
+                    // 而且还必须是**边调整平衡边计算**，因为递归的线路没有包含这里
+                    // 所以该算法为错误的算法，不能仅仅使用堆栈来弥补
+                    // 错误的点在于，如果将ptr的双子节点非空的情况和其他情况一起处理，情况会非常复杂
+                    // while(right_st.size() != 1)
+                    // {
+                    //     Node* p = right_st.top();
+                    //     right_st.pop();
+                    //     p->hight_ = alg::max(hight(p->right_tree_), hight(p->left_tree_)) + 1;
+                    // }
+
                     no_need_bal = q->left_tree_ == nullptr;
                 }
 
@@ -352,14 +371,14 @@ private:
         }
     }
 
-    // 递归的另外一个版本, 这才是最简单的版本
-    bool _remove(Node*& ptr, const T& val, Node* f_ptr)
+    // 递归的另外一个版本, 正确的版本，逻辑都是简单清晰的
+    bool _remove(Node*& ptr, const T& val)
     {
         if (ptr == nullptr) return false;
 
         if (alg::gt(ptr->data_, val))
         {
-            if (!remove(ptr->left_tree_, val, ptr))
+            if (!_remove(ptr->left_tree_, val))
                 return false;
             
             if (!right_balance_check(&ptr))
@@ -370,7 +389,7 @@ private:
         }
         else if (alg::le(ptr->data_, val))
         {
-            if (!remove(ptr->right_tree_, val, ptr))
+            if (!_remove(ptr->right_tree_, val))
                 return false;
 
             if (!left_balance_check(&ptr))
@@ -383,13 +402,13 @@ private:
         {
             if (ptr->left_tree_ && ptr->right_tree_)
             {
-                Node* q = ptr->left_tree_;
+                Node* q = ptr->left_tree_; // 取右子树的最大值
                 while(q->right_tree_)
                 {
                     q = q->right_tree_;
                 }
                 ptr->data_ = q->data_;
-                remove(ptr->left_tree_, q->data_, ptr);
+                _remove(ptr->left_tree_, q->data_);
 
                 if (!right_balance_check(&ptr))
                 {
@@ -726,6 +745,12 @@ private:
         int32_t diff = l_res.first > r_res.first ?
                         (l_res.first - r_res.first) :
                         (r_res.first - l_res.first);
+
+        if (diff >= 2)
+        {
+            draw_tree<Node>(ptr);
+            assert(false);
+        }
 
         return {alg::max(l_res.first, r_res.first) + 1,
                 (diff < 2) && l_res.second && r_res.second};

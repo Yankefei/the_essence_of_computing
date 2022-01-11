@@ -103,25 +103,25 @@ public:
     ~AvlTree() { destory(_m_impl._root); }
 
     // 递归
-    bool insert2(const T& val)
+    bool insert2(const T& val) // pass
     {
         bool taller = false;
         return insert(_m_impl._root, val, taller);
     }
     // 递归
-    bool remove2(const T& val)
+    bool remove2(const T& val)   // pass
     {
         bool lower = false;
         return remove(_m_impl._root, val, lower);
     }
 
     // 非递归
-    bool insert(const T& val)
+    bool insert(const T& val) // error
     {
         return insert(&_m_impl._root, val);
     }
     // 非递归
-    bool remove(const T& val)
+    bool remove(const T& val)  // pass
     {
         return remove(&_m_impl._root, val);
     }
@@ -129,6 +129,7 @@ public:
     void InOrder()
     {
         _InOrder(_m_impl._root);
+        stream << std::endl;
     }
 
     Node* get_root() const
@@ -343,6 +344,12 @@ private:
                 default:
                     break;
             }
+
+            // 已经达到平衡条件，可以退出
+            if (node.ptr->balance_ == Bal::Balance)
+            {
+                return true;
+            }
         }
 
         Node* ready_ptr = nullptr; // 放置一个待修改的指针
@@ -373,12 +380,24 @@ private:
                 }
                 case Bal::Left:
                 {
-                    ready_ptr = total_left_balance(node.ptr);
+                    if (node.dir == Bal::Right)
+                    {
+                        node.ptr->balance_ = Bal::Balance;
+                        return true;
+                    }
+                    else
+                        ready_ptr = total_left_balance(node.ptr);
                     break;
                 }
                 case Bal::Right:
                 {
-                    ready_ptr = total_right_balance(node.ptr);
+                    if (node.dir == Bal::Left)
+                    {
+                        node.ptr->balance_ = Bal::Balance;
+                        return true;
+                    }
+                    else
+                        ready_ptr = total_right_balance(node.ptr);
                     break;
                 }
                 default:
@@ -766,7 +785,13 @@ private:
         int32_t res = left_res.first > right_res.first ?
                     (left_res.first - right_res.first) :
                     (right_res.first - left_res.first);
-        
+
+        // if (res >= 2)
+        // {
+        //     draw_tree<Node>(ptr);
+        //     assert(false);
+        // }
+
         return BalRes(alg::max(left_res.first, right_res.first) + 1,
                             (res < 2) && left_res.second && right_res.second);
     }

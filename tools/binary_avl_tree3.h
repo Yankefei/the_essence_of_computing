@@ -103,25 +103,25 @@ public:
     AvlTree() {}
     ~AvlTree() { destory(_m_impl._root); }
 
-    bool insert2(const T& val)
+    bool insert2(const T& val)  // pass
     {
         bool taller = false;
         return insert(_m_impl._root, val, nullptr, taller);
     }
 
-    bool remove2(const T& val)
+    bool remove2(const T& val)   // pass
     {
         bool lower = false;
         return remove(_m_impl._root, val, lower);
     }
 
     // 非递归
-    bool insert(const T& val)
+    bool insert(const T& val)   // pass
     {
         return insert(&_m_impl._root, val);
     }
     // 非递归
-    bool remove(const T& val)
+    bool remove(const T& val)     // pass
     {
         return remove(&_m_impl._root, val);
     }
@@ -328,10 +328,17 @@ private:
                 case Bal::Left:
                 case Bal::Right:
                 {
-                    pa->balance_ = Bal::Balance; break;
+                    pa->balance_ = Bal::Balance;
+                    break;
                 }
                 default:
                     break;
+            }
+
+            // 已经达到平衡条件，可以退出
+            if (pa->balance_ == Bal::Balance)
+            {
+                return true;
             }
         }
 
@@ -354,11 +361,25 @@ private:
                 }
                 case Bal::Left:
                 {
-                    ready_ptr = total_left_balance(pa_); break;
+                    if (dir == Bal::Right)
+                    {
+                        pa_->balance_ = Bal::Balance;
+                        return true;
+                    }
+                    else
+                        ready_ptr = total_left_balance(pa_);
+                    break;
                 }
                 case Bal::Right:
                 {
-                    ready_ptr = total_right_balance(pa_); break;
+                    if (dir == Bal::Left)
+                    {
+                        pa_->balance_ = Bal::Balance;
+                        return true;
+                    }
+                    else
+                        ready_ptr = total_right_balance(pa_);
+                    break;
                 }
                 default:
                     break;
@@ -737,7 +758,9 @@ private:
         c->balance_ = Bal::Balance;
     }
 
-
+    /*  注： 目前所有的转换函数，已经将内部所有节点的状态信息全部变更完毕
+        外界使用则无需任何更改，且注意内部的状态也会同时发生改变
+    */
     static void left_balance(Node*& ptr)
     {
         Node* b = ptr->left_tree_;
