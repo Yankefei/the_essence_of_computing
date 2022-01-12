@@ -8,6 +8,8 @@
 #include "rand.h"
 
 using namespace tools;
+//using namespace tools::avl_tree_2;
+using namespace tools::avl_tree_3;
 
 int main()
 {

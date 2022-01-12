@@ -41,3 +41,6 @@ target_link_libraries(avl_tree_main  tools)
 
 add_executable(avl_tree_main2  avl_tree_main2.cpp)
 target_link_libraries(avl_tree_main2  tools)
+
+add_executable(avl_tree_check avl_tree_check_main.cpp)
+target_link_libraries(avl_tree_check  tools)

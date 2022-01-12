@@ -9,9 +9,12 @@
 
 #define HAS_BALANCE
 
-#include "binary_avl_tree_util.h"
+#include "binary_tree_print_util.h"
 
 namespace tools
+{
+
+namespace avl_tree_2
 {
 
 /*平衡状态*/
@@ -797,6 +800,7 @@ private:
     }
 };
 
+}
 }
 
 #endif

@@ -6,6 +6,7 @@
 #include "vector.hpp"
 
 using namespace tools;
+using namespace tools::avl_tree_1;
 
 int main()
 {

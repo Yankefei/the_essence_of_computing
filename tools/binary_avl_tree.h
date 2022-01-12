@@ -7,9 +7,12 @@
 #include "vector.hpp"
 #include "queue.h"
 #include "algorithm.hpp"
-#include "binary_avl_tree_util.h"
+#include "binary_tree_print_util.h"
 
 namespace tools
+{
+
+namespace avl_tree_1
 {
 
 enum class Dir
@@ -810,6 +813,7 @@ private:
     }
 };
 
+}
 }
 
 #endif
