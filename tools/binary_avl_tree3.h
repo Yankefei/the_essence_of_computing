@@ -137,11 +137,21 @@ public:
 
     void NiceInOrder() const
     {
+        Node* ptr = first(_m_impl._root);
+        for (; ptr != nullptr; ptr = next(ptr))
+        {
+            stream << ptr->data_ << " ";
+        }
         stream << std::endl;
     }
 
     void ResNiceInOrder() const
     {
+        Node* ptr = last(_m_impl._root);
+        for (; ptr != nullptr; ptr = prev(ptr))
+        {
+            stream << ptr->data_ << " ";
+        }
         stream << std::endl;
     }
 
@@ -861,32 +871,63 @@ private:
                             res && left_res.second && right_res.second);
     }
 
-    Node* first(Node* ptr)
+    static Node* first(Node* ptr)
     {
         if (ptr)
         {
             while (ptr->left_tree_)
-            {
                 ptr = ptr->left_tree_;
-            }
         }
 
         return ptr;
     }
 
-    Node* next(Node* ptr)
+    static Node* next(Node* ptr)
     {
-
+        if (ptr)
+        {
+            if (ptr->right_tree_)
+                return first(ptr->right_tree_);
+            else
+            {
+                Node* pa = ptr->parent_;
+                while(pa != nullptr && pa->right_tree_ == ptr)
+                {
+                    ptr = pa;
+                    pa = pa->parent_;
+                }
+                return pa;
+            }
+        }
     }
 
-    Node* last(Node* ptr)
+    static Node* last(Node* ptr)
     {
-
+        if (ptr)
+        {
+            while(ptr->right_tree_)
+                ptr = ptr->right_tree_;
+        }
+        return ptr;
     }
 
-    Node* prev(Node* ptr)
+    static Node* prev(Node* ptr)
     {
-
+        if (ptr)
+        {
+            if (ptr->left_tree_)
+                return last(ptr->left_tree_);
+            else
+            {
+                Node* pa = ptr->parent_;
+                while(pa != nullptr && pa->left_tree_ == ptr)
+                {
+                    ptr = pa;
+                    pa = pa->parent_;
+                }
+                return pa;
+            }
+        }
     }
 };
 
