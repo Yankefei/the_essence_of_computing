@@ -304,8 +304,6 @@ int main()
     }
 #endif
 
-    int rang_index = 10;
-    while(rang_index -- > 0)
     {
         Vector<int> array;
         Rand<int> rand(1, 10000);
@@ -326,10 +324,42 @@ int main()
         }
         stream << std::endl;
         stream << "tree hight: "<< my_tree.get_hight() << std::endl;
-        //my_tree.InOrder();
+        my_tree.InOrder();
         for (auto& i : array)
         {
             my_tree.remove2(i);
+            if (!my_tree.is_balance())
+            {
+                stream << "remove: "<< i << " failed. ";
+            }
+        }
+        stream << std::endl;
+    }
+
+    {
+        Vector<int> array;
+        Rand<int> rand(1, 10000);
+        for(int i = 0; i < 1000; i++)
+        {
+            array.push_back(rand());
+        }
+
+        bool res = false;
+        AvlTree<int> my_tree;
+        for (auto& i : array)
+        {
+            my_tree.insert(i);
+            if (!my_tree.is_balance())
+            {
+                stream << "insert: "<< i << " failed. ";
+            }
+        }
+        stream << std::endl;
+        stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+        my_tree.InOrder();
+        for (auto& i : array)
+        {
+            my_tree.remove(i);
             if (!my_tree.is_balance())
             {
                 stream << "remove: "<< i << " failed. ";

@@ -33,7 +33,7 @@ struct _BNode
 
     _BNode* left_tree_{nullptr};
     _BNode* right_tree_{nullptr};
-    _BNode* parent_{nullptr};
+    _BNode* parent_{nullptr};      // 父指针是迭代器遍历树的关键
     Bal balance_{Bal::Balance};    // 平衡因子 1 : left   0 : balance  -1 right
     T data_;
 };
@@ -129,9 +129,20 @@ public:
         return remove(&_m_impl._root, val);
     }
 
-    void InOrder()
+    void InOrder() const
     {
         _InOrder(_m_impl._root);
+        stream << std::endl;
+    }
+
+    void NiceInOrder() const
+    {
+        stream << std::endl;
+    }
+
+    void ResNiceInOrder() const
+    {
+        stream << std::endl;
     }
 
     Node* get_root() const
@@ -155,6 +166,7 @@ public:
     }
 
 private:
+    // 这里的taller是必须存在的，告知上层是否应该停止平衡判定的操作
     bool insert(Node*& ptr, const T&val, Node* f_ptr, bool& taller)
     {
         if (ptr == nullptr)
@@ -847,6 +859,34 @@ private:
         
         return BalRes(alg::max(left_res.first, right_res.first) + 1,
                             res && left_res.second && right_res.second);
+    }
+
+    Node* first(Node* ptr)
+    {
+        if (ptr)
+        {
+            while (ptr->left_tree_)
+            {
+                ptr = ptr->left_tree_;
+            }
+        }
+
+        return ptr;
+    }
+
+    Node* next(Node* ptr)
+    {
+
+    }
+
+    Node* last(Node* ptr)
+    {
+
+    }
+
+    Node* prev(Node* ptr)
+    {
+
     }
 };
 
