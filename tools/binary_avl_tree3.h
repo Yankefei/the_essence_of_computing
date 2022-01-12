@@ -176,7 +176,7 @@ public:
     }
 
 private:
-    // 这里的taller是必须存在的，告知上层是否应该停止平衡判定的操作
+    // 这里的taller是在递归中必须存在的，告知上层是否应该停止平衡判定的操作
     bool insert(Node*& ptr, const T&val, Node* f_ptr, bool& taller)
     {
         if (ptr == nullptr)

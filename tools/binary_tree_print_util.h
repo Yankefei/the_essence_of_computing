@@ -144,10 +144,16 @@ void draw_tree(Node* ptr)
         print_empty(interval_num / 2);
         if (node.ptr)
         {
-#ifndef HAS_BALANCE
-            stream << node.ptr->data_;
-#else
+#ifdef HAS_BALANCE
             stream << node.ptr->data_ << static_cast<int32_t>(node.ptr->balance_);
+#else
+#ifdef HAS_COLOR
+            if (node.ptr->color_ != tools::Color::Black)
+                stream << node.ptr->data_ << "*";
+            else
+                stream << node.ptr->data_;
+#endif
+            stream << node.ptr->data_;  
 #endif
         }
         else
