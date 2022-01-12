@@ -755,8 +755,14 @@ private:
             assert(false);
         }
 
+        bool is_sort = true;
+        if (ptr->left_tree_)
+            is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+        if (ptr->right_tree_)
+            is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+
         return {alg::max(l_res.first, r_res.first) + 1,
-                (diff < 2) && l_res.second && r_res.second};
+                is_sort && (diff < 2) && l_res.second && r_res.second};
     }
 
     static bool is_balance2(Node* ptr)

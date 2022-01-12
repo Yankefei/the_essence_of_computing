@@ -867,8 +867,14 @@ private:
                     left_res.first - right_res.first < 2 :
                     right_res.first - left_res.first < 2;
         
+        bool is_sort = true;
+        if (ptr->left_tree_)
+            is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+        if (ptr->right_tree_)
+            is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+
         return BalRes(alg::max(left_res.first, right_res.first) + 1,
-                            res && left_res.second && right_res.second);
+                            is_sort && res && left_res.second && right_res.second);
     }
 
     static Node* first(Node* ptr)

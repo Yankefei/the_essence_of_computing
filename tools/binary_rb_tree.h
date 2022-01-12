@@ -19,12 +19,19 @@ namespace tools
 namespace rb_tree_1
 {
 
+enum class Dir
+{
+    Unknown = 0,
+    Left,
+    Right
+};
 
 template<typename T>
 struct _RbNode
 {
     _RbNode() = default;
     _RbNode(const T&val) : data_(val) {}
+    _RbNode(const T&val, Dir dir) : data_(val), color_(dir) {}
 
     _RbNode* left_tree_{nullptr};
     _RbNode* right_tree_{nullptr};
@@ -77,6 +84,13 @@ public:
         return static_cast<Node*>(p);
     }
 
+    Node* buy_node(const T& val, Color c)
+    {
+        Node* ptr = buy_node(val);
+        ptr->color_ = c;
+        return ptr;
+    }
+
     void free_node(Node* ptr)
     {
         rebind_traits::destroy(_m_impl, ptr);
@@ -112,20 +126,17 @@ public:
     // 自顶向下插入
     bool insert(const T& val)
     {
-        return insert(&_m_impl._root, val);
+        return insert(_m_impl._root, val);
     }
 
     // 自顶向下删除
     bool remove(const T& val)
     {
-
+        return remove(_m_impl._root, val);
     }
 
-
     bool is_rb_tree()
-    {
-        if (_m_impl._root == nullptr) return true;
-        
+    {   
         Node* read_root = _m_impl._root->right_tree_;
         if (read_root == nullptr) return true;
 
@@ -136,20 +147,177 @@ public:
 
     void in_order()
     {
-        if (_m_impl._root != nullptr)
-            in_order(_m_impl._root->right_tree_);
+        in_order(_m_impl._root->right_tree_);
     }
 
     void print_tree()
     {
-        if (_m_impl._root != nullptr)
-            draw_tree<Node>(_m_impl._root->right_tree_);
+        draw_tree<Node>(_m_impl._root->right_tree_);
     }
 
 private:
-    bool insert(Node**, const T& val)
+    // 自顶向下 非递归
+    bool insert(Node* root, const T& val)
     {
+        Node* ptr = root->right_tree_;
+        Node* pa = root;   // 父节点
+        if (ptr == nullptr)
+        {
+            pa->right_tree_ = buy_node(val);
+            return true;
+        }
+        Node* gptr = root; // 祖父节点
+        Node* _gptr = root; // 曾祖父节点
+
+        Dir insert_dir = Dir::Unknown;
+        _gptr = gptr;  gptr = pa; pa = ptr;  // 更新节点
+        while(ptr != nullptr)
+        {
+            if (alg::gt(ptr->data_, val))
+            {
+                ptr = ptr->left_tree_;
+                if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
+                {
+                    ptr->left_tree_->color_ = Color::Black;
+                    ptr->right_tree_->color_ = Color::Black;
+                    ptr->color_ = Color::Red;
+                    balance_check(&ptr, &pa, &gptr, _gptr, val);
+                }
+                
+                insert_dir = Dir::Left;
+            }
+            else if (alg::le(ptr->data_, val))
+            {
+                ptr = ptr->right_tree_;
+                if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
+                {
+                    ptr->left_tree_->color_ = Color::Black;
+                    ptr->right_tree_->color_ = Color::Black;
+                    ptr->color_ = Color::Red;
+                    balance_check(&ptr, &pa, &gptr, _gptr, val);
+                }
+                insert_dir = Dir::Right;
+            }
+            else
+            {
+                return false;
+            }
+
+            _gptr = gptr;  gptr = pa; pa = ptr;
+        }
         
+        // ptr == nullptr
+        if (insert_dir == Dir::Left)
+        {
+            ptr = buy_node(val, Color::Red);
+            pa->left_tree_ = ptr;
+        }
+        else
+        {
+            ptr = buy_node(val, Color::Red);
+            pa->right_tree_ = ptr;
+        }
+
+        // 可能存在两个红色节点相连
+        // check
+        if (pa->color_ == Color::Red)
+            balance_check(&ptr, &pa, &gptr, _gptr, val);
+
+        return true;    
+    }
+
+    bool remove(Node* ptr, const T& val)
+    {
+
+    }
+
+    // check p_ptr和 p_pa 是否同时为red节点
+    void balance_check(Node** p_ptr, Node** p_pa, Node** p_gptr, Node* p__gptr, const T& val)
+    {
+        Node* _p_ptr = *p_ptr;
+        Node* _p_pa = *p_pa;
+        Node* _p_gptr = *p_gptr;
+        if (_p_ptr->color_ == Color::Red && _p_pa->color_ == Color::Red)
+        {
+            assert(_p_gptr->color_ == Color::Black);
+            Dir __gptr_dir = alg::gt(p__gptr->data_, _p_gptr->data_) ? Dir::Left : Dir::Right;
+            if (alg::gt(_p_gptr->data_, _p_ptr->data_))
+            {
+                // 左旋转
+                if (alg::gt(_p_ptr->data_, _p_ptr->data_)) // 单旋转
+                {
+                    if (__gptr_dir == Dir::Left)
+                        p__gptr->left_tree_ = SignalRotateLeft(_p_gptr);
+                    else
+                        p__gptr->right_tree_ = SignalRotateLeft(_p_gptr);
+                }
+                else // 双旋转
+                {
+                    if (__gptr_dir == Dir::Left)
+                        p__gptr->left_tree_ = doubleRotateLeft(_p_gptr);
+                    else
+                        p__gptr->right_tree_ = doubleRotateLeft(_p_gptr);
+                }
+            }
+            else
+            {
+                // 右旋转
+                if (alg::gt(_p_ptr->data_, _p_ptr->data_)) // 双旋转
+                {
+                    if (__gptr_dir == Dir::Left)
+                        p__gptr->left_tree_ = SignalRotateRight(_p_gptr);
+                    else
+                        p__gptr->right_tree_ = SignalRotateRight(_p_gptr);
+                }
+                else  // 单旋转
+                {
+                    if (__gptr_dir == Dir::Left)
+                        p__gptr->left_tree_ = doubleRotateRight(_p_gptr);
+                    else
+                        p__gptr->right_tree_ = doubleRotateRight(_p_gptr);
+                }
+            }
+
+            // 还原根节点颜色
+            _m_impl._root->right_tree_->color_ = Color::Black;
+        }
+    }
+
+    // 传参为祖父节点指针
+    Node* SignalRotateLeft(Node* gptr)
+    {
+        Node* pa = gptr->left_tree_;
+        gptr->left_tree_ = pa->right_tree_;
+        pa->right_tree_ = gptr;
+        
+        gptr->color_ = Color::Red;
+        pa->color_ = Color::Black;
+
+        return pa;
+    }
+
+    Node* SignalRotateRight(Node* gptr)
+    {
+        Node* pa = gptr->right_tree_;
+        gptr->right_tree_ = pa->left_tree_;
+        pa->left_tree_ = gptr;
+
+        gptr->color_ = Color::Red;
+        pa->color_ = Color::Black;
+
+        return pa;
+    }
+
+    Node* doubleRotateLeft(Node* gptr)
+    {
+        SignalRotateRight(gptr->left_tree_);
+        return SignalRotateLeft(gptr);
+    }
+
+    Node* doubleRotateRight(Node* gptr)
+    {
+        SignalRotateLeft(gptr->right_tree_);
+        return SignalRotateRight(gptr);
     }
 
     using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;
@@ -178,7 +346,13 @@ private:
 
             if (l_info.second != r_info.second) break;
 
-            res.first = true;
+            bool is_sort = true;
+            if (ptr->left_tree_)
+                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+            if (ptr->right_tree_)
+                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+
+            res.first = is_sort;
             res.second = l_info.second + (c == Color::Black ? 1 : 0);
         } while (false);
 
