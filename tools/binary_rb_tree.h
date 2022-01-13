@@ -174,12 +174,22 @@ private:
         {
             if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
             {
+                // 这里是保证每一个节点到Null指针的路径上黑色节点个数相同的保证
                 ptr->left_tree_->color_ = Color::Black;
                 ptr->right_tree_->color_ = Color::Black;
                 ptr->color_ = Color::Red;
-                balance_check(&ptr, &pa, &gptr, _gptr, val);
+                balance_check(ptr, pa, gptr, _gptr, val);
+                
+                // 还原根节点颜色, 只有在父节点是root的情况下才可能出现
+                // pa在balance_check之后可能会被改变，不过这里仅仅使用值做判断
+                if (pa == _m_impl._root)
+                    _m_impl._root->right_tree_->color_ = Color::Black;
             }
 
+            // 如果经过 balance_check之后, 理论上下面的值都可能会被修改
+            // 该算法之所以正确，是在于: 经过了处理后，ptr会从原来gptr的位置继续向下遍历
+            // 遍历的过程，一定不会出现需要再次 balance_check的场景，随着ptr的遍历
+            // _gptr, gptr, pa 等指针的值也会慢慢全部被替换为正确的值，后面的逻辑也就保证了正确
             _gptr = gptr;  gptr = pa; pa = ptr;
 
             if (alg::gt(ptr->data_, val))
@@ -199,6 +209,7 @@ private:
         }
         
         // ptr == nullptr
+        // 默认初始插入节点颜色为 Red
         if (insert_dir == Dir::Left)
         {
             ptr = buy_node(val, Color::Red);
@@ -211,9 +222,8 @@ private:
         }
 
         // 可能存在两个红色节点相连
-        // check
         if (pa->color_ == Color::Red)
-            balance_check(&ptr, &pa, &gptr, _gptr, val);
+            balance_check(ptr, pa, gptr, _gptr, val);
 
         return true;    
     }
@@ -224,54 +234,55 @@ private:
     }
 
     // check p_ptr和 p_pa 是否同时为red节点
-    void balance_check(Node** p_ptr, Node** p_pa, Node** p_gptr, Node* p__gptr, const T& val)
+    void balance_check(Node* ptr, Node* pa, Node* gptr, Node* _gptr, const T& val)
     {
-        Node* _p_ptr = *p_ptr;
-        Node* _p_pa = *p_pa;
-        Node* _p_gptr = *p_gptr;
-        if (_p_ptr->color_ == Color::Red && _p_pa->color_ == Color::Red)
+        if (ptr->color_ == Color::Red && pa->color_ == Color::Red)
         {
-            assert(_p_gptr->color_ == Color::Black);
-            Dir __gptr_dir = alg::gt(p__gptr->data_, _p_gptr->data_) ? Dir::Left : Dir::Right;
-            if (alg::gt(_p_gptr->data_, _p_ptr->data_))
+            assert(gptr->color_ == Color::Black);
+            // 如果曾祖父节点是根节点，那么默认是右边
+            // 该判断位于ptr和pa节点为红色的情况下，在程序一开始的过程中，也就是 gptr和_gptr都是
+            // 根节点， 是不可能进入到这里的。
+            Dir _gptr_dir = Dir::Right;
+            if (_gptr != _m_impl._root)
+                _gptr_dir = alg::gt(_gptr->data_, gptr->data_) ? Dir::Left : Dir::Right;
+
+            if (alg::gt(gptr->data_, ptr->data_))
             {
                 // 左旋转
-                if (alg::gt(_p_pa->data_, _p_ptr->data_)) // 单旋转
+                if (alg::gt(pa->data_, ptr->data_)) // 单旋转
                 {
-                    if (__gptr_dir == Dir::Left)
-                        p__gptr->left_tree_ = SignalRotateLeft(_p_gptr);
+                    if (_gptr_dir == Dir::Left)
+                        _gptr->left_tree_ = SignalRotateLeft(gptr);
                     else
-                        p__gptr->right_tree_ = SignalRotateLeft(_p_gptr);
+                        _gptr->right_tree_ = SignalRotateLeft(gptr);
                 }
                 else // 双旋转
                 {
-                    if (__gptr_dir == Dir::Left)
-                        p__gptr->left_tree_ = doubleRotateLeft(_p_gptr);
+                    if (_gptr_dir == Dir::Left)
+                        _gptr->left_tree_ = doubleRotateLeft(gptr);
                     else
-                        p__gptr->right_tree_ = doubleRotateLeft(_p_gptr);
+                        _gptr->right_tree_ = doubleRotateLeft(gptr);
                 }
             }
             else
             {
                 // 右旋转
-                if (alg::le(_p_pa->data_, _p_ptr->data_)) // 单旋转
+                if (alg::le(pa->data_, ptr->data_)) // 单旋转
                 {
-                    if (__gptr_dir == Dir::Left)
-                        p__gptr->left_tree_ = SignalRotateRight(_p_gptr);
+                    if (_gptr_dir == Dir::Left)
+                        _gptr->left_tree_ = SignalRotateRight(gptr);
                     else
-                        p__gptr->right_tree_ = SignalRotateRight(_p_gptr);
+                        _gptr->right_tree_ = SignalRotateRight(gptr);
                 }
                 else  // 双旋转
                 {
-                    if (__gptr_dir == Dir::Left)
-                        p__gptr->left_tree_ = doubleRotateRight(_p_gptr);
+                    if (_gptr_dir == Dir::Left)
+                        _gptr->left_tree_ = doubleRotateRight(gptr);
                     else
-                        p__gptr->right_tree_ = doubleRotateRight(_p_gptr);
+                        _gptr->right_tree_ = doubleRotateRight(gptr);
                 }
             }
         }
-        // 还原根节点颜色
-        _m_impl._root->right_tree_->color_ = Color::Black;
     }
 
     // 传参为祖父节点指针
