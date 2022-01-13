@@ -9,6 +9,9 @@
 
 #include "binary_tree_util.h"
 
+
+#define DEFAULT_PRINT
+
 namespace tools
 {
 
@@ -146,13 +149,18 @@ void draw_tree(Node* ptr)
         {
 #ifdef HAS_BALANCE
             stream << node.ptr->data_ << static_cast<int32_t>(node.ptr->balance_);
-#else
+#undef DEFAULT_PRINT
+#endif
+
 #ifdef HAS_COLOR
             if (node.ptr->color_ != tools::Color::Black)
                 stream << node.ptr->data_ << "*";
             else
                 stream << node.ptr->data_;
+#undef DEFAULT_PRINT
 #endif
+
+#ifdef DEFAULT_PRINT
             stream << node.ptr->data_;  
 #endif
         }

@@ -170,40 +170,32 @@ private:
         Node* _gptr = root; // 曾祖父节点
 
         Dir insert_dir = Dir::Unknown;
-        _gptr = gptr;  gptr = pa; pa = ptr;  // 更新节点
         while(ptr != nullptr)
         {
+            if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
+            {
+                ptr->left_tree_->color_ = Color::Black;
+                ptr->right_tree_->color_ = Color::Black;
+                ptr->color_ = Color::Red;
+                balance_check(&ptr, &pa, &gptr, _gptr, val);
+            }
+
+            _gptr = gptr;  gptr = pa; pa = ptr;
+
             if (alg::gt(ptr->data_, val))
             {
                 ptr = ptr->left_tree_;
-                if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
-                {
-                    ptr->left_tree_->color_ = Color::Black;
-                    ptr->right_tree_->color_ = Color::Black;
-                    ptr->color_ = Color::Red;
-                    balance_check(&ptr, &pa, &gptr, _gptr, val);
-                }
-                
                 insert_dir = Dir::Left;
             }
             else if (alg::le(ptr->data_, val))
             {
                 ptr = ptr->right_tree_;
-                if (get_color(ptr->left_tree_) == Color::Red && get_color(ptr->right_tree_) == Color::Red)
-                {
-                    ptr->left_tree_->color_ = Color::Black;
-                    ptr->right_tree_->color_ = Color::Black;
-                    ptr->color_ = Color::Red;
-                    balance_check(&ptr, &pa, &gptr, _gptr, val);
-                }
                 insert_dir = Dir::Right;
             }
             else
             {
                 return false;
             }
-
-            _gptr = gptr;  gptr = pa; pa = ptr;
         }
         
         // ptr == nullptr
@@ -244,7 +236,7 @@ private:
             if (alg::gt(_p_gptr->data_, _p_ptr->data_))
             {
                 // 左旋转
-                if (alg::gt(_p_ptr->data_, _p_ptr->data_)) // 单旋转
+                if (alg::gt(_p_pa->data_, _p_ptr->data_)) // 单旋转
                 {
                     if (__gptr_dir == Dir::Left)
                         p__gptr->left_tree_ = SignalRotateLeft(_p_gptr);
@@ -262,14 +254,14 @@ private:
             else
             {
                 // 右旋转
-                if (alg::gt(_p_ptr->data_, _p_ptr->data_)) // 双旋转
+                if (alg::le(_p_pa->data_, _p_ptr->data_)) // 单旋转
                 {
                     if (__gptr_dir == Dir::Left)
                         p__gptr->left_tree_ = SignalRotateRight(_p_gptr);
                     else
                         p__gptr->right_tree_ = SignalRotateRight(_p_gptr);
                 }
-                else  // 单旋转
+                else  // 双旋转
                 {
                     if (__gptr_dir == Dir::Left)
                         p__gptr->left_tree_ = doubleRotateRight(_p_gptr);
@@ -277,10 +269,9 @@ private:
                         p__gptr->right_tree_ = doubleRotateRight(_p_gptr);
                 }
             }
-
-            // 还原根节点颜色
-            _m_impl._root->right_tree_->color_ = Color::Black;
         }
+        // 还原根节点颜色
+        _m_impl._root->right_tree_->color_ = Color::Black;
     }
 
     // 传参为祖父节点指针
@@ -310,13 +301,15 @@ private:
 
     Node* doubleRotateLeft(Node* gptr)
     {
-        SignalRotateRight(gptr->left_tree_);
+        Node* new_p = SignalRotateRight(gptr->left_tree_);
+        gptr->left_tree_ = new_p;
         return SignalRotateLeft(gptr);
     }
 
     Node* doubleRotateRight(Node* gptr)
     {
-        SignalRotateLeft(gptr->right_tree_);
+        Node* new_p = SignalRotateLeft(gptr->right_tree_);
+        gptr->right_tree_ = new_p;
         return SignalRotateRight(gptr);
     }
 
