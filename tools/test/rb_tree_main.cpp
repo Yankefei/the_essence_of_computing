@@ -1,3 +1,4 @@
+#include <iostream>
 #include "stream.h"
 
 #include "binary_rb_tree.h"
@@ -10,6 +11,8 @@ using namespace tools::rb_tree_1;
 int main()
 {
     stream << Boolalpha;
+
+#if 1
     {
         RbTree<int> my_tree;
 
@@ -19,10 +22,23 @@ int main()
         for (auto e : array)
         {
             my_tree.insert(e);
-            stream << "after insert "<< e <<"is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            stream << "after insert "<< e <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
             my_tree.print_tree();
         }
 
+    }
+#endif
+
+    {
+        RbTree<int> my_tree;
+
+        int kx;
+        while(std::cin>>kx, kx != -1)
+        {
+            stream <<my_tree.insert(kx) ;
+            stream << "after insert "<< kx <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            my_tree.print_tree();
+        }
     }
 
     return 0;

@@ -7,6 +7,7 @@
 #include "vector.hpp"
 #include "queue.h"
 #include "algorithm.hpp"
+#include "pair.hpp"
 
 #include "binary_rb_tree_base.h"
 
@@ -105,6 +106,13 @@ class RbTree : protected RbTree_Base<T, Alloc>
     typedef typename RbTree_Base<T, Alloc>::Node Node;
     typedef Node*  Root;
 
+    enum class Dir
+    {
+        Unknown = 0,
+        Left = 1,
+        Right = 2
+    };
+
 public:
     using RbTree_Base<T, Alloc>::buy_node;
     using RbTree_Base<T, Alloc>::free_node;
@@ -123,10 +131,22 @@ public:
         free_node(_m_impl._root);   
     }
 
-    // 自顶向下插入
-    bool insert(const T& val)
+    // 自顶向下插入 非递归
+    bool _insert(const T& val)
     {
         return insert(_m_impl._root, val);
+    }
+
+    // 自顶向下插入 递归
+    bool insert(const T&val)
+    {
+        Node* res = insert3(_m_impl._root->right_tree_, val);
+        if (res == nullptr)
+            return false;
+
+        res->color_ = Color::Black;
+        _m_impl._root->right_tree_ = res;
+        return true;
     }
 
     // 自顶向下删除
@@ -157,6 +177,7 @@ public:
 
 private:
     // 自顶向下 非递归
+    // 将向下的分解和向上的旋转放在了一起处理, 和下面的递归程序截然不同
     bool insert(Node* root, const T& val)
     {
         Node* ptr = root->right_tree_;
@@ -183,7 +204,8 @@ private:
                 // 还原根节点颜色, 只有在父节点是root的情况下才可能出现
                 // pa在balance_check之后可能会被改变，不过这里仅仅使用值做判断
                 if (pa == _m_impl._root)
-                    _m_impl._root->right_tree_->color_ = Color::Black;
+                    ptr->color_ = Color::Black;
+                    //_m_impl._root->right_tree_->color_ = Color::Black;
             }
 
             // 如果经过 balance_check之后, 理论上下面的值都可能会被修改
@@ -225,7 +247,7 @@ private:
         if (pa->color_ == Color::Red)
             balance_check(ptr, pa, gptr, _gptr, val);
 
-        return true;    
+        return true;
     }
 
     bool remove(Node* ptr, const T& val)
@@ -233,7 +255,232 @@ private:
 
     }
 
+    // 自顶向下 递归
+    // 开始向下递归时, 分界4-节点
+    // 返回向上递归时, 判断节点连接, 进行旋转
+    // 本函数在退出递归时将单旋转和双旋转分开考虑
+    Node* insert3(Node* ptr, const T&val)
+    {
+        if (ptr == nullptr)
+        {
+            ptr = buy_node(val, Color::Red);
+            return ptr;
+        }
+
+        if (get_color(ptr->left_tree_) == Color::Red &&
+            get_color(ptr->right_tree_) == Color::Red)
+        {
+            ptr->color_ = Color::Red;
+            ptr->left_tree_->color_ = Color::Black;
+            ptr->right_tree_->color_ = Color::Black;
+        }
+
+        Node* res = nullptr;
+        do
+        {
+            if (alg::gt(ptr->data_, val))
+            {
+                res = insert3(ptr->left_tree_, val);
+                if (res == nullptr) break;
+
+                // 先将下面返回的指针接到现有的ptr上
+                if (res != ptr->left_tree_)
+                    ptr->left_tree_ = res;
+
+                /*关键:  判断是否应该单旋转或者双旋转，ptr必须在顶部位置*/
+                if (res->color_ == Color::Red)
+                {
+                    if (res->left_tree_ && res->left_tree_->color_ == Color::Red)
+                    {
+                        // 单循环
+                        res = SignalRotateLeft(ptr);
+                    }
+                    else if (res->right_tree_ && res->right_tree_->color_ == Color::Red)
+                    {
+                        // 双循环
+                        res = doubleRotateLeft(ptr);
+                    }
+                }
+
+                // 如果ptr没有发生改变, 那么应该照常返回
+                if (ptr->left_tree_ == res)
+                {
+                    res = ptr; // 正常返回 ptr
+                }
+            }
+            else if (alg::le(ptr->data_, val))
+            {
+                res = insert3(ptr->right_tree_, val);
+                if (res == nullptr) break;
+
+                if (res != ptr->right_tree_)
+                    ptr->right_tree_ = res;
+
+                // 这里的res就相当于ptr 的新下级节点
+                if (res->color_ == Color::Red)
+                {
+                    if (res->left_tree_ && res->left_tree_->color_ == Color::Red)
+                    {
+                        res = doubleRotateRight(ptr);
+                    }
+                    else if (res->right_tree_ && res->right_tree_->color_ == Color::Red)
+                    {
+                        res = SignalRotateRight(ptr);
+                    }
+                }
+
+                if (ptr->right_tree_ == res)
+                {
+                    res = ptr; // 正常返回 ptr
+                }
+            }
+        }while(false);
+
+        return res;
+    }
+
+#if 0
+    enum class NodeType
+    {
+        THIS,   // 当前节点
+        SON,    // 子节点
+        G_SON   // 孙节点
+    };
+
+    // 自顶向下 递归
+    // 开始向下递归时, 分界4-节点
+    // 返回向上递归时, 判断节点连接, 进行旋转
+    // 本函数在退出递归时同时考虑处理单旋转和双旋转，代码逻辑过于复杂，停止调试
+    using ResType = Pair<Node*, NodeType>;
+    ResType insert2(Node* ptr, Node* f_ptr, const T&val)
+    {
+        if (ptr == nullptr)
+        {
+            ptr = buy_node(val, Color::Red); // 插入一定是一棵红色节点
+            return ResType{ptr, NodeType::G_SON};  // 对于旋转来说，相当于返回孙子节点, 统一处理
+        }
+
+        if (get_color(ptr->left_tree_) == Color::Red &&
+            get_color(ptr->right_tree_) == Color::Red)
+        {
+            ptr->color_ = Color::Red;
+            ptr->left_tree_->color_ = Color::Black;
+            ptr->right_tree_->color_ = Color::Black;
+        }
+
+        ResType res{ptr, NodeType::THIS};
+        do
+        {
+            if (alg::gt(ptr->data_, val))
+            {
+                res = insert2(ptr->left_tree_, ptr, val);
+                if (res.first == nullptr) break;
+
+                // 这里的res就相当于ptr 的新下级节点
+                if (ptr->color_ == Color::Red && res.first->color_ == Color::Red)
+                {
+                    // assert(res.first == ptr->left_tree_); // 不可能连续三个节点都是红色的
+                    res = balance_check2(res.first, ptr, f_ptr, val);
+                }
+
+                switch (res.second)
+                {
+                    case NodeType::THIS:
+                    {
+                        break;
+                    }
+                    case NodeType::SON:
+                    {
+                        res.second = NodeType::G_SON;
+                        break;
+                    }
+                    case NodeType::G_SON:
+                    {
+                        ptr->left_tree_ = res.first;
+                        res.first = ptr;
+                        res.second = NodeType::THIS;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            else if (alg::le(ptr->data_, val))
+            {
+                res = insert2(ptr->right_tree_, ptr, val);
+                if (res.first == nullptr) break;
+
+                if (ptr->color_ == Color::Red && res.first->color_ == Color::Red)
+                {
+                    // assert(res.first != ptr->right_tree_); // 不可能连续三个节点都是红色的
+                    if (ptr->right_tree_ == nullptr)
+                    {
+                        // todo 需要考虑如果在双旋转时，pr->right_tree是叶子节点的情况
+                    }
+                    res = balance_check2(res.first, ptr, f_ptr, val);
+                }
+
+                switch (res.second)
+                {
+                    case NodeType::THIS:
+                    {
+                        break;
+                    }
+                    case NodeType::SON:
+                    {
+                        res.second = NodeType::G_SON;
+                        break;
+                    }
+                    case NodeType::G_SON:
+                    {
+                        ptr->right_tree_ = res.first;
+                        res.first = ptr;
+                        res.second = NodeType::THIS;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+
+        }while(false);
+
+        return res;
+    }
+
+    // 返回新的根节点
+    ResType balance_check2(Node* ptr, Node* pa, Node* gptr, const T& val)
+    {
+        ResType res = {nullptr, NodeType::SON};
+        assert(gptr->color_ == Color::Black);
+        // 左旋转
+        if (alg::gt(gptr->data_, ptr->data_))
+        {
+            if (alg::gt(pa->data_, ptr->data_)) // 单旋转
+                res.first = SignalRotateLeft(gptr);
+            else
+            {
+                res.first = doubleRotateLeft(gptr);
+                res.second = NodeType::G_SON;
+            }
+        }
+        else // 右旋转
+        {
+            if (alg::le(pa->data_, ptr->data_)) // 单旋转
+                res.first = SignalRotateRight(gptr);
+            else
+            {
+                res.first = doubleRotateRight(gptr);
+                res.second = NodeType::G_SON;
+            }
+        }
+
+        return res;
+    }
+#endif
+
     // check p_ptr和 p_pa 是否同时为red节点
+    // 将所有的单旋转和双旋转同时进行考虑
     void balance_check(Node* ptr, Node* pa, Node* gptr, Node* _gptr, const T& val)
     {
         if (ptr->color_ == Color::Red && pa->color_ == Color::Red)
