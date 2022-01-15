@@ -32,7 +32,7 @@ struct _RbNode
 {
     _RbNode() = default;
     _RbNode(const T&val) : data_(val) {}
-    _RbNode(const T&val, Dir dir) : data_(val), color_(dir) {}
+    _RbNode(const T&val, Color c) : data_(val), color_(c) {}
 
     _RbNode* left_tree_{nullptr};
     _RbNode* right_tree_{nullptr};
@@ -149,15 +149,16 @@ public:
     }
 
     // 自顶向下删除 递归
+    // 发现了一个神奇的现象，任何删除操作，即使没有找到目标元素，也会导致整个rb_tree的染色发生变化
+    // 但依然能保持rb_tree的特性
     bool remove(const T& val)
     {
         // 先进行变换， 在结束后，将根节点的颜色变为黑色即可
-        if (!remove2(_m_impl._root->right_tree_, val))
-            return false;
+        bool res = remove2(_m_impl._root->right_tree_, val);
         
         if (_m_impl._root->right_tree_)
             _m_impl._root->right_tree_->color_ = Color::Black;
-        return true;
+        return res;
     }
 
     bool is_rb_tree()
@@ -172,7 +173,7 @@ public:
 
     void in_order()
     {
-        in_order(_m_impl._root->right_tree_);
+        _InOrder(_m_impl._root->right_tree_);
     }
 
     void print_tree()
@@ -368,93 +369,106 @@ private:
         }
         else
         {
+            Node* pa = ptr; // 设置pa是ptr的父指针，用来连接发生变更的子节点
+            Node* _ptr = nullptr; // 代替ptr记录状态， ptr无法被复用
+            Node* old_ptr = ptr;
+            Dir dir_change = Dir::Unknown; // 控制当前节点与父指针的方向
             if ((ptr->left_tree_ != nullptr && ptr->right_tree_ != nullptr) ||
                 ptr->right_tree_ != nullptr)
             {
-                Node* pa = ptr; // 设置pa是ptr的父指针，用来连接发生变更的子节点
-                Node* old_ptr = ptr;
-                bool dir_change = false;
                 if (search_for_delete_max(ptr))
                 {
-                    ptr = ptr->right_tree_->right_tree_; // 下面复用ptr指针
                     pa = ptr->right_tree_;
+                    _ptr = ptr->right_tree_->right_tree_;
                 }
                 else
-                    ptr = ptr->right_tree_;
-                while(ptr->left_tree_)
+                    _ptr = ptr->right_tree_;
+                while(_ptr->left_tree_)
                 {
-                    dir_change = true;
-                    if (search_for_delete_min(ptr))
+                    if (search_for_delete_min(_ptr))
                     {
-                        pa->left_tree_ = ptr; // 将变更的ptr指针进行记录
-                        pa = ptr->left_tree_;  // 更新父指针
-                        ptr = ptr->left_tree_->left_tree_;
+                        if (dir_change == Dir::Unknown)
+                        {
+                            pa->right_tree_ = _ptr;
+                            dir_change = Dir::Left;
+                        }
+                        else
+                            pa->left_tree_ = _ptr;
+                        pa = _ptr->left_tree_;  // 更新父指针
+                        _ptr = _ptr->left_tree_->left_tree_;
                     }
                     else
                     {
-                        pa = ptr;
-                        ptr = ptr->left_tree_;
+                        if (dir_change == Dir::Unknown)
+                            dir_change = Dir::Left;
+                        pa = _ptr;
+                        _ptr = _ptr->left_tree_;
                     }
                 }
-                old_ptr->data_ = ptr->data_;
+                old_ptr->data_ = _ptr->data_;
 
                 // 将删除目标设置为ptr节点
-                if (!remove2(ptr, pa->data_)) return false;
+                if (!remove2(_ptr, _ptr->data_)) return false;
                 else
                 {
-                    if (!dir_change)
-                        pa->right_tree_ = ptr;
+                    if (dir_change == Dir::Unknown)
+                        pa->right_tree_ = _ptr;
                     else
-                        pa->left_tree_ = ptr; // 最后还是更新父节点的左子树，左子树为更新后的值
+                        pa->left_tree_ = _ptr; // 最后还是更新父节点的左子树，左子树为更新后的值
                 }
                 return true;
             }
             else if (ptr->left_tree_ != nullptr)
             {
-                Node* pa = ptr; 
-                Node* old_ptr = ptr;
-                bool dir_change = false;
                 if (search_for_delete_min(ptr)) // 这里的ptr如果修改了，可以通过引用让上层知道
                 {
-                    ptr = ptr->left_tree_->left_tree_; // 下面复用ptr指针
                     pa = ptr->left_tree_;  // 更新成ptr最新的父指针
+                    _ptr = ptr->left_tree_->left_tree_;
                 }
                 else
                 {
-                    ptr = ptr->left_tree_;
+                    _ptr = ptr->left_tree_;
                 }
 
-                while(ptr->right_tree_) // 当右子节点存在时，再进行接下来的处理
+                while(_ptr->right_tree_) // 当右子节点存在时，再进行接下来的处理
                 {
-                    dir_change = true;
-                    if (search_for_delete_max(ptr))
+                    if (search_for_delete_max(_ptr))
                     {
-                        pa->right_tree_ = ptr; // 更新变更的ptr指针的父节点
-                        pa = ptr->right_tree_;
-                        ptr = ptr->right_tree_->right_tree_;
+                        if (dir_change == Dir::Unknown)
+                        {
+                            pa->left_tree_ = _ptr;
+                            dir_change = Dir::Right;
+                        }
+                        else
+                            pa->right_tree_ = _ptr; // 更新变更的ptr指针的父节点
+                        pa = _ptr->right_tree_;
+                        _ptr = _ptr->right_tree_->right_tree_;
                     }
                     else
                     {
-                        pa = ptr;
-                        ptr = ptr->right_tree_;
+                        if (dir_change == Dir::Unknown)
+                            dir_change = Dir::Right;
+                        pa = _ptr;
+                        _ptr = _ptr->right_tree_;
                     }
                 }
-                old_ptr->data_ = ptr->data_;
+                old_ptr->data_ = _ptr->data_;
                 // 将删除目标设置为ptr节点
-                if (!remove2(ptr, ptr->data_)) return false;
+                if (!remove2(_ptr, _ptr->data_)) return false;
                 else
                 {
                      // 最后还是更新父节点的左子树，左子树为更新后的值
-                    if (!dir_change)
-                        pa->left_tree_ = ptr;
+                    if (dir_change == Dir::Unknown)
+                        pa->left_tree_ = _ptr;
                     else
-                        pa->right_tree_ = ptr;
+                        pa->right_tree_ = _ptr;
                 }
                 return true;
             }
             else
             {
-                assert(ptr->color_ == Color::Red);
+                if (ptr != _m_impl._root->right_tree_)
+                    assert(ptr->color_ == Color::Red);
                 free_node(ptr);
                 ptr = nullptr;
                 return true;
@@ -474,37 +488,53 @@ private:
             Node* l_ptr = ptr->left_tree_;
             if (l_ptr->color_ == Color::Red)
                 break;  // 如果左子节点已经是红色, 直接返回
-            else
-            {
-                // 只要左子节点为黑，那么如果父节点非空，则右子节点必须是非空的, 否则违反了rb树的性质
-                Node* r_ptr = ptr->right_tree_;
-                assert(r_ptr != nullptr);
 
-                Color r_l_c = get_color(r_ptr->left_tree_);
-                Color r_r_c = get_color(r_ptr->right_tree_);
-                // 按照该算法，父节点只能是红色，因为这里的父节点就是上一次处理完毕的左子节点
-                // 对于根节点，也可以使用该算法进行处理，做复用，但是最后必须将新跟节点的值设置为 Black
-                // 父节点是红色，右子树只能是黑色
-                if (r_l_c == Color::Black && r_r_c == Color::Black)
-                {
-                    // 将父节点，左右子节点共同组成一个4-节点
-                    ptr->color_ = Color::Black;
-                    l_ptr->color_ = Color::Red;
-                    r_ptr->color_ = Color::Red;
-                }
-                else if (r_l_c == Color::Red) // r_r_c为红 或 r_r_c 为黑 两种情况
-                {
-                    // 进行双旋转
-                    ptr = doubleRotateRightForRemove(ptr);
-                    res = true;
-                }
-                else // 仅包含 r_r_c 为红，r_l_c 为黑的情况
-                {
-                    // 进行单旋转
-                    ptr = SignalRotateRightForRemove(ptr);
-                    ChangeColorAfterRemoveRightRotate(ptr);
-                    res = true;
-                }
+            // 如果左子节点的子节点有红色，说明左子节点是3-节点或者4-节点，直接返回
+            if (l_ptr->left_tree_ != nullptr  && l_ptr->left_tree_->color_ == Color::Red ||
+                l_ptr->right_tree_ != nullptr && l_ptr->right_tree_->color_ == Color::Red)
+                break;
+
+            // 只要左子节点为黑，那么如果父节点非空，则右子节点必须是非空的, 否则违反了rb树的性质
+            Node* r_ptr = ptr->right_tree_;
+            assert(r_ptr != nullptr);
+
+            //父节点可能是黑色的情况，因为有可能兄弟节点T是红色，需要旋转处理
+            if (r_ptr->color_ == Color::Red)
+            {
+                ptr = SignalRotateRightForRemove(ptr);
+                // 需要单独重设颜色
+                ptr->color_ = Color::Black;
+                Node* n_l_ptr = ptr->left_tree_;
+                n_l_ptr->color_ = Color::Black;
+                n_l_ptr->left_tree_->color_ = Color::Red;
+                n_l_ptr->right_tree_->color_ = Color::Red;
+                res = true;
+                break;
+            }
+
+            Color r_l_c = get_color(r_ptr->left_tree_);
+            Color r_r_c = get_color(r_ptr->right_tree_);
+            // 对于根节点，也可以使用该算法进行处理，做复用，但是最后必须将新跟节点的值设置为 Black
+            // 父节点是红色，右子树只能是黑色
+            if (r_l_c == Color::Black && r_r_c == Color::Black)
+            {
+                // 将父节点，左右子节点共同组成一个4-节点
+                ptr->color_ = Color::Black;
+                l_ptr->color_ = Color::Red;
+                r_ptr->color_ = Color::Red;
+            }
+            else if (r_l_c == Color::Red) // r_r_c为红 或 r_r_c 为黑 两种情况
+            {
+                // 进行双旋转
+                ptr = doubleRotateRightForRemove(ptr);
+                res = true;
+            }
+            else // 仅包含 r_r_c 为红，r_l_c 为黑的情况
+            {
+                // 进行单旋转
+                ptr = SignalRotateRightForRemove(ptr);
+                ChangeColorAfterRemoveRightRotate(ptr);
+                res = true;
             }
         }while(false);
         return res;
@@ -522,34 +552,51 @@ private:
             Node* r_ptr = ptr->right_tree_;
             if (r_ptr->color_ == Color::Red)
                 break;  // 如果右子节点已经是红色, 直接返回
-            else
-            {
-                Node* l_ptr = ptr->left_tree_;
-                assert(l_ptr != nullptr);
 
-                Color l_l_c = get_color(l_ptr->left_tree_);
-                Color l_r_c = get_color(l_ptr->right_tree_);
-                // 父节点是红色，左子树只能是黑色
-                if (l_l_c == Color::Black && l_r_c == Color::Black)
-                {
-                    // 将父节点，左右子节点共同组成一个4-节点
-                    ptr->color_ = Color::Black;
-                    l_ptr->color_ = Color::Red;
-                    r_ptr->color_ = Color::Red;
-                }
-                else if (l_r_c == Color::Red) // l_l_c为红 或 l_l_c 为黑 两种情况
-                {
-                    // 进行双旋转
-                    ptr = doubleRotateRightForRemove(ptr);
-                    res = true;
-                }
-                else // 仅包含 l_l_c 为红，l_r_c 为黑的情况
-                {
-                    // 进行单旋转
-                    ptr = SignalRotateLeftForRemove(ptr);
-                    ChangeColorAfterRemoveLeftRotate(ptr);
-                    res = true;
-                }
+            // 如果右子节点的子节点有红色，说明右子节点是3-节点或者4-节点，直接返回
+            if (r_ptr->left_tree_ != nullptr  && r_ptr->left_tree_->color_ == Color::Red ||
+                r_ptr->right_tree_ != nullptr && r_ptr->right_tree_->color_ == Color::Red)
+                break;
+
+            Node* l_ptr = ptr->left_tree_;
+            assert(l_ptr != nullptr);
+
+            //父节点可能是黑色的情况，因为有可能兄弟节点T是红色，需要旋转处理
+            if (l_ptr->color_ == Color::Red)
+            {
+                ptr = SignalRotateLeftForRemove(ptr);
+                // 需要单独重设颜色
+                ptr->color_ = Color::Black;
+                Node* n_r_ptr = ptr->right_tree_;
+                n_r_ptr->color_ = Color::Black;
+                n_r_ptr->left_tree_->color_ = Color::Red;
+                n_r_ptr->right_tree_->color_ = Color::Red;
+                res = true;
+                break;
+            }
+
+            Color l_l_c = get_color(l_ptr->left_tree_);
+            Color l_r_c = get_color(l_ptr->right_tree_);
+            // 父节点是红色，左子树只能是黑色
+            if (l_l_c == Color::Black && l_r_c == Color::Black)
+            {
+                // 将父节点，左右子节点共同组成一个4-节点
+                ptr->color_ = Color::Black;
+                l_ptr->color_ = Color::Red;
+                r_ptr->color_ = Color::Red;
+            }
+            else if (l_r_c == Color::Red) // l_l_c为红 或 l_l_c 为黑 两种情况
+            {
+                // 进行双旋转
+                ptr = doubleRotateLeftForRemove(ptr);
+                res = true;
+            }
+            else // 仅包含 l_l_c 为红，l_r_c 为黑的情况
+            {
+                // 进行单旋转
+                ptr = SignalRotateLeftForRemove(ptr);
+                ChangeColorAfterRemoveLeftRotate(ptr);
+                res = true;
             }
         }while(false);
         return res;
@@ -891,6 +938,16 @@ private:
         if (ptr == nullptr) return Color::Black;  // 约定默认空节点为黑色
 
         return ptr->color_;
+    }
+
+    static void _InOrder(Node* ptr)
+    {
+        if (ptr)
+        {
+            if (ptr->left_tree_) _InOrder(ptr->left_tree_);
+            stream << ptr->data_ << " ";
+            if (ptr->right_tree_) _InOrder(ptr->right_tree_);
+        }
     }
 
     void destory(Node* ptr)

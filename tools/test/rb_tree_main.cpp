@@ -23,23 +23,21 @@ int main()
         {
             my_tree.insert(e);
             stream << "after insert "<< e <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            my_tree.in_order();
             my_tree.print_tree();
         }
-
-    }
-#endif
-
-    {
-        RbTree<int> my_tree;
 
         int kx;
         while(std::cin>>kx, kx != -1)
         {
             stream <<my_tree.remove(kx) ;
-            stream << "after remove "<< kx <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            stream << ", after remove "<< kx <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            my_tree.in_order();
             my_tree.print_tree();
         }
     }
+
+#endif
 
     return 0;
 }
