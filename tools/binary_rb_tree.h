@@ -106,13 +106,6 @@ class RbTree : protected RbTree_Base<T, Alloc>
     typedef typename RbTree_Base<T, Alloc>::Node Node;
     typedef Node*  Root;
 
-    enum class Dir
-    {
-        Unknown = 0,
-        Left = 1,
-        Right = 2
-    };
-
 public:
     using RbTree_Base<T, Alloc>::buy_node;
     using RbTree_Base<T, Alloc>::free_node;
@@ -149,10 +142,22 @@ public:
         return true;
     }
 
-    // 自顶向下删除
-    bool remove(const T& val)
+    // 自顶向下删除 非递归
+    bool remove2(const T& val)
     {
         return remove(_m_impl._root, val);
+    }
+
+    // 自顶向下删除 递归
+    bool remove(const T& val)
+    {
+        // 先进行变换， 在结束后，将根节点的颜色变为黑色即可
+        if (!remove2(_m_impl._root->right_tree_, val))
+            return false;
+        
+        if (_m_impl._root->right_tree_)
+            _m_impl._root->right_tree_->color_ = Color::Black;
+        return true;
     }
 
     bool is_rb_tree()
@@ -250,13 +255,14 @@ private:
         return true;
     }
 
+    // 自顶向下，非递归
     bool remove(Node* ptr, const T& val)
     {
 
     }
 
     // 自顶向下 递归
-    // 开始向下递归时, 分界4-节点
+    // 开始向下递归时, 分裂4-节点
     // 返回向上递归时, 判断节点连接, 进行旋转
     // 本函数在退出递归时将单旋转和双旋转分开考虑
     Node* insert3(Node* ptr, const T&val)
@@ -339,6 +345,216 @@ private:
         return res;
     }
 
+    // 自顶向下，递归
+    // 本质是: 以删除最小节点为目的的搜索函数
+    bool remove2(Node*& ptr, const T& val)
+    {
+        if (ptr == nullptr) return false;
+
+        if (alg::gt(ptr->data_, val))
+        {
+            // 根据是否旋转，判断下一个值应该如何传递，同时保证引用形参的正确性
+            if (search_for_delete_min(ptr))
+                return remove2(ptr->left_tree_->left_tree_, val);
+            else
+                return remove2(ptr->left_tree_, val);
+        }
+        else if (alg::le(ptr->data_, val))
+        {
+            if (search_for_delete_max(ptr))
+                return remove2(ptr->right_tree_->right_tree_, val);
+            else
+                return remove2(ptr->right_tree_, val);
+        }
+        else
+        {
+            if ((ptr->left_tree_ != nullptr && ptr->right_tree_ != nullptr) ||
+                ptr->right_tree_ != nullptr)
+            {
+                Node* pa = ptr; // 设置pa是ptr的父指针，用来连接发生变更的子节点
+                Node* old_ptr = ptr;
+                bool dir_change = false;
+                if (search_for_delete_max(ptr))
+                {
+                    ptr = ptr->right_tree_->right_tree_; // 下面复用ptr指针
+                    pa = ptr->right_tree_;
+                }
+                else
+                    ptr = ptr->right_tree_;
+                while(ptr->left_tree_)
+                {
+                    dir_change = true;
+                    if (search_for_delete_min(ptr))
+                    {
+                        pa->left_tree_ = ptr; // 将变更的ptr指针进行记录
+                        pa = ptr->left_tree_;  // 更新父指针
+                        ptr = ptr->left_tree_->left_tree_;
+                    }
+                    else
+                    {
+                        pa = ptr;
+                        ptr = ptr->left_tree_;
+                    }
+                }
+                old_ptr->data_ = ptr->data_;
+
+                // 将删除目标设置为ptr节点
+                if (!remove2(ptr, pa->data_)) return false;
+                else
+                {
+                    if (!dir_change)
+                        pa->right_tree_ = ptr;
+                    else
+                        pa->left_tree_ = ptr; // 最后还是更新父节点的左子树，左子树为更新后的值
+                }
+                return true;
+            }
+            else if (ptr->left_tree_ != nullptr)
+            {
+                Node* pa = ptr; 
+                Node* old_ptr = ptr;
+                bool dir_change = false;
+                if (search_for_delete_min(ptr)) // 这里的ptr如果修改了，可以通过引用让上层知道
+                {
+                    ptr = ptr->left_tree_->left_tree_; // 下面复用ptr指针
+                    pa = ptr->left_tree_;  // 更新成ptr最新的父指针
+                }
+                else
+                {
+                    ptr = ptr->left_tree_;
+                }
+
+                while(ptr->right_tree_) // 当右子节点存在时，再进行接下来的处理
+                {
+                    dir_change = true;
+                    if (search_for_delete_max(ptr))
+                    {
+                        pa->right_tree_ = ptr; // 更新变更的ptr指针的父节点
+                        pa = ptr->right_tree_;
+                        ptr = ptr->right_tree_->right_tree_;
+                    }
+                    else
+                    {
+                        pa = ptr;
+                        ptr = ptr->right_tree_;
+                    }
+                }
+                old_ptr->data_ = ptr->data_;
+                // 将删除目标设置为ptr节点
+                if (!remove2(ptr, ptr->data_)) return false;
+                else
+                {
+                     // 最后还是更新父节点的左子树，左子树为更新后的值
+                    if (!dir_change)
+                        pa->left_tree_ = ptr;
+                    else
+                        pa->right_tree_ = ptr;
+                }
+                return true;
+            }
+            else
+            {
+                assert(ptr->color_ == Color::Red);
+                free_node(ptr);
+                ptr = nullptr;
+                return true;
+            }
+        }
+    }
+
+    // 搜索儿子节点中最小节点，并将最小节点的颜色修改为红色
+    // 返回旋转与否的 bool 值
+    bool search_for_delete_min(Node*& ptr)
+    {
+        if (ptr == nullptr || ptr->left_tree_ == nullptr) return false;
+
+        bool res = false;
+        do
+        {
+            Node* l_ptr = ptr->left_tree_;
+            if (l_ptr->color_ == Color::Red)
+                break;  // 如果左子节点已经是红色, 直接返回
+            else
+            {
+                // 只要左子节点为黑，那么如果父节点非空，则右子节点必须是非空的, 否则违反了rb树的性质
+                Node* r_ptr = ptr->right_tree_;
+                assert(r_ptr != nullptr);
+
+                Color r_l_c = get_color(r_ptr->left_tree_);
+                Color r_r_c = get_color(r_ptr->right_tree_);
+                // 按照该算法，父节点只能是红色，因为这里的父节点就是上一次处理完毕的左子节点
+                // 对于根节点，也可以使用该算法进行处理，做复用，但是最后必须将新跟节点的值设置为 Black
+                // 父节点是红色，右子树只能是黑色
+                if (r_l_c == Color::Black && r_r_c == Color::Black)
+                {
+                    // 将父节点，左右子节点共同组成一个4-节点
+                    ptr->color_ = Color::Black;
+                    l_ptr->color_ = Color::Red;
+                    r_ptr->color_ = Color::Red;
+                }
+                else if (r_l_c == Color::Red) // r_r_c为红 或 r_r_c 为黑 两种情况
+                {
+                    // 进行双旋转
+                    ptr = doubleRotateRightForRemove(ptr);
+                    res = true;
+                }
+                else // 仅包含 r_r_c 为红，r_l_c 为黑的情况
+                {
+                    // 进行单旋转
+                    ptr = SignalRotateRightForRemove(ptr);
+                    ChangeColorAfterRemoveRightRotate(ptr);
+                    res = true;
+                }
+            }
+        }while(false);
+        return res;
+    }
+
+
+    // 搜索儿子节点中最大节点，并将最大节点的颜色修改为红色
+    bool search_for_delete_max(Node*& ptr)
+    {
+        if (ptr == nullptr || ptr->right_tree_ == nullptr) return false;
+
+        bool res = false;
+        do
+        {
+            Node* r_ptr = ptr->right_tree_;
+            if (r_ptr->color_ == Color::Red)
+                break;  // 如果右子节点已经是红色, 直接返回
+            else
+            {
+                Node* l_ptr = ptr->left_tree_;
+                assert(l_ptr != nullptr);
+
+                Color l_l_c = get_color(l_ptr->left_tree_);
+                Color l_r_c = get_color(l_ptr->right_tree_);
+                // 父节点是红色，左子树只能是黑色
+                if (l_l_c == Color::Black && l_r_c == Color::Black)
+                {
+                    // 将父节点，左右子节点共同组成一个4-节点
+                    ptr->color_ = Color::Black;
+                    l_ptr->color_ = Color::Red;
+                    r_ptr->color_ = Color::Red;
+                }
+                else if (l_r_c == Color::Red) // l_l_c为红 或 l_l_c 为黑 两种情况
+                {
+                    // 进行双旋转
+                    ptr = doubleRotateRightForRemove(ptr);
+                    res = true;
+                }
+                else // 仅包含 l_l_c 为红，l_r_c 为黑的情况
+                {
+                    // 进行单旋转
+                    ptr = SignalRotateLeftForRemove(ptr);
+                    ChangeColorAfterRemoveLeftRotate(ptr);
+                    res = true;
+                }
+            }
+        }while(false);
+        return res;
+    }
+
 #if 0
     enum class NodeType
     {
@@ -348,7 +564,7 @@ private:
     };
 
     // 自顶向下 递归
-    // 开始向下递归时, 分界4-节点
+    // 开始向下递归时, 分裂4-节点
     // 返回向上递归时, 判断节点连接, 进行旋转
     // 本函数在退出递归时同时考虑处理单旋转和双旋转，代码逻辑过于复杂，停止调试
     using ResType = Pair<Node*, NodeType>;
@@ -569,6 +785,66 @@ private:
         Node* new_p = SignalRotateLeft(gptr->right_tree_);
         gptr->right_tree_ = new_p;
         return SignalRotateRight(gptr);
+    }
+
+    // 专门用于删除时进行旋转, 不修改任何颜色，后面集中处理
+    Node* SignalRotateRightForRemove(Node* gptr)
+    {
+        Node* pa = gptr->right_tree_;
+        gptr->right_tree_ = pa->left_tree_;
+        pa->left_tree_ = gptr;
+        return pa;
+    }
+
+    // 针对右单旋转之后的颜色修改
+    void ChangeColorAfterRemoveRightRotate(Node* gptr)
+    {
+        gptr->color_ = Color::Red;
+        gptr->left_tree_->left_tree_->color_ = Color::Red;
+        gptr->left_tree_->color_ = Color::Black;
+        gptr->right_tree_->color_ = Color::Black;
+    }
+
+    // 专门用于删除时进行旋转, 不修改任何颜色，后面集中处理
+    Node* SignalRotateLeftForRemove(Node* gptr)
+    {
+        Node* pa = gptr->left_tree_;
+        gptr->left_tree_ = pa->right_tree_;
+        pa->right_tree_ = gptr;
+        return pa;
+    }
+
+    // 针对左单旋转之后的颜色修改
+    void ChangeColorAfterRemoveLeftRotate(Node* gptr)
+    {
+        gptr->color_ = Color::Red;
+        gptr->right_tree_->right_tree_->color_ = Color::Red;
+        gptr->left_tree_->color_ = Color::Black;
+        gptr->right_tree_->color_ = Color::Black;
+    }
+
+    // 专门用于删除时进行旋转, 包含了颜色的处理
+    Node* doubleRotateRightForRemove(Node* gptr)
+    {
+        Node* new_p = SignalRotateLeftForRemove(gptr->right_tree_);
+        gptr->right_tree_ = new_p;
+        new_p = SignalRotateRightForRemove(gptr);
+
+        ChangeColorAfterRemoveRightRotate(new_p);
+
+        return new_p;
+    }
+
+    // 专门用于删除时进行旋转, 包含了颜色的处理
+    Node* doubleRotateLeftForRemove(Node* gptr)
+    {
+        Node* new_p = SignalRotateRightForRemove(gptr->left_tree_);
+        gptr->left_tree_ = new_p;
+        new_p = SignalRotateLeftForRemove(gptr);
+
+        ChangeColorAfterRemoveLeftRotate(new_p);
+
+        return new_p;
     }
 
     using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;

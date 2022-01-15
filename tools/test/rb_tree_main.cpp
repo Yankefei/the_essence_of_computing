@@ -35,8 +35,8 @@ int main()
         int kx;
         while(std::cin>>kx, kx != -1)
         {
-            stream <<my_tree.insert(kx) ;
-            stream << "after insert "<< kx <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
+            stream <<my_tree.remove(kx) ;
+            stream << "after remove "<< kx <<", is_rb_tree ? "<< my_tree.is_rb_tree() << std::endl;
             my_tree.print_tree();
         }
     }
