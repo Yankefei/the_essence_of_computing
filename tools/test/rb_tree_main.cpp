@@ -129,10 +129,10 @@ int main()
         for (int i = 1; i < 10; i ++)
         {
             res = my_tree.remove(i);
-            // {
-            //     stream << i << std::endl;
-            //     my_tree.print_tree();
-            // }
+            {
+                // my_tree.print_tree();
+                // stream <<"remove: "<< i << std::endl;
+            }
             if (!res || !my_tree.is_rb_tree())
             {
                 stream << "remove: "<< i <<"  failed. " << std::endl;
@@ -180,14 +180,15 @@ int main()
         {
             res = my_tree.remove(i);
 
-            // if (i == 34)
+            // if (i == 22 || i == 21)
             // {
-            //     my_tree.print_tree();
+            //     // my_tree.print_tree();
             // }
 
             if (!res || !my_tree.is_rb_tree())
             {
                 stream << "remove: "<< i << " failed. " << std::endl;
+                assert(false);
             }
         }
 
@@ -197,6 +198,7 @@ int main()
             if (!res || !my_tree.is_rb_tree())
             {
                 stream << "remove: "<< i << " failed. " << std::endl;
+                assert(false);
             }
         }
 
@@ -206,6 +208,7 @@ int main()
             if (!res || !my_tree.is_rb_tree())
             {
                 stream << "remove: "<< i <<"  failed. " << std::endl;
+                assert(false);
             }
         }
 
@@ -301,7 +304,7 @@ int main()
     }
 #endif
 
-
+#if 1
     {
         size_t ele_size = 0;
         // Vector<int> array{557, 384, 351, 909, 394, 410, 384, 672, 763, 641, 773,
@@ -320,10 +323,12 @@ int main()
         //                   915, 236, 920, 236, 989, 704, 515, 817, 243, 323, 807, 762, 316,
         //                   826, 62, 685, 162, 179, 865, 454, 844, 239, 365, 935};
         
-        Vector<int> array{386, 40, 488, 278, 853, 640, 876, 349, 397, 655, 899, 215, 70, 627,
-                          754, 204, 953, 108, 403, 202, 756, 306, 556, 636, 157, 645, 905, 707,
-                          125, 702, 269, 544, 737, 707, 873, 499, 565, 765, 572, 810, 916, 457,
-                          989, 381, 188, 514, 193, 905, 345, 678};
+        // Vector<int> array{386, 40, 488, 278, 853, 640, 876, 349, 397, 655, 899, 215, 70, 627,
+        //                   754, 204, 953, 108, 403, 202, 756, 306, 556, 636, 157, 645, 905, 707,
+        //                   125, 702, 269, 544, 737, 707, 873, 499, 565, 765, 572, 810, 916, 457,
+        //                   989, 381, 188, 514, 193, 905, 345, 678};
+        
+        Vector<int> array{394, 202, 725, 429, 245, 455, 44, 478, 748, 112, 710, 70, 762, 559, 849, 333, 291, 878, 500, 804, 564, 597, 895, 508, 360, 371, 949, 351, 256, 996, 663, 523, 620, 610, 786, 1, 38, 449, 191, 972, 712, 25, 802, 118, 490, 459, 398, 289, 994, 942};
         bool res = false;
         RbTree<int> my_tree;
         for (auto& i : array)
@@ -342,7 +347,7 @@ int main()
         // my_tree.print_tree();
         for (auto& i : array)
         {
-            // if (i == 565)
+            // if (i == 559)
             // {
             //     my_tree.print_tree();
             // }
@@ -362,6 +367,7 @@ int main()
         stream << "ele_size: "<< ele_size << std::endl;
         assert(ele_size == 0);
     }
+#endif
 
 #if 1
     {
