@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BINARY_RB_TREE_H_
-#define _TOOLS_BINARY_RB_TREE_H_
+#ifndef _TOOLS_BINARY_RB_TREE_RECURSIVE_H_
+#define _TOOLS_BINARY_RB_TREE_RECURSIVE_H_
 
 #include <memory>
 #include <cassert>
@@ -99,7 +99,7 @@ public:
     }
 };
 
-/*红黑树*/
+/*红黑树 递归版本*/
 template<typename T, typename Alloc = std::allocator<T>>
 class RbTree : protected RbTree_Base<T, Alloc>
 {
@@ -459,12 +459,15 @@ private:
 
     // 自顶向下，递归
     // 本质是: 以删除最小节点为目的的搜索函数
+    // 该算法没有贯彻下游节点变为红色才向下搜索的原则，导致中间出现非常多复杂场景，虽然调试成功
+    // 但是内容混乱，并非一个很好的算法
     bool remove2(Node** _ptr, Node* pptr, Dir dir, const T& val)
     {
         Node* ptr = *_ptr;
         if (ptr == nullptr) return false;
 
         Node* ret_ptr = nullptr; // 记录应该返回给上一层递归的ptr指针
+        bool res = false;
         if (alg::gt(ptr->data_, val))
         {
             // 根据是否旋转，判断下一个值应该如何传递，同时保证引用形参的正确性
@@ -472,32 +475,18 @@ private:
             {
                 pptr = ptr->left_tree_;
                 ptr = ptr->left_tree_->left_tree_;
-                if (!remove2(&ptr, pptr, Dir::Left, val))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
-                else
-                {
-                    pptr->left_tree_ = ptr;
-                }
+                res = remove2(&ptr, pptr, Dir::Left, val);
+                pptr->left_tree_ = ptr;
             }
             else
             {
                 pptr = ptr;
                 ptr = ptr->left_tree_;
-                if (!remove2(&ptr, pptr, Dir::Left, val))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
-                else
-                {
-                    pptr->left_tree_ = ptr;
-                }
+                res = remove2(&ptr, pptr, Dir::Left, val);
+                pptr->left_tree_ = ptr;
             }
             *_ptr = ret_ptr;
-            return true;
+            return res;
         }
         else if (alg::le(ptr->data_, val))
         {
@@ -505,32 +494,18 @@ private:
             {
                 pptr = ptr->right_tree_;  // 更新成ptr最新的父指针
                 ptr = ptr->right_tree_->right_tree_;
-                if (!remove2(&ptr, pptr, Dir::Right, val))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
-                else
-                {
-                    pptr->right_tree_ = ptr;
-                }
+                res = remove2(&ptr, pptr, Dir::Right, val);
+                pptr->right_tree_ = ptr;
             }
             else
             {
                 pptr = ptr;
                 ptr = ptr->right_tree_;
-                if (!remove2(&ptr, pptr, Dir::Right, val))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
-                else
-                {
-                    pptr->right_tree_ = ptr;
-                }
+                res = remove2(&ptr, pptr, Dir::Right, val);
+                pptr->right_tree_ = ptr;
             }
             *_ptr = ret_ptr;
-            return true;
+            return res;
         }
         else
         {
@@ -558,11 +533,16 @@ private:
                     {
                         if (dir_change == Dir::Unknown)
                         {
-                            pptr->right_tree_ = ptr;
+                            // 不相等时，search_for函数内部已经完成了关联
+                            if(tmp == ptr)
+                                pptr->right_tree_ = ptr;
                             dir_change = Dir::Left;
                         }
                         else
-                            pptr->left_tree_ = ptr;
+                        {
+                            if(tmp == ptr)
+                                pptr->left_tree_ = ptr;
+                        }
                         pptr = ptr->left_tree_;  // 更新父指针
                         ptr = ptr->left_tree_->left_tree_;
                     }
@@ -577,21 +557,14 @@ private:
                 old_ptr->data_ = ptr->data_;
 
                 // 将删除目标设置为ptr节点
-                if (!remove2(&ptr, pptr, dir_change == Dir::Unknown ? Dir::Right : Dir::Left, ptr->data_))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
+                res = remove2(&ptr, pptr, dir_change == Dir::Unknown ? Dir::Right : Dir::Left, ptr->data_);
+                // 最后还是更新父节点的左子树，左子树为更新后的值
+                if (dir_change == Dir::Unknown)
+                    pptr->right_tree_ = ptr;
                 else
-                {
-                    // 最后还是更新父节点的左子树，左子树为更新后的值
-                    if (dir_change == Dir::Unknown)
-                        pptr->right_tree_ = ptr;
-                    else
-                        pptr->left_tree_ = ptr;
-                }
+                    pptr->left_tree_ = ptr;
                 *_ptr = ret_ptr;
-                return true;
+                return res;
             }
             else if (ptr->left_tree_ != nullptr)
             {
@@ -613,11 +586,15 @@ private:
                     {
                         if (dir_change == Dir::Unknown)
                         {
-                            pptr->left_tree_ = ptr;
+                            if(tmp == ptr)
+                                pptr->left_tree_ = ptr;
                             dir_change = Dir::Right;
                         }
                         else
-                            pptr->right_tree_ = ptr; // 更新变更的ptr指针的父节点
+                        {
+                            if(tmp == ptr)
+                                pptr->right_tree_ = ptr; // 更新变更的ptr指针的父节点
+                        }
                         pptr = ptr->right_tree_;
                         ptr = ptr->right_tree_->right_tree_;
                     }
@@ -631,21 +608,14 @@ private:
                 }
                 old_ptr->data_ = ptr->data_;
                 // 将删除目标设置为ptr节点
-                if (!remove2(&ptr, pptr, dir_change == Dir::Unknown ? Dir::Left : Dir::Right, ptr->data_))
-                {
-                    *_ptr = ret_ptr;
-                    return false;
-                }
+                res = remove2(&ptr, pptr, dir_change == Dir::Unknown ? Dir::Left : Dir::Right, ptr->data_);
+                    // 最后还是更新父节点的左子树，左子树为更新后的值
+                if (dir_change == Dir::Unknown)
+                    pptr->left_tree_ = ptr;
                 else
-                {
-                     // 最后还是更新父节点的左子树，左子树为更新后的值
-                    if (dir_change == Dir::Unknown)
-                        pptr->left_tree_ = ptr;
-                    else
-                        pptr->right_tree_ = ptr;
-                }
+                    pptr->right_tree_ = ptr;
                 *_ptr = ret_ptr;
-                return true;
+                return res;
             }
             else
             {
@@ -668,10 +638,6 @@ private:
             ptr->right_tree_->color_ = Color::Black;
             ptr = SignalRotateRightForRemove(ptr); 
             ptr->left_tree_->color_ = Color::Red;
-            if (ptr->left_tree_->right_tree_ != nullptr)
-            {
-
-            }
 
             return false;
         }
@@ -684,11 +650,11 @@ private:
     // ptr为后续继续进行处理的新根
     bool search_for_delete_min(Node*& ptr, Node* pptr, Dir dir, Node*& ret_ptr)
     {
+        ret_ptr = ptr;
         if (ptr == nullptr || ptr->left_tree_ == nullptr) return false;
 
         bool res = false;
         bool check = false;
-        ret_ptr = ptr;
         for(;;)
         {
             Node* l_ptr = ptr->left_tree_;
@@ -773,10 +739,10 @@ private:
     // 搜索儿子节点中最大节点，并将最大节点的颜色修改为红色
     bool search_for_delete_max(Node*& ptr, Node* pptr, Dir dir, Node*& ret_ptr)
     {
+        ret_ptr = ptr;
         if (ptr == nullptr || ptr->right_tree_ == nullptr) return false;
 
         bool res = false;
-        ret_ptr = ptr;
         bool check = false;
         for(;;)
         {
