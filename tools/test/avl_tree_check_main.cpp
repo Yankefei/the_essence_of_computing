@@ -12,6 +12,7 @@ using namespace tools;
 
 int main()
 {
+    size_t e_size = 0;
     {
         using namespace tools::avl_tree_1;
         int rang_index = 5;
@@ -28,21 +29,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert2(i);
+                if (my_tree.insert(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove2(i);
+                if (my_tree.remove(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 
@@ -62,21 +66,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert(i);
+                if (my_tree.insert2(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove(i);
+                if (my_tree.remove2(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 
@@ -96,21 +103,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert2(i);
+                if (my_tree.insert2(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove2(i);
+                if (my_tree.remove2(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 
@@ -130,21 +140,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert(i);
+                if (my_tree.insert(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove(i);
+                if (my_tree.remove(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 
@@ -164,21 +177,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert2(i);
+                if (my_tree.insert2(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove2(i);
+                if (my_tree.remove2(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 
@@ -198,21 +214,24 @@ int main()
             AvlTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert(i);
+                if (my_tree.insert(i))
+                    e_size ++;
                 if (!my_tree.is_balance())
                 {
                     stream << "insert: "<< i << " failed. ";
                 }
             }
-            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            stream << "tree hight: "<< my_tree.get_hight() << ", size: "<< e_size << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove(i);
+                if (my_tree.remove(i))
+                    e_size --;
                 if (!my_tree.is_balance())
                 {
                     stream << "remove: "<< i << " failed. ";
                 }
             }
+            assert(e_size == 0);
         }
     }
 

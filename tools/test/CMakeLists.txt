@@ -51,3 +51,9 @@ target_link_libraries(avl_tree_check  tools)
 
 add_executable(rb_tree_main rb_tree_main.cpp)
 target_link_libraries(rb_tree_main  tools)
+
+add_executable(rb_tree_main2 rb_tree_main2.cpp)
+target_link_libraries(rb_tree_main2  tools)
+
+add_executable(rb_tree_check rb_tree_check_main.cpp)
+target_link_libraries(rb_tree_check  tools)
