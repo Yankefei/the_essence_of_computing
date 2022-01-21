@@ -41,75 +41,18 @@ struct _RbNode
 };
 
 
-template<typename T, typename Alloc>
-class RbTree_Base
-{
-public:
-    typedef typename std::allocator_traits<Alloc>::template
-        rebind_alloc<_RbNode<T>> _RbNode_alloc_type;
-
-    typedef typename std::allocator_traits<_RbNode_alloc_type>
-        rebind_traits;
-
-    typedef typename rebind_traits::pointer  pointer;
-
-    typedef _RbNode<T>        Node;
-
-public:
-    struct Base_Impl : public _RbNode_alloc_type
-    {
-        Base_Impl(): _RbNode_alloc_type(), _root()
-        {
-        }
-
-        ~Base_Impl() {}
-
-        Base_Impl(Base_Impl& _x) noexcept
-        {
-            std::swap(_root, _x._root);
-        }
-
-        Node*     _root{nullptr};
-    };
-
-    RbTree_Base() {}
-    ~RbTree_Base() {} // 设置虚函数，Base_Impl 会额外增加8字节内存
-
-public:
-    Base_Impl   _m_impl;
-
-    Node* buy_node(const T& val)
-    {
-        pointer p = rebind_traits::allocate(_m_impl, 1);
-        rebind_traits::construct(_m_impl, p, val);
-        return static_cast<Node*>(p);
-    }
-
-    Node* buy_node(const T& val, Color c)
-    {
-        Node* ptr = buy_node(val);
-        ptr->color_ = c;
-        return ptr;
-    }
-
-    void free_node(Node* ptr)
-    {
-        rebind_traits::destroy(_m_impl, ptr);
-        rebind_traits::deallocate(_m_impl, ptr, 1);
-    }
-};
-
 /*红黑树 递归版本*/
-template<typename T, typename Alloc = std::allocator<T>>
-class RbTree : protected RbTree_Base<T, Alloc>
+template<typename T, template <typename T1> class RbNode = _RbNode, typename Alloc = std::allocator<T>>
+class RbTree : protected RbTree_Base<T, RbNode, Alloc>
 {
-    typedef typename RbTree_Base<T, Alloc>::Node Node;
+    typedef RbTree_Base<T, RbNode, Alloc> RbTreeBase;
+    typedef typename RbTreeBase::Node Node;
     typedef Node*  Root;
 
 public:
-    using RbTree_Base<T, Alloc>::buy_node;
-    using RbTree_Base<T, Alloc>::free_node;
-    using RbTree_Base<T, Alloc>::_m_impl;
+    using RbTreeBase::buy_node;
+    using RbTreeBase::free_node;
+    using RbTreeBase::_m_impl;
 
 public:
     RbTree()
@@ -1332,8 +1275,8 @@ private:
     static Node*  null_node_;
 };
 
-template<typename T, typename Alloc>
-typename RbTree<T, Alloc>::Node*  RbTree<T, Alloc>::null_node_;
+template<typename T, template <typename T1> class RbNode, typename Alloc>
+typename RbTree<T, RbNode, Alloc>::Node*  RbTree<T, RbNode, Alloc>::null_node_;
 
 }
 }
