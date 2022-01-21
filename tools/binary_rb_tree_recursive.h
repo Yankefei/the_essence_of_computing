@@ -17,7 +17,7 @@
 namespace tools
 {
 
-namespace rb_tree_1
+namespace rb_tree_recurs_1
 {
 
 enum class Dir
@@ -139,7 +139,7 @@ public:
     // 自顶向下删除 递归
     // 发现了一个神奇的现象，任何删除操作，即使没有找到目标元素，也会导致整个rb_tree的染色发生变化
     // 但依然能保持rb_tree的特性
-    bool remove(const T& val)       // pass
+    bool remove_(const T& val)       // pass
     {
         // 先进行变换， 在结束后，将根节点的颜色变为黑色即可
         bool res = remove(&_m_impl._root->right_tree_, _m_impl._root, Dir::Right, val);
@@ -150,7 +150,7 @@ public:
     }
 
     // 自顶向下删除 递归 推荐使用, 编码过程简单明了
-    bool remove_(const T& val)         // pass
+    bool remove(const T& val)         // pass
     {
         handle_before_remove(_m_impl._root->right_tree_, _m_impl._root, val);
         bool res = remove2(&_m_impl._root->right_tree_, _m_impl._root, val);
@@ -1275,7 +1275,7 @@ private:
         // }
         if (!res.first)
         {
-            draw_tree<Node>(ptr);
+            // draw_tree<Node>(ptr);
             //assert(false);
         }
 

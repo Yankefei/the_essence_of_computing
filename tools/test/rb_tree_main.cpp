@@ -7,8 +7,8 @@
 #include "rand.h"
 
 using namespace tools;
-using namespace tools::rb_tree_1;
-
+//using namespace tools::rb_tree_1;
+using namespace tools::rb_tree_recurs_1;
 
 int main()
 {
@@ -371,7 +371,6 @@ int main()
 
 #if 1
     {
-        using namespace tools::rb_tree_1;
         size_t ele_size = 0;
         int rang_index = 5;
         while(rang_index -- > 0)

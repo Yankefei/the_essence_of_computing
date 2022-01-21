@@ -14,7 +14,7 @@ int main()
 {
     size_t ele_size = 0;
     {
-        using namespace tools::rb_tree_1;
+        using namespace tools::rb_tree_recurs_1;
         int rang_index = 5;
         while(rang_index -- > 0)
         {
