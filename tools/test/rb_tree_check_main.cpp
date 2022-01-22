@@ -12,6 +12,9 @@ using namespace tools;
 int main()
 {
     size_t ele_size = 0;
+
+#if 1
+
     {
         using namespace tools::rb_tree_recurs_1;
         int rang_index = 5;
@@ -53,7 +56,9 @@ int main()
         }
     }
 
-#if 0
+#endif
+
+#if 1
 
     {
         using namespace tools::rb_tree_1;
@@ -71,7 +76,9 @@ int main()
             RbTree<int> my_tree;
             for (auto& i : array)
             {
-                my_tree.insert2(i);
+                if (my_tree.insert(i))
+                    ele_size ++;
+
                 if (!my_tree.is_rb_tree())
                 {
                     stream << "insert: "<< i << " failed. ";
@@ -81,13 +88,16 @@ int main()
             stream << "tree hight: "<< my_tree.get_hight() << std::endl;
             for (auto& i : array)
             {
-                my_tree.remove2(i);
+                if (my_tree.remove(i))
+                    ele_size --;
+
                 if (!my_tree.is_rb_tree())
                 {
                     stream << "remove: "<< i << " failed. ";
                     assert(false);
                 }
             }
+            assert(ele_size == 0);
         }
     }
 

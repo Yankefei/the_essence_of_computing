@@ -111,7 +111,7 @@ public:
     bool remove(const T& val)         // pass
     {
         handle_before_remove(_m_impl._root->right_tree_, _m_impl._root, val);
-        bool res = remove2(&_m_impl._root->right_tree_, _m_impl._root, val);
+        bool res = remove2(&_m_impl._root->right_tree_, val);
         
         if (_m_impl._root->right_tree_)
             _m_impl._root->right_tree_->color_ = Color::Black;
@@ -171,7 +171,7 @@ private:
         }
 
         bool res = false;     // 插入重复数据返回false
-        Node* ret_ptr = ptr;  // 设置为ptr的初值
+        Node* ret_ptr = ptr;  // 设置为ptr的初值， 如果有重复的数据，则直接将ptr返回
         do
         {
             if (alg::gt(ptr->data_, val))
@@ -183,6 +183,7 @@ private:
                 if (ret_ptr != ptr->left_tree_)
                     ptr->left_tree_ = ret_ptr;
 
+                // 下面复用了ret_ptr指针
                 /*关键:  判断是否应该单旋转或者双旋转，ptr必须在顶部位置*/
                 if (ret_ptr->color_ == Color::Red)
                 {
@@ -212,7 +213,6 @@ private:
                 if (ret_ptr != ptr->right_tree_)
                     ptr->right_tree_ = ret_ptr;
 
-                // 这里的res就相当于ptr 的新下级节点
                 if (ret_ptr->color_ == Color::Red)
                 {
                     if (ret_ptr->left_tree_ && ret_ptr->left_tree_->color_ == Color::Red)
@@ -241,13 +241,14 @@ private:
     // 这个算法测试通过，方案简单，逻辑清晰，推荐使用和阅读
     // 这个算法的编码过程和下面的remove相比, 最大的改进就是将搜索过程中的目标子树全部旋转为红色后再向下继续搜索
     // 而下面的remove算法的编码过程，将目标子树的向下搜索过程和旋转混在一起，导致出现的情况非常多，异常复杂
-    bool remove2(Node** _ptr, Node* pptr, const T& val)
+    bool remove2(Node** _ptr, const T& val)
     {
         Node* ptr = *_ptr;
         if (ptr == nullptr) return false;
 
         bool res = false;
         Node* ret_ptr = nullptr;
+        Node* pptr = nullptr;
         if (alg::gt(ptr->data_, val))
         {
             // 根据是否旋转，判断下一个值应该如何传递，同时保证引用形参的正确性
@@ -257,13 +258,13 @@ private:
             {
                 pptr = ptr->left_tree_;
                 ptr = ptr->left_tree_->left_tree_;
-                res = remove2(&ptr, pptr, val);
+                res = remove2(&ptr, val);
             }
             else
             {
                 pptr = ptr;
                 ptr = ptr->left_tree_;
-                res = remove2(&ptr, pptr, val);
+                res = remove2(&ptr, val);
             }
             pptr->left_tree_ = ptr;
             *_ptr = ret_ptr;
@@ -277,13 +278,13 @@ private:
             {
                 pptr = ptr->right_tree_;  // 更新成ptr最新的父指针
                 ptr = ptr->right_tree_->right_tree_;
-                res = remove2(&ptr, pptr, val);
+                res = remove2(&ptr, val);
             }
             else
             {
                 pptr = ptr;
                 ptr = ptr->right_tree_;
-                res = remove2(&ptr, pptr, val);
+                res = remove2(&ptr, val);
             }
             pptr->right_tree_ = ptr;
             *_ptr = ret_ptr;
@@ -338,12 +339,10 @@ private:
                 old_ptr->data_ = ptr->data_;
 
                 // 将删除目标设置为ptr节点
-                res = remove2(&ptr, pptr, ptr->data_);
+                res = remove2(&ptr, ptr->data_);
                 // 最后还是更新父节点的左子树，左子树为更新后的值
-                if (dir_change == Dir::Unknown)
-                    pptr->right_tree_ = ptr;
-                else
-                    pptr->left_tree_ = ptr;
+                dir_change == Dir::Unknown ?
+                    pptr->right_tree_ = ptr : pptr->left_tree_ = ptr;
                 *_ptr = ret_ptr;
                 return res;
             }
@@ -389,12 +388,10 @@ private:
                 }
                 old_ptr->data_ = ptr->data_;
                 // 将删除目标设置为ptr节点
-                res = remove2(&ptr, pptr, ptr->data_);
+                res = remove2(&ptr, ptr->data_);
                     // 最后还是更新父节点的左子树，左子树为更新后的值
-                if (dir_change == Dir::Unknown)
-                    pptr->left_tree_ = ptr;
-                else
-                    pptr->right_tree_ = ptr;
+                dir_change == Dir::Unknown ?
+                    pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
                 *_ptr = ret_ptr;
                 return res;
             }
@@ -403,7 +400,6 @@ private:
                 if (ptr != _m_impl._root->right_tree_)
                     assert(ptr->color_ == Color::Red);
                 free_node(ptr);
-                ptr = nullptr;
                 *_ptr = nullptr;
                 return true;
             }

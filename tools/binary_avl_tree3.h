@@ -78,24 +78,42 @@ public:
         stream << std::endl;
     }
 
-    void NiceInOrder() const
+    size_t NiceInOrder() const
     {
+        size_t e_size = 0;
         Node* ptr = first(_m_impl._root);
+        T f_min = ptr->data_;
         for (; ptr != nullptr; ptr = next(ptr))
         {
+            if (alg::gt(f_min, ptr->data_))
+            {
+                assert(false);
+            }
+            f_min = ptr->data_;
             stream << ptr->data_ << " ";
+            e_size ++;
         }
         stream << std::endl;
+        return e_size;
     }
 
-    void ResNiceInOrder() const
+    size_t ResNiceInOrder() const
     {
+        size_t e_size = 0;
         Node* ptr = last(_m_impl._root);
+        T f_max = ptr->data_;
         for (; ptr != nullptr; ptr = prev(ptr))
         {
+            if (alg::le(f_max, ptr->data_))
+            {
+                assert(false);
+            }
+            f_max = ptr->data_;
             stream << ptr->data_ << " ";
+            e_size ++;
         }
         stream << std::endl;
+        return e_size;
     }
 
     Node* get_root() const

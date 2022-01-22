@@ -24,6 +24,7 @@ struct _RbNode
 {
     _RbNode() = default;
     _RbNode(const T&val) : data_(val) {}
+    _RbNode(const T&val, Color c) : data_(val), color_(c) {}
 
     _RbNode* left_tree_{nullptr};
     _RbNode* right_tree_{nullptr};

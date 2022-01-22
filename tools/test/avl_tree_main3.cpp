@@ -352,10 +352,12 @@ int main()
         }
 
         bool res = false;
+        size_t ele_size = 0;
         AvlTree<int> my_tree;
         for (auto& i : array)
         {
-            my_tree.insert2(i);
+            if (my_tree.insert2(i))
+                ele_size++;
             if (!my_tree.is_balance())
             {
                 stream << "insert: "<< i << " failed. " << std::endl;
@@ -364,16 +366,19 @@ int main()
             }
         }
         stream << "tree hight: "<< my_tree.get_hight() << std::endl;
-        my_tree.NiceInOrder();
-        my_tree.ResNiceInOrder();
+        assert(ele_size == my_tree.NiceInOrder());
+        assert(ele_size == my_tree.ResNiceInOrder());
         for (auto& i : array)
         {
-            my_tree.remove2(i);
+            if (my_tree.remove2(i))
+                ele_size--;
             if (!my_tree.is_balance())
             {
                 stream << "remove: "<< i << " failed. " << std::endl;
             }
         }
+
+        assert(ele_size == 0);
     }
     return 0;
 }
