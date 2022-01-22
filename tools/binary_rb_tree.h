@@ -20,13 +20,6 @@ namespace tools
 namespace rb_tree_1
 {
 
-enum class Dir
-{
-    Unknown = 0,
-    Left,
-    Right
-};
-
 template<typename T>
 struct _RbNode
 {
@@ -41,19 +34,40 @@ struct _RbNode
 };
 
 
-
 /*红黑树 非递归版本*/
 template<typename T, template <typename T1> class RbNode = _RbNode, typename Alloc = std::allocator<T>>
-class RbTree : protected RbTree_Base<T, RbNode, Alloc>
+class RbTree : protected RbTree_Base<T, RbNode, Alloc>, protected RbTree_Util<T, RbNode>
 {
     typedef RbTree_Base<T, RbNode, Alloc> RbTreeBase;
     typedef typename RbTreeBase::Node Node;
     typedef Node*  Root;
 
+    typedef RbTree_Util<T, RbNode> RbTreeUtil;
+
 public:
     using RbTreeBase::buy_node;
     using RbTreeBase::free_node;
     using RbTreeBase::_m_impl;
+
+    // 算法函数
+    using RbTreeUtil::handle_before_remove;
+    using RbTreeUtil::search_for_delete_min2;
+    using RbTreeUtil::search_for_delete_max2;
+
+    using RbTreeUtil::SignalRotateLeft;
+    using RbTreeUtil::SignalRotateRight;
+    using RbTreeUtil::doubleRotateLeft;
+    using RbTreeUtil::doubleRotateRight;
+    using RbTreeUtil::SignalRotateRightForRemove;
+    using RbTreeUtil::ChangeColorAfterRemoveRightRotate;
+    using RbTreeUtil::SignalRotateLeftForRemove;
+    using RbTreeUtil::ChangeColorAfterRemoveLeftRotate;
+    using RbTreeUtil::doubleRotateRightForRemove;
+    using RbTreeUtil::doubleRotateLeftForRemove;
+    using RbTreeUtil::_is_rb_tree;
+    using RbTreeUtil::get_color;
+    using RbTreeUtil::_get_hight;
+    using RbTreeUtil::_InOrder;
 
 public:
     RbTree()
@@ -75,7 +89,7 @@ public:
     }
 
     // 自顶向下删除 非递归
-    bool remove(const T& val)
+    bool remove(const T& val)            // pass
     {
         bool res = remove(_m_impl._root, val);
 
@@ -194,94 +208,157 @@ private:
     // 改写自逻辑清晰的递归版本，算法过程与递归版本完全一致
     bool remove(Node* ptr, const T& val_param)
     {
-        Node* pa = ptr;      // 作为遍历的父节点
+        Node* pptr = ptr;      // 作为遍历的父节点
         ptr = ptr->right_tree_;
         T val = val_param;       // 后面可能会修改待删除的val值
-        Dir p_dir = Dir::Right;  // 记录遍历过程子节点位于父节点的方位
+        handle_before_remove(ptr, pptr, val);
+
+        Dir dir = Dir::Right;
+        Dir dir_change = Dir::Unknown; // 控制替换节点后的方向变化
+        bool res = false;
+        Node* old_ptr = nullptr; // 代替ptr记录状态
         while(ptr != nullptr)
         {
             if (alg::gt(ptr->data_, val))
             {
-                left_search_for_remove(ptr, pa, p_dir);
+                res = search_for_delete_min2(ptr, val, false);
+                dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
+                if (res)
+                {
+                    pptr = ptr->left_tree_;
+                    ptr = ptr->left_tree_->left_tree_;
+                }
+                else
+                {
+                    pptr = ptr;
+                    ptr = ptr->left_tree_;
+                }
+                dir = Dir::Left;
             }
             else if (alg::le(ptr->data_, val))
             {
-                right_search_for_remove(ptr, pa, p_dir);
+                res = search_for_delete_max2(ptr, val, false);   // 仅依据数据来转向
+                dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
+                if (res)
+                {
+                    pptr = ptr->right_tree_;  // 更新成ptr最新的父指针
+                    ptr = ptr->right_tree_->right_tree_;
+                }
+                else
+                {
+                    pptr = ptr;
+                    ptr = ptr->right_tree_;
+                }
+                dir = Dir::Right;
             }
             else
             {
-                Node* _ptr = ptr; // 代替ptr记录状态
+                old_ptr = ptr;             // 重置
+                dir_change = Dir::Unknown; // 重置
                 if ((ptr->left_tree_ != nullptr && ptr->right_tree_ != nullptr) ||
-                     ptr->right_tree_ != nullptr)
+                    ptr->right_tree_ != nullptr)
                 {
-                    right_search_for_remove(ptr, pa, p_dir);
+                    // 这里处理之后，会发生遍历线路的拐弯，需要特殊处理
+                    res = search_for_delete_max2(ptr, val, true, true); // 强制转向
+                    dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
+                    if (res)
+                    {
+                        pptr = ptr->right_tree_;
+                        ptr = ptr->right_tree_->right_tree_;
+                    }
+                    else
+                    {
+                        pptr = ptr;
+                        ptr = ptr->right_tree_;
+                    }
+
                     while(ptr->left_tree_)
                     {
-                        left_search_for_remove(ptr, pa, p_dir);
+                        res = search_for_delete_min2(ptr, val, true);  // 去掉数据和外界的强制转向
+                        if (res)
+                        {
+                            if (dir_change == Dir::Unknown)
+                            {
+                                pptr->right_tree_ = ptr;
+                                dir_change = Dir::Left;
+                            }
+                            else
+                            {
+                                pptr->left_tree_ = ptr;
+                            }
+                            pptr = ptr->left_tree_;  // 更新父指针
+                            ptr = ptr->left_tree_->left_tree_;
+                        }
+                        else
+                        {
+                            if (dir_change == Dir::Unknown)
+                                dir_change = Dir::Left;
+                            pptr = ptr;
+                            ptr = ptr->left_tree_;
+                        }
                     }
-                    _ptr->data_ = ptr->data_; // 替换值
-                    val = ptr->data_;         // 替换待查找的val
+                    old_ptr->data_ = ptr->data_;
+                    val = ptr->data_;
+                    dir_change == Dir::Unknown ? dir = Dir::Right : dir = Dir::Left;
                 }
                 else if (ptr->left_tree_ != nullptr)
                 {
-                    left_search_for_remove(ptr, pa, p_dir);
-                    while(ptr->right_tree_)
+                    res = search_for_delete_min2(ptr, val, true, true);
+                    dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
+                    if (res)
                     {
-                        right_search_for_remove(ptr, pa, p_dir);
+                        pptr = ptr->left_tree_;  // 更新成ptr最新的父指针
+                        ptr = ptr->left_tree_->left_tree_;
                     }
-                    _ptr->data_ = ptr->data_;   // 替换值
+                    else
+                    {
+                        pptr = ptr;
+                        ptr = ptr->left_tree_;
+                    }
+
+                    while(ptr->right_tree_) // 当右子节点存在时，再进行接下来的处理
+                    {
+                        res = search_for_delete_max2(ptr, val, true);
+                        if (res)
+                        {
+                            if (dir_change == Dir::Unknown)
+                            {
+                                pptr->left_tree_ = ptr;
+                                dir_change = Dir::Right;
+                            }
+                            else
+                            {
+                                pptr->right_tree_ = ptr; // 更新变更的ptr指针的父节点
+                            }
+                            pptr = ptr->right_tree_;
+                            ptr = ptr->right_tree_->right_tree_;
+                        }
+                        else
+                        {
+                            if (dir_change == Dir::Unknown)
+                                dir_change = Dir::Right;
+                            pptr = ptr;
+                            ptr = ptr->right_tree_;
+                        }
+                    }
+                    old_ptr->data_ = ptr->data_;
                     val = ptr->data_;
+                    dir_change == Dir::Unknown ? dir = Dir::Left : dir = Dir::Right;
                 }
                 else
                 {
                     if (ptr != _m_impl._root->right_tree_)
                         assert(ptr->color_ == Color::Red);
                     free_node(ptr);
-                    p_dir == Dir::Right ?
-                        pa->right_tree_ = nullptr : pa->left_tree_ = nullptr;
+                    ptr = nullptr;
+                    dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
                     return true;
                 }
             }
         }
 
-        // 没有找到时返回
+        // 没有找到，返回false
         return false;
-    }
-
-    void left_search_for_remove(Node*& ptr, Node*& pa, Dir& p_dir)
-    {
-        if (true)//(search_for_delete_min(ptr))
-        {
-            p_dir == Dir::Right ?
-                pa->right_tree_ = ptr : pa->left_tree_ = ptr;
-            // pa 和 ptr 的值依据来自于旋转后的位置
-            pa = ptr->left_tree_;
-            ptr = ptr->left_tree_->left_tree_;
-        }
-        else
-        {
-            // 未发生旋转
-            pa =  ptr;
-            ptr = ptr->left_tree_;
-        }
-        p_dir = Dir::Left;
-    }
-
-    void right_search_for_remove(Node*& ptr, Node*& pa, Dir& p_dir)
-    {
-        if (true)//(search_for_delete_max(ptr))
-        {
-            p_dir == Dir::Right ?
-                pa->right_tree_ = ptr : pa->left_tree_ = ptr;
-            pa = ptr->right_tree_;
-            ptr = ptr->right_tree_->right_tree_;
-        }
-        else
-        {
-            pa = ptr;
-            ptr = ptr->right_tree_;
-        }
-        p_dir = Dir::Right;
     }
 
     // check p_ptr和 p_pa 是否同时为red节点
@@ -334,168 +411,6 @@ private:
                         _gptr->right_tree_ = doubleRotateRight(gptr);
                 }
             }
-        }
-    }
-
-    // 传参为祖父节点指针
-    Node* SignalRotateLeft(Node* gptr)
-    {
-        Node* pa = gptr->left_tree_;
-        gptr->left_tree_ = pa->right_tree_;
-        pa->right_tree_ = gptr;
-        
-        gptr->color_ = Color::Red;
-        pa->color_ = Color::Black;
-
-        return pa;
-    }
-
-    Node* SignalRotateRight(Node* gptr)
-    {
-        Node* pa = gptr->right_tree_;
-        gptr->right_tree_ = pa->left_tree_;
-        pa->left_tree_ = gptr;
-
-        gptr->color_ = Color::Red;
-        pa->color_ = Color::Black;
-
-        return pa;
-    }
-
-    Node* doubleRotateLeft(Node* gptr)
-    {
-        Node* new_p = SignalRotateRight(gptr->left_tree_);
-        gptr->left_tree_ = new_p;
-        return SignalRotateLeft(gptr);
-    }
-
-    Node* doubleRotateRight(Node* gptr)
-    {
-        Node* new_p = SignalRotateLeft(gptr->right_tree_);
-        gptr->right_tree_ = new_p;
-        return SignalRotateRight(gptr);
-    }
-
-    // 专门用于删除时进行旋转, 不修改任何颜色，后面集中处理
-    Node* SignalRotateRightForRemove(Node* gptr)
-    {
-        Node* pa = gptr->right_tree_;
-        gptr->right_tree_ = pa->left_tree_;
-        pa->left_tree_ = gptr;
-        return pa;
-    }
-
-    // 针对右单旋转之后的颜色修改
-    void ChangeColorAfterRemoveRightRotate(Node* gptr)
-    {
-        gptr->color_ = Color::Red;
-        gptr->left_tree_->left_tree_->color_ = Color::Red;
-        gptr->left_tree_->color_ = Color::Black;
-        gptr->right_tree_->color_ = Color::Black;
-    }
-
-    // 专门用于删除时进行旋转, 不修改任何颜色，后面集中处理
-    Node* SignalRotateLeftForRemove(Node* gptr)
-    {
-        Node* pa = gptr->left_tree_;
-        gptr->left_tree_ = pa->right_tree_;
-        pa->right_tree_ = gptr;
-        return pa;
-    }
-
-    // 针对左单旋转之后的颜色修改
-    void ChangeColorAfterRemoveLeftRotate(Node* gptr)
-    {
-        gptr->color_ = Color::Red;
-        gptr->right_tree_->right_tree_->color_ = Color::Red;
-        gptr->left_tree_->color_ = Color::Black;
-        gptr->right_tree_->color_ = Color::Black;
-    }
-
-    // 专门用于删除时进行旋转, 包含了颜色的处理
-    Node* doubleRotateRightForRemove(Node* gptr)
-    {
-        Node* new_p = SignalRotateLeftForRemove(gptr->right_tree_);
-        gptr->right_tree_ = new_p;
-        new_p = SignalRotateRightForRemove(gptr);
-
-        ChangeColorAfterRemoveRightRotate(new_p);
-
-        return new_p;
-    }
-
-    // 专门用于删除时进行旋转, 包含了颜色的处理
-    Node* doubleRotateLeftForRemove(Node* gptr)
-    {
-        Node* new_p = SignalRotateRightForRemove(gptr->left_tree_);
-        gptr->left_tree_ = new_p;
-        new_p = SignalRotateLeftForRemove(gptr);
-
-        ChangeColorAfterRemoveLeftRotate(new_p);
-
-        return new_p;
-    }
-
-    using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;
-    RbInfo _is_rb_tree(Node* ptr)
-    {
-        if (ptr == nullptr) return RbInfo(true, 0);
-
-        RbInfo res(false, 0);
-        Color c = ptr->color_;
-
-        do
-        {
-            if (c == Color::Red)
-            {
-                if ((ptr->right_tree_ && ptr->right_tree_->color_ == c) ||
-                    (ptr->left_tree_ && ptr->left_tree_->color_ == c))
-                {
-                    break;
-                }
-            }
-
-            RbInfo l_info = _is_rb_tree(ptr->left_tree_);
-            if (!l_info.first) break;
-            RbInfo r_info = _is_rb_tree(ptr->right_tree_);
-            if (!r_info.first) break;
-
-            if (l_info.second != r_info.second) break;
-
-            bool is_sort = true;
-            if (ptr->left_tree_)
-                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
-            if (ptr->right_tree_)
-                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
-
-            res.first = is_sort;
-            res.second = l_info.second + (c == Color::Black ? 1 : 0);
-        } while (false);
-
-        return res;
-    }
-
-    Color get_color(Node* ptr)
-    {
-        if (ptr == nullptr) return Color::Black;  // 约定默认空节点为黑色
-
-        return ptr->color_;
-    }
-
-    static int32_t _get_hight(Node* ptr)
-    {
-        if (ptr == nullptr) return -1;
-
-        return alg::max(_get_hight(ptr->left_tree_), _get_hight(ptr->right_tree_)) + 1;
-    }
-
-    static void _InOrder(Node* ptr)
-    {
-        if (ptr)
-        {
-            if (ptr->left_tree_) _InOrder(ptr->left_tree_);
-            stream << ptr->data_ << " ";
-            if (ptr->right_tree_) _InOrder(ptr->right_tree_);
         }
     }
 
