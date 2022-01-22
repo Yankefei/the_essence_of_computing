@@ -4,6 +4,7 @@
 #include <memory>
 #include <cassert>
 
+#include "binary_sort_tree_base.h"
 #include "algorithm.hpp"
 
 namespace tools
@@ -21,69 +22,18 @@ struct _SNode2
     T data_;
 };
 
-
-template<typename T, typename Alloc>
-class BsTree_Base
-{
-public:
-    typedef typename std::allocator_traits<Alloc>::template
-        rebind_alloc<_SNode2<T>> _SNode_alloc_type;
-
-    typedef typename std::allocator_traits<_SNode_alloc_type>
-        rebind_traits;
-
-    typedef typename rebind_traits::pointer  pointer;
-
-    typedef _SNode2<T>        Node;
-
-public:
-    struct Base_Impl : public _SNode_alloc_type
-    {
-        Base_Impl(): _SNode_alloc_type(), _root()
-        {
-        }
-
-        ~Base_Impl() {}
-
-        Base_Impl(Base_Impl& _x) noexcept
-        {
-            std::swap(_root, _x._root);
-        }
-
-        Node*     _root{nullptr};
-    };
-
-    BsTree_Base() {}
-    ~BsTree_Base() {} // 设置虚函数，Base_Impl 会额外增加8字节内存
-
-public:
-    Base_Impl   _m_impl;
-
-    Node* buy_node(const T& val)
-    {
-        pointer p = rebind_traits::allocate(_m_impl, 1);
-        rebind_traits::construct(_m_impl, p, val);
-        return static_cast<Node*>(p);
-    }
-
-    void free_node(Node* ptr)
-    {
-        rebind_traits::destroy(_m_impl, ptr);
-        rebind_traits::deallocate(_m_impl, ptr, 1);
-    }
-};
-
 /*排序二叉树*/
-template<typename T, typename Alloc = std::allocator<T>>
-class BsTree : protected BsTree_Base<T, Alloc>
+template<typename T, template <typename T1> class SNode = _SNode2, typename Alloc = std::allocator<T>>
+class BsTree : protected BsTree_Base<T, SNode, Alloc>
 {
-    typedef typename BsTree_Base<T, Alloc>::Node Node;
+    typedef BsTree_Base<T, SNode, Alloc> BsTreeBase;
+    typedef typename BsTreeBase::Node Node;
     typedef Node*  Root;
 
 public:
-    using BsTree_Base<T, Alloc>::buy_node;
-    using BsTree_Base<T, Alloc>::free_node;
-    using BsTree_Base<T, Alloc>::_m_impl;
+    using BsTreeBase::buy_node;
+    using BsTreeBase::free_node;
+    using BsTreeBase::_m_impl;
 
 public:
     BsTree() {}
