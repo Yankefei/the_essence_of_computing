@@ -32,8 +32,10 @@ struct _BNode
 };
 
 
+
+// 当默认模板参数本身也是模板时, 需要使用 template<typename T1> class 的形式来替换 typename
 /*排序平衡二叉树*/
-template<typename T, template <typename T1> class BNode = _BNode, typename Alloc = std::allocator<T>>
+template<typename T, typename Alloc = std::allocator<T> ,template <typename T1> class BNode = _BNode>
 class AvlTree : protected AvlTree_Base<T, BNode, Alloc>
 {
     typedef AvlTree_Base<T, BNode, Alloc> AvlTreeBase;
@@ -85,7 +87,7 @@ public:
         T f_min = ptr->data_;
         for (; ptr != nullptr; ptr = next(ptr))
         {
-            if (alg::gt(f_min, ptr->data_))
+            if (alg::le(ptr->data_, f_min))
             {
                 assert(false);
             }
@@ -148,7 +150,7 @@ private:
             return true;
         }
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!insert(ptr->left_tree_, val, ptr, taller)) return false;
             if (taller)
@@ -219,7 +221,7 @@ private:
         if (ptr == nullptr)
             return false;
         
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!remove(ptr->left_tree_, val, lower)) return false;
             if (lower)
@@ -275,7 +277,7 @@ private:
         Node* ptr = *pptr;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 pa = ptr; ptr = ptr->left_tree_;
             }
@@ -295,7 +297,7 @@ private:
         }
         else
         {
-            Bal dir = alg::gt(pa->data_, val) ? Bal::Left : Bal::Right;
+            Bal dir = alg::le(val, pa->data_) ? Bal::Left : Bal::Right;
             if (dir == Bal::Left)
                 pa->left_tree_ = ptr;
             else
@@ -378,7 +380,7 @@ private:
                     break;
 
                 // 设置ready_ptr的父节点如何指向自身
-                Bal _dir = alg::gt(ready_ptr->parent_->data_, val) ? Bal::Left : Bal::Right;
+                Bal _dir = alg::le(val, ready_ptr->parent_->data_) ? Bal::Left : Bal::Right;
 
                 if (_dir == Bal::Left)
                     ready_ptr->parent_->left_tree_ = ready_ptr;
@@ -405,7 +407,7 @@ private:
         Node* ptr = *pptr;
         while(ptr != nullptr && alg::neq(ptr->data_, t_val))
         {
-            if (alg::gt(ptr->data_, t_val))
+            if (alg::le(t_val, ptr->data_))
                 ptr = ptr->left_tree_;
             else
                 ptr = ptr->right_tree_;
@@ -514,7 +516,7 @@ private:
         }
 
         // 设置ready_ptr的父节点如何指向自身
-        Bal _dir = alg::gt_eq(ready_ptr->parent_->data_, val) ? Bal::Left : Bal::Right;
+        Bal _dir = !alg::le(ready_ptr->parent_->data_, val) ? Bal::Left : Bal::Right;
 
         if (_dir == Bal::Left)
             ready_ptr->parent_->left_tree_ = ready_ptr;
@@ -830,9 +832,9 @@ private:
         
         bool is_sort = true;
         if (ptr->left_tree_)
-            is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+            is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
         if (ptr->right_tree_)
-            is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+            is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
         return BalRes(alg::max(left_res.first, right_res.first) + 1,
                             is_sort && res && left_res.second && right_res.second);

@@ -167,7 +167,7 @@ private:
             // _gptr, gptr, pa 等指针的值也会慢慢全部被替换为正确的值，后面的逻辑也就保证了正确
             _gptr = gptr;  gptr = pa; pa = ptr;
 
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 ptr = ptr->left_tree_;
                 insert_dir = Dir::Left;
@@ -218,7 +218,7 @@ private:
         Node* old_ptr = nullptr; // 代替ptr记录状态
         while(ptr != nullptr)
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 res = search_for_delete_min2(ptr, val, false);
                 dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
@@ -372,12 +372,12 @@ private:
             // 根节点， 是不可能进入到这里的。
             Dir _gptr_dir = Dir::Right;
             if (_gptr != _m_impl._root)
-                _gptr_dir = alg::gt(_gptr->data_, gptr->data_) ? Dir::Left : Dir::Right;
+                _gptr_dir = alg::le(gptr->data_, _gptr->data_) ? Dir::Left : Dir::Right;
 
-            if (alg::gt(gptr->data_, ptr->data_))
+            if (alg::le(ptr->data_, gptr->data_))
             {
                 // 左旋转
-                if (alg::gt(pa->data_, ptr->data_)) // 单旋转
+                if (alg::le(ptr->data_, pa->data_)) // 单旋转
                 {
                     if (_gptr_dir == Dir::Left)
                         _gptr->left_tree_ = SignalRotateLeft(gptr);
@@ -441,9 +441,9 @@ private:
 
             bool is_sort = true;
             if (ptr->left_tree_)
-                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+                is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
             if (ptr->right_tree_)
-                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+                is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
             res.first = is_sort;
             res.second = l_info.second + (c == Color::Black ? 1 : 0);

@@ -34,7 +34,9 @@ struct _RbNode
 };
 
 /*红黑树 非递归*/
-template<typename T, template <typename T1> class RbNode = _RbNode, typename Alloc = std::allocator<T>>
+template<typename T,
+        typename Alloc = std::allocator<T>,
+        template <typename T1> class RbNode = _RbNode>
 class RbTree : protected RbTree_Base<T, RbNode, Alloc>, protected RbTree_Util2<T, RbNode>
 {
     typedef RbTree_Base<T, RbNode, Alloc> RbTreeBase;
@@ -136,7 +138,7 @@ public:
         T f_min = ptr->data_;
         for (; ptr != nullptr; ptr = next(ptr))
         {
-            if (alg::gt(f_min, ptr->data_))
+            if (alg::le(ptr->data_, f_min))
             {
                 assert(false);
             }
@@ -211,7 +213,7 @@ private:
             // _gptr = gptr;  gptr = pa; pa = ptr;
             pa = ptr;
 
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 ptr = ptr->left_tree_;
                 insert_dir = Dir::Left;
@@ -272,13 +274,13 @@ private:
             else
             {
                 _gptr = gptr->parent_;
-                _gptr_dir = alg::gt(_gptr->data_, gptr->data_) ? Dir::Left : Dir::Right;
+                _gptr_dir = alg::le(gptr->data_, _gptr->data_) ? Dir::Left : Dir::Right;
             }
 
-            if (alg::gt(gptr->data_, ptr->data_))
+            if (alg::le(ptr->data_, gptr->data_))
             {
                 // 左旋转
-                if (alg::gt(pa->data_, ptr->data_)) // 单旋转
+                if (alg::le(ptr->data_, pa->data_)) // 单旋转
                 {
                     if (_gptr_dir == Dir::Left)
                         _gptr->left_tree_ = SignalRotateLeft(gptr);
@@ -327,7 +329,7 @@ private:
         Node* old_ptr = nullptr; // 代替ptr记录状态
         while(ptr != nullptr)
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 res = search_for_delete_min2(ptr, val, false);
                 dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
@@ -493,9 +495,9 @@ private:
 
             bool is_sort = true;
             if (ptr->left_tree_)
-                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+                is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
             if (ptr->right_tree_)
-                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+                is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
             res.first = is_sort;
             res.second = l_info.second + (c == Color::Black ? 1 : 0);
@@ -527,6 +529,7 @@ private:
 
     void initialize()
     {
+        // TODO 线程安全处理
         if (null_node_ == nullptr)
             null_node_ = buy_node(T());
 
@@ -539,11 +542,12 @@ private:
 
 
 private:
+    // TODO 生命周期线程安全
     static Node* null_node_;
 };
 
-template<typename T, template <typename T1> class RbNode, typename Alloc>
-typename RbTree<T, RbNode, Alloc>::Node*  RbTree<T, RbNode, Alloc>::null_node_;
+template<typename T, typename Alloc, template <typename T1> class RbNode>
+typename RbTree<T, Alloc, RbNode>::Node*  RbTree<T, Alloc, RbNode>::null_node_;
 
 }
 }

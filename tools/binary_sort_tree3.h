@@ -98,7 +98,7 @@ private:
             ptr->parent_ = pptr;
             res = true;
         }
-        else if (alg::gt(ptr->data_, val))
+        else if (alg::le(val, ptr->data_))
         {
             return insert(ptr->left_tree_, val, ptr);
         }
@@ -118,7 +118,7 @@ private:
         while(p != nullptr && alg::neq(p->data_, val))
         {
             pa = p;
-            p = alg::gt(p->data_, val) ? p->left_tree_ : p->right_tree_;
+            p = alg::le(val, p->data_) ? p->left_tree_ : p->right_tree_;
         }
         if (p != nullptr && alg::eq(p->data_, val)) return false;
 
@@ -130,7 +130,7 @@ private:
             *pptr = p;
         else
         {
-            if (alg::gt(pa->data_, p->data_))
+            if (alg::le(p->data_, pa->data_))
             {
                 pa->left_tree_ = p;
             }
@@ -215,14 +215,14 @@ private:
     {
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            ptr = alg::gt(ptr->data_, val) ? ptr->left_tree_ : ptr->right_tree_;
+            ptr = alg::le(val, ptr->data_) ? ptr->left_tree_ : ptr->right_tree_;
         }
 
         // if(ptr == nullptr) return ptr;
 
         // for (;;)
         // {
-        //     if (alg::gt(ptr->data_, val))
+        //     if (alg::le(val, ptr->data_))
         //     {
         //         ptr = ptr->left_tree_;
         //         if (ptr == nullptr) break;
@@ -281,11 +281,11 @@ private:
 
             // if (ptr->parent_ == nullptr) return nullptr;
 
-            // if (alg::gt(ptr->data_, ptr->parent_->data_))
+            // if (alg::le(ptr->parent_->data_, ptr->data_))
             // {
             //     if (ptr->parent_->parent_ == nullptr) return nullptr;
                 
-            //     if (alg::gt(ptr->data_, ptr->parent_->parent_->data_))
+            //     if (alg::le(ptr->parent_->parent_->data_, ptr->data_))
             //     {
             //         return nullptr;
             //     }

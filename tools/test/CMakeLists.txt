@@ -57,3 +57,9 @@ target_link_libraries(rb_tree_main2  tools)
 
 add_executable(rb_tree_check rb_tree_check_main.cpp)
 target_link_libraries(rb_tree_check  tools)
+
+add_executable(map_main map_main.cpp)
+target_link_libraries(map_main  tools)
+
+add_executable(set_main set_main.cpp)
+target_link_libraries(set_main  tools)

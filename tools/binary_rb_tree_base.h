@@ -96,7 +96,7 @@ public:
             return;
         }
 
-        Dir dir = alg::gt(ptr->data_, val) ? Dir::Left : Dir::Right;
+        Dir dir = alg::le(val, ptr->data_) ? Dir::Left : Dir::Right;
 
         if (dir == Dir::Right && ptr->left_tree_ != nullptr  &&
             ptr->left_tree_->color_ == Color::Red)
@@ -138,7 +138,7 @@ public:
                 break;
             }
 
-            Dir dir = alg::gt(l_ptr->data_, val) ? Dir::Left : Dir::Right;
+            Dir dir = alg::le(val, l_ptr->data_) ? Dir::Left : Dir::Right;
             // 需要根据遍历顺序后续是否转向，来调整遍历的方向
 
             bool change_dir = is_change_dir || (!lock_dir && dir == Dir::Right);
@@ -219,7 +219,7 @@ public:
                 break;
             }
 
-            Dir dir = alg::gt(r_ptr->data_, val) ? Dir::Left : Dir::Right;
+            Dir dir = alg::le(val, r_ptr->data_) ? Dir::Left : Dir::Right;
             bool change_dir = is_change_dir || (!lock_dir && dir == Dir::Left);
 
             if (r_ptr->right_tree_ != nullptr && r_ptr->right_tree_->color_ == Color::Red)
@@ -420,7 +420,7 @@ public:
             return;
         }
 
-        Dir dir = alg::gt(ptr->data_, val) ? Dir::Left : Dir::Right;
+        Dir dir = alg::le(val, ptr->data_) ? Dir::Left : Dir::Right;
 
         if (dir == Dir::Right && ptr->left_tree_ != nullptr  &&
             ptr->left_tree_->color_ == Color::Red)
@@ -463,7 +463,7 @@ public:
                 break;
             }
 
-            Dir dir = alg::gt(l_ptr->data_, val) ? Dir::Left : Dir::Right;
+            Dir dir = alg::le(val, l_ptr->data_) ? Dir::Left : Dir::Right;
             // 需要根据遍历顺序后续是否转向，来调整遍历的方向
 
             bool change_dir = is_change_dir || (!lock_dir && dir == Dir::Right);
@@ -543,7 +543,7 @@ public:
                 break;
             }
 
-            Dir dir = alg::gt(r_ptr->data_, val) ? Dir::Left : Dir::Right;
+            Dir dir = alg::le(val, r_ptr->data_) ? Dir::Left : Dir::Right;
             bool change_dir = is_change_dir || (!lock_dir && dir == Dir::Left);
 
             if (r_ptr->right_tree_ != nullptr && r_ptr->right_tree_->color_ == Color::Red)

@@ -165,37 +165,35 @@ size_t kmp_find2(const T* src_str,  size_t src_len, const T* dst_str, size_t dst
     return find;
 }
 
+// 只要重载小于运算符, 那么其余的比较运算符都可以推导出来
+template<typename T>
+bool le(const T& lhs, const T& rhs)
+{
+    return lhs < rhs;
+}
 
 template<typename T>
 bool eq(const T& lhs, const T& rhs)
 {
-    if (lhs == rhs) return true;
-    else return false;
-}
-
-template<typename T>
-bool gt(const T& lhs, const T& rhs)
-{
-    if (lhs > rhs) return true;
-    else return false;
-}
-
-template<typename T>
-bool gt_eq(const T& lhs, const T& rhs)
-{
-    return eq(lhs, rhs) || gt(lhs, rhs);
-}
-
-template<typename T>
-bool le(const T& lhs, const T& rhs)
-{
-    return !gt_eq(lhs, rhs);
+    return !le(lhs, rhs) && !le(rhs, lhs);
 }
 
 template<typename T>
 bool le_eq(const T& lhs, const T& rhs)
 {
-    return !ge(lhs, rhs);
+    return le(lhs, rhs) || eq(lhs, rhs);
+}
+
+template<typename T>
+bool gt(const T& lhs, const T& rhs)
+{
+    return !le_eq(lhs, rhs);
+}
+
+template<typename T>
+bool gt_eq(const T& lhs, const T& rhs)
+{
+    return !le(lhs, rhs);
 }
 
 template<typename T>

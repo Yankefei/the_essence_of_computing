@@ -109,7 +109,7 @@ private:
             return true;
         }
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!insert(ptr->left_tree_, val, taller)) return false;
             if (taller)
@@ -181,7 +181,7 @@ private:
         if (ptr == nullptr)
             return false;
         
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!remove(ptr->left_tree_, val, lower)) return false;
             if (lower)
@@ -243,7 +243,7 @@ private:
         Stack<ParentNode> st;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 st.push(ParentNode(ptr, Bal::Left));
                 ptr = ptr->left_tree_;
@@ -366,7 +366,7 @@ private:
         Stack<ParentNode> st;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 st.push(ParentNode(ptr, Bal::Left));
                 ptr = ptr->left_tree_;
@@ -734,9 +734,9 @@ private:
 
         bool is_sort = true;
         if (ptr->left_tree_)
-            is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+            is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
         if (ptr->right_tree_)
-            is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+            is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
         // if (res >= 2)
         // {

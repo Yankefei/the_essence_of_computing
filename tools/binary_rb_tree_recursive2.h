@@ -143,7 +143,7 @@ public:
         T f_min = ptr->data_;
         for (; ptr != nullptr; ptr = next(ptr))
         {
-            if (alg::gt(f_min, ptr->data_))
+            if (alg::le(ptr->data_, f_min))
             {
                 assert(false);
             }
@@ -201,7 +201,7 @@ private:
         Node* ret_ptr = ptr;
         do
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 ret_ptr = ptr->left_tree_;
                 res = insert(ret_ptr, val, &ret_ptr);
@@ -273,7 +273,7 @@ private:
         bool res = false;
         Node* ret_ptr = nullptr;
         Node* pptr = nullptr;
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             // 根据是否旋转，判断下一个值应该如何传递，同时保证引用形参的正确性
             res = search_for_delete_min2(ptr, val, false);
@@ -446,9 +446,9 @@ private:
 
             bool is_sort = true;
             if (ptr->left_tree_)
-                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+                is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
             if (ptr->right_tree_)
-                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+                is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
             res.first = is_sort;
             res.second = l_info.second + (c == Color::Black ? 1 : 0);

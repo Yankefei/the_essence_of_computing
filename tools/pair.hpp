@@ -9,7 +9,9 @@ namespace tools
 template<typename T1, typename T2>
 struct Pair
 {
+    Pair() = default;
     Pair(const T1& _t1, const T2& _t2) : first(_t1), second(_t2) {}
+    Pair(const Pair& val) : first(val.first), second(val.second) {}
 
     T1 first;
     T2 second;

@@ -83,7 +83,7 @@ private:
         }
         else
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 insert(ptr->left_tree_, val);
             }
@@ -112,7 +112,7 @@ private:
             Node* f_ptr = nullptr;  // 充当父节点
             for(;;)
             {
-                if (alg::gt(tmp->data_, val))
+                if (alg::le(val, tmp->data_))
                 {
                     f_ptr = tmp;
                     tmp = tmp->left_tree_;
@@ -150,7 +150,7 @@ private:
     {
         if (ptr == nullptr) return false;
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             return remove(ptr->left_tree_, val);
         }
@@ -203,7 +203,7 @@ private:
         int desc = 0;     // 记录遍历的方向0:未知，1：左， 2：右
         for (;;)
         {
-            if (alg::gt(tmp->data_, val))
+            if (alg::le(val, tmp->data_))
             {
                 f_ptr = tmp;
                 tmp = tmp->left_tree_;
@@ -371,7 +371,7 @@ private:
 
         for (;;)
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 ptr = ptr->left_tree_;
                 if (ptr == nullptr) break;

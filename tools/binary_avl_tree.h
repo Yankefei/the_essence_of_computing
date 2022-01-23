@@ -118,7 +118,7 @@ private:
             return true;
         }
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!insert(ptr->left_tree_, val)) return false;
 
@@ -126,7 +126,7 @@ private:
             {
                 // 调整之后，必须保证当前的的子树内部高度已经保持正常
                 // 1. 保证平衡， 2. 节点高度是正确的
-                if (alg::gt(ptr->left_tree_->data_, val))
+                if (alg::le(val, ptr->left_tree_->data_))
                 {
                     // 这里传递二级指针可以，因为修改函数内部*ptr的信息，就相当于修改外部ptr的值
                     // 而该值为引用传参
@@ -174,7 +174,7 @@ private:
     {
         if (ptr == nullptr) return false;
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!remove(ptr->left_tree_, val, ptr))
                 return false;
@@ -332,7 +332,7 @@ private:
     {
         if (ptr == nullptr) return false;
 
-        if (alg::gt(ptr->data_, val))
+        if (alg::le(val, ptr->data_))
         {
             if (!_remove(ptr->left_tree_, val))
                 return false;
@@ -399,7 +399,7 @@ private:
         Stack<ParentNode> st;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 st.push(ParentNode(ptr, Dir::Left));
                 ptr = ptr->left_tree_;
@@ -445,7 +445,7 @@ private:
                 }
                 if (hight(node.ptr->left_tree_) - hight(node.ptr->right_tree_) == 2)
                 {
-                    if (alg::gt(node.ptr->left_tree_->data_, val))
+                    if (alg::le(val, node.ptr->left_tree_->data_))
                     {
                         signal_rotate_withleft(&node.ptr);
                         ready_ptr = node.ptr;
@@ -497,7 +497,7 @@ private:
         Stack<ParentNode> st;
         while(ptr != nullptr && alg::neq(ptr->data_, val))
         {
-            if (alg::gt(ptr->data_, val))
+            if (alg::le(val, ptr->data_))
             {
                 st.push(ParentNode(ptr, Dir::Left));
                 ptr = ptr->left_tree_;
@@ -710,9 +710,9 @@ private:
 
         bool is_sort = true;
         if (ptr->left_tree_)
-            is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+            is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
         if (ptr->right_tree_)
-            is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+            is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
 
         return {alg::max(l_res.first, r_res.first) + 1,
                 is_sort && (diff < 2) && l_res.second && r_res.second};
