@@ -2,6 +2,7 @@
 #define _TOOLS_PAIR_H_
 
 #include <cstdint>
+#include "algorithm.hpp"
 
 namespace tools
 {
@@ -20,19 +21,25 @@ struct Pair
 template<typename T1, typename T2>
 bool operator==(const Pair<T1, T2>& lhs, const Pair<T1, T2>& rhs)
 {
-    return lhs.first == rhs.first;
+    return alg::eq(lhs.first, rhs.first);
 }
 
 template<typename T1, typename T2>
 bool operator!=(const Pair<T1, T2>& lhs, const Pair<T1, T2>& rhs)
 {
-    return !(lhs == rhs);
+    return !lhs == rhs;
+}
+
+template<typename T1, typename T2>
+bool operator<(const Pair<T1, T2>& lhs, const Pair<T1, T2>& rhs)
+{
+    return alg::le(lhs.first, rhs.first);
 }
 
 template<typename T1, typename T2>
 bool operator>(const Pair<T1, T2>& lhs, const Pair<T1, T2>& rhs)
 {
-    return lhs.first > rhs.first;
+    return alg::gt(lhs.first, rhs.first);
 }
 
 
