@@ -64,7 +64,6 @@ public:
     using RbTreeUtil::ChangeColorAfterRemoveLeftRotate;
     using RbTreeUtil::doubleRotateRightForRemove;
     using RbTreeUtil::doubleRotateLeftForRemove;
-    using RbTreeUtil::_is_rb_tree;
     using RbTreeUtil::get_color;
     using RbTreeUtil::_get_hight;
     using RbTreeUtil::_InOrder;
@@ -226,7 +225,7 @@ private:
                 if (res)
                 {
                     pptr = ptr->left_tree_;
-                    ptr = ptr->left_tree_->left_tree_;
+                    ptr = pptr->left_tree_;
                 }
                 else
                 {
@@ -242,7 +241,7 @@ private:
                 if (res)
                 {
                     pptr = ptr->right_tree_;  // 更新成ptr最新的父指针
-                    ptr = ptr->right_tree_->right_tree_;
+                    ptr = pptr->right_tree_;
                 }
                 else
                 {
@@ -264,7 +263,7 @@ private:
                     if (res)
                     {
                         pptr = ptr->right_tree_;
-                        ptr = ptr->right_tree_->right_tree_;
+                        ptr = pptr->right_tree_;
                     }
                     else
                     {
@@ -287,7 +286,7 @@ private:
                                 pptr->left_tree_ = ptr;
                             }
                             pptr = ptr->left_tree_;  // 更新父指针
-                            ptr = ptr->left_tree_->left_tree_;
+                            ptr = pptr->left_tree_;
                         }
                         else
                         {
@@ -308,7 +307,7 @@ private:
                     if (res)
                     {
                         pptr = ptr->left_tree_;  // 更新成ptr最新的父指针
-                        ptr = ptr->left_tree_->left_tree_;
+                        ptr = pptr->left_tree_;
                     }
                     else
                     {
@@ -331,7 +330,7 @@ private:
                                 pptr->right_tree_ = ptr; // 更新变更的ptr指针的父节点
                             }
                             pptr = ptr->right_tree_;
-                            ptr = ptr->right_tree_->right_tree_;
+                            ptr = pptr->right_tree_;
                         }
                         else
                         {
@@ -413,6 +412,56 @@ private:
             }
         }
     }
+
+    using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;
+    RbInfo _is_rb_tree(Node* ptr)
+    {
+        if (ptr == nullptr) return RbInfo(true, 0);
+
+        RbInfo res(false, 0);
+        Color c = ptr->color_;
+
+        do
+        {
+            if (c == Color::Red)
+            {
+                if ((ptr->right_tree_ && ptr->right_tree_->color_ == c) ||
+                    (ptr->left_tree_ && ptr->left_tree_->color_ == c))
+                {
+                    break;
+                }
+            }
+
+            RbInfo l_info = _is_rb_tree(ptr->left_tree_);
+            if (!l_info.first) break;
+            RbInfo r_info = _is_rb_tree(ptr->right_tree_);
+            if (!r_info.first) break;
+
+            if (l_info.second != r_info.second) break;
+
+            bool is_sort = true;
+            if (ptr->left_tree_)
+                is_sort &= alg::gt(ptr->data_, ptr->left_tree_->data_);
+            if (ptr->right_tree_)
+                is_sort &= alg::gt(ptr->right_tree_->data_, ptr->data_);
+
+            res.first = is_sort;
+            res.second = l_info.second + (c == Color::Black ? 1 : 0);
+        } while (false);
+
+        // if (ptr->data_ == T(140))
+        // {
+        //     draw_tree<Node>(ptr);
+        // }
+        if (!res.first)
+        {
+            draw_tree<Node>(ptr);
+            assert(false);
+        }
+
+        return res;
+    }
+
 
     void destory(Node* ptr)
     {

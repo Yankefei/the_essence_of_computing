@@ -3,13 +3,13 @@
 
 #include "rand.h"
 
-//#include "binary_rb_tree2.h"
-#include "binary_rb_tree_recursive2.h"
+#include "binary_rb_tree2.h"
+//#include "binary_rb_tree_recursive2.h"
 #include "vector.hpp"
 
 using namespace tools;
-// using namespace tools::rb_tree_2;
-using namespace tools::rb_tree_recurs_2;
+using namespace tools::rb_tree_2;
+//using namespace tools::rb_tree_recurs_2;
 
 int main()
 {
@@ -219,7 +219,7 @@ int main()
     }
 #endif
 
-#if 1
+#if 0
     {
         size_t ele_size = 0;
         bool res = false;
@@ -328,8 +328,11 @@ int main()
         //                   754, 204, 953, 108, 403, 202, 756, 306, 556, 636, 157, 645, 905, 707,
         //                   125, 702, 269, 544, 737, 707, 873, 499, 565, 765, 572, 810, 916, 457,
         //                   989, 381, 188, 514, 193, 905, 345, 678};
-        
-        Vector<int> array{394, 202, 725, 429, 245, 455, 44, 478, 748, 112, 710, 70, 762, 559, 849, 333, 291, 878, 500, 804, 564, 597, 895, 508, 360, 371, 949, 351, 256, 996, 663, 523, 620, 610, 786, 1, 38, 449, 191, 972, 712, 25, 802, 118, 490, 459, 398, 289, 994, 942};
+
+        Vector<int> array{394, 202, 725, 429, 245, 455, 44, 478, 748, 112, 710, 70, 762, 559,
+                          849, 333, 291, 878, 500, 804, 564, 597, 895, 508, 360, 371, 949, 351,
+                          256, 996, 663, 523, 620, 610, 786, 1, 38, 449, 191, 972, 712, 25,
+                          802, 118, 490, 459, 398, 289, 994, 942};
         bool res = false;
         RbTree<int> my_tree;
         for (auto& i : array)
@@ -348,7 +351,7 @@ int main()
         // my_tree.print_tree();
         for (auto& i : array)
         {
-            // if (i == 559)
+            // if (i == 564 || i == 804)
             // {
             //     my_tree.print_tree();
             // }

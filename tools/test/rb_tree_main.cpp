@@ -1,14 +1,13 @@
 #include <iostream>
 #include "stream.h"
 
-//#include "binary_rb_tree_recursive.h"
+#include "binary_rb_tree_recursive.h"
 #include "binary_rb_tree.h"
 #include "vector.hpp"
 
 #include "rand.h"
 
 using namespace tools;
-using namespace tools::rb_tree_1;
 //using namespace tools::rb_tree_recurs_1;
 
 int main()
@@ -17,6 +16,7 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_1;
         size_t ele_size = 0;
         RbTree<int> my_tree;
 
@@ -66,6 +66,7 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_1;
         bool res = false;
         RbTree<int> my_tree;
         for (int i = 1; i < 10; i ++)
@@ -147,6 +148,7 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_1;
         bool res = false;
         RbTree<int> my_tree;
         for (int i = 1; i < 20; i ++)
@@ -221,6 +223,7 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_1;
         size_t ele_size = 0;
         bool res = false;
         RbTree<int> my_tree;
@@ -307,6 +310,7 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_1;
         size_t ele_size = 0;
         // Vector<int> array{557, 384, 351, 909, 394, 410, 384, 672, 763, 641, 773,
         //                   462, 431, 950, 979, 689, 687, 825, 581, 326, 45, 527,
@@ -372,6 +376,69 @@ int main()
 
 #if 1
     {
+        using namespace tools::rb_tree_recurs_1;
+        size_t ele_size = 0;
+        int rang_index = 5;
+        while(rang_index -- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 100000);
+            for(int i = 0; i < 1000; i++)
+            {
+                array.push_back(rand());
+            }
+
+            // for (auto i : array)
+            // {
+            //     stream << i << ", ";
+            // }
+            // stream << std::endl;
+
+            bool res = false;
+            RbTree<int> my_tree;
+            for (auto& i : array)
+            {
+                if (my_tree.insert(i))
+                    ele_size ++;
+
+                // my_tree.print_tree();
+                // stream << "insert: "<< i << std::endl;
+
+                if (!my_tree.is_rb_tree())
+                {
+                    stream << "insert: "<< i << " failed. ";
+                    assert(false);
+                }
+            }
+            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            //my_tree.print_tree();
+            for (auto& i : array)
+            {
+                if (my_tree.remove_(i))
+                    ele_size --;
+
+                // my_tree.print_tree();
+                // stream << "remove i : "<< i << std::endl;
+
+                // stream << "remove i : "<< i << std::endl;
+                // my_tree.in_order();
+
+                if (!my_tree.is_rb_tree())
+                {
+                    stream << "remove: "<< i << " failed. ";
+                    
+                    assert(false);
+                }
+            }
+            assert(ele_size == 0);
+            assert(my_tree.get_root() == nullptr);
+        }
+    }
+#endif
+
+#if 1
+    {
+        using namespace tools::rb_tree_1;
         size_t ele_size = 0;
         int rang_index = 5;
         while(rang_index -- > 0)

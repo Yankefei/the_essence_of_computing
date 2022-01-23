@@ -5,6 +5,8 @@
 #include "binary_avl_tree2.h"
 #include "binary_avl_tree3.h"
 
+#include "timer_guard.h"
+
 #include "vector.hpp"
 #include "rand.h"
 
@@ -25,6 +27,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_1");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
@@ -62,6 +65,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_recurs_1");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
@@ -99,6 +103,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_recurs_2");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
@@ -136,6 +141,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_2");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
@@ -173,6 +179,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_recurs_3");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
@@ -210,6 +217,7 @@ int main()
                 array.push_back(rand());
             }
 
+            TimerGuard timer("avl_tree_3");
             bool res = false;
             AvlTree<int> my_tree;
             for (auto& i : array)
