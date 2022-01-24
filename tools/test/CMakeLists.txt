@@ -63,3 +63,9 @@ target_link_libraries(map_main  tools)
 
 add_executable(set_main set_main.cpp)
 target_link_libraries(set_main  tools)
+
+add_executable(b_tree_main b_tree_main.cpp)
+target_link_libraries(b_tree_main  tools)
+
+add_executable(bp_tree_main b_plus_tree_main.cpp)
+target_link_libraries(bp_tree_main  tools)
