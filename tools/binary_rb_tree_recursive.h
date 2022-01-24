@@ -967,11 +967,11 @@ private:
     }
 
 private:
-    static Node*  null_node_;
+    /*static*/ Node*  null_node_;
 };
 
-template<typename T, template <typename T1> class RbNode, typename Alloc>
-typename RbTree<T, RbNode, Alloc>::Node*  RbTree<T, RbNode, Alloc>::null_node_;
+// template<typename T, template <typename T1> class RbNode, typename Alloc>
+// typename RbTree<T, RbNode, Alloc>::Node*  RbTree<T, RbNode, Alloc>::null_node_;
 
 }
 }

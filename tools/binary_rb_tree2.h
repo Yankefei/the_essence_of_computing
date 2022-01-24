@@ -88,6 +88,12 @@ public:
         free_node(_m_impl._root);
     }
 
+    RbTree(const RbTree& tree)
+    {
+        initialize();
+        _m_impl._root->right_tree_ = copy(tree._m_impl._root->right_tree_);
+    }
+
     // 自顶向下插入 非递归
     bool insert(const T& val)
     {
@@ -146,7 +152,7 @@ public:
             // stream << ptr->data_ << " ";
             e_size ++;
         }
-        stream << std::endl;
+        // stream << std::endl;
         return e_size;
     }
 
@@ -166,7 +172,7 @@ public:
             // stream << ptr->data_ << " ";
             e_size ++;
         }
-        stream << std::endl;
+        // stream << std::endl;
         return e_size;
     }
 
@@ -175,7 +181,86 @@ public:
         draw_tree<Node>(_m_impl._root->right_tree_);
     }
 
+    bool is_same(const RbTree& rhs)
+    {
+        return check_same(_m_impl._root->right_tree_, rhs._m_impl._root->right_tree_) &&
+               check_same2(_m_impl._root->right_tree_, rhs._m_impl._root->right_tree_);
+    }
+
 private:
+    // 复制一棵树, 返回新的ptr指针, 同时维护parent_指针
+    Node* copy(Node* ptr)
+    {
+        if (nullptr == ptr) return ptr;
+
+        // 先获取ptr树的left节点
+        Node* left = ptr;
+        while(left->left_tree_)
+            left = left->left_tree_;
+
+        Node* new_ptr = nullptr;
+        Node* new_ptr_next = nullptr; // new_ptr 的左子树
+        for(; left != ptr->parent_; left = left->parent_)
+        {
+            new_ptr_next = new_ptr;
+            new_ptr = buy_node(left->data_);
+            new_ptr->color_ = left->color_;
+            new_ptr->right_tree_ = copy(left->right_tree_);
+            if (new_ptr->right_tree_ != nullptr)
+                new_ptr->right_tree_->parent_ = new_ptr;
+            
+            if (new_ptr_next != nullptr)
+                new_ptr_next->parent_ = new_ptr;
+            new_ptr->left_tree_ = new_ptr_next;
+        }
+
+        return new_ptr;
+    }
+
+    // 递归检查
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        if (ptr == nullptr || ptr2 == nullptr) return false;
+
+        if (alg::eq(ptr->data_, ptr2->data_) &&
+            check_same(ptr->left_tree_, ptr2->left_tree_) &&
+            check_same(ptr->right_tree_, ptr2->right_tree_))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    // 正反遍历检查
+    bool check_same2(Node* root1, Node* root2)
+    {
+        {
+            Node* ptr = first(root1);
+            Node* ptr2 = first(root2);
+            for (; ptr != nullptr; ptr = next(ptr), ptr2 = next(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+
+        {
+            Node* ptr = last(root1);
+            Node* ptr2 = last(root2);
+            for (; ptr != nullptr; ptr = prev(ptr), ptr2 = prev(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+        return true;
+    }
+
     bool insert(Node* root, const T& val)
     {
         Node* ptr = root->right_tree_;
@@ -529,7 +614,6 @@ private:
 
     void initialize()
     {
-        // TODO 线程安全处理
         if (null_node_ == nullptr)
             null_node_ = buy_node(T());
 
@@ -542,12 +626,12 @@ private:
 
 
 private:
-    // TODO 生命周期线程安全
-    static Node* null_node_;
+    // TODO static 需要处理生命周期线程安全
+    /*static*/ Node* null_node_;
 };
 
-template<typename T, typename Alloc, template <typename T1> class RbNode>
-typename RbTree<T, Alloc, RbNode>::Node*  RbTree<T, Alloc, RbNode>::null_node_;
+// template<typename T, typename Alloc, template <typename T1> class RbNode>
+// typename RbTree<T, Alloc, RbNode>::Node*  RbTree<T, Alloc, RbNode>::null_node_;
 
 }
 }
