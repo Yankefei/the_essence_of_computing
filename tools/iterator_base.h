@@ -87,7 +87,7 @@ struct _Ranit :
 
 
 ///////////////////////////
-// Input Iterator
+// 随机访问 Iterator
 template<typename _Ty, typename _Dis = ptrdiff_t>
 class CRIterator : public _Ranit<_Ty, _Dis>
 {

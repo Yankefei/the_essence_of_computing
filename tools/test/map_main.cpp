@@ -9,7 +9,7 @@ int main()
 {
 
     stream << "sizeof std_map: "<< sizeof(std::map<int, int>) << std::endl;
-    /*
+    
     stream << "sizeof r_map: "<< sizeof(RMap<int, int>) << std::endl;
 
     {
@@ -19,6 +19,6 @@ int main()
     {
         RMap<int, int> r_test_map;
     }
-    */
+    
     return 0;
 }

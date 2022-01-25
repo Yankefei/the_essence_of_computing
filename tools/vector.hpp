@@ -43,7 +43,7 @@ public:
         first_free_ = cap_ = new_data.second;
     }
 
-    Vector(Vector&& val)
+    Vector(Vector&& val)  noexcept
     {
         set_status_null();
         swap_data(val);
@@ -58,7 +58,7 @@ public:
         return *this;
     }
 
-    Vector& operator=(Vector&& val)
+    Vector& operator=(Vector&& val)  noexcept
     {
         if (this != &val)
         {
@@ -89,14 +89,14 @@ public:
         push_back(T(val));
     }
 
-    void push_back(T&& val)
+    void push_back(T&& val) noexcept
     {
         check_n_alloc();
         alloc_.construct(first_free_++, std::move(val));
     }
 
     template<typename... Args>
-    void emplace_back(Args&&... args)
+    void emplace_back(Args&&... args)  noexcept
     {
         check_n_alloc();
         alloc_.construct(first_free_++, std::move(T(std::forward<Args>(args)...)));

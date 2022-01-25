@@ -380,5 +380,60 @@ int main()
 
         assert(ele_size == 0);
     }
+
+    {
+        using namespace tools::avl_tree_3;
+        int index = 0;
+        size_t ele_size = 0;
+        while(index ++ < 10)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 1000000);
+            for(int i = 0; i < 10000; i++)
+            {
+                array.push_back(rand());
+            }
+            AvlTree<int> my_tree;
+            for (auto& i : array)
+            {
+                if (my_tree.insert(i))
+                    ele_size ++;
+            }
+
+            if (!my_tree.is_balance())
+            {
+                assert(false);
+            }
+
+            //my_tree.in_order();
+            //my_tree.print_tree();
+            assert(ele_size == my_tree.NiceInOrder());
+            assert(ele_size == my_tree.ResNiceInOrder());
+
+            AvlTree<int> my_tree2;
+            my_tree2 = std::move(my_tree);
+            //my_tree2.in_order();
+            //my_tree2.print_tree();
+            assert(ele_size == my_tree2.NiceInOrder());
+            assert(ele_size == my_tree2.ResNiceInOrder());
+
+            // assert(my_tree2.is_same(my_tree) == true);
+
+            if (!my_tree2.is_balance())
+            {
+                assert(false);
+            }
+
+            for (auto& i : array)
+            {
+                if (/*my_tree.remove(i) && */my_tree2.remove(i))
+                    ele_size --;
+            }
+            //assert(my_tree.get_root() == nullptr);
+            assert(my_tree2.get_root() == nullptr);
+
+            assert(ele_size == 0);
+        }
+    }
     return 0;
 }

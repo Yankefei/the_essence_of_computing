@@ -40,10 +40,11 @@ template<typename T,
 class RbTree : protected RbTree_Base<T, RbNode, Alloc>, protected RbTree_Util2<T, RbNode>
 {
     typedef RbTree_Base<T, RbNode, Alloc> RbTreeBase;
+    typedef RbTree_Util2<T, RbNode> RbTreeUtil2;
+
+public:
     typedef typename RbTreeBase::Node Node;
     typedef Node*  Root;
-
-    typedef RbTree_Util2<T, RbNode> RbTreeUtil2;
 
 public:
     using RbTreeBase::buy_node;
@@ -88,10 +89,37 @@ public:
         free_node(_m_impl._root);
     }
 
-    RbTree(const RbTree& tree)
+    RbTree(const RbTree& rhs)
     {
         initialize();
-        _m_impl._root->right_tree_ = copy(tree._m_impl._root->right_tree_);
+        _m_impl._root->right_tree_ = copy(rhs._m_impl._root->right_tree_);
+    }
+
+    RbTree& operator=(const RbTree& rhs)
+    {
+        if (this != &rhs)
+        {
+            if (_m_impl._root->right_tree_ != null_node_)
+                destory(_m_impl._root->right_tree_);
+            _m_impl._root->right_tree_ = copy(rhs._m_impl._root->right_tree_);
+        }
+        return *this;
+    }
+
+    RbTree(RbTree&& rhs)   noexcept
+    {
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+    }
+
+    RbTree& operator=(RbTree&& rhs)  noexcept
+    {
+        if (this != &rhs)
+        {
+            _m_impl._root = rhs._m_impl._root;
+            rhs._m_impl._root = nullptr;
+        }
+        return *this;
     }
 
     // 自顶向下插入 非递归
@@ -108,6 +136,17 @@ public:
         if (_m_impl._root->right_tree_)
             _m_impl._root->right_tree_->color_ = Color::Black;
         return res;
+    }
+
+    Node* find(const T& val)
+    {
+        Node* ptr = _m_impl._root->right_tree_;
+        while(ptr != nullptr && alg::neq(ptr->data_, val))
+        {
+            ptr = alg::le(val, ptr->data_) ? ptr->left_tree_ : ptr->right_tree_;
+        }
+
+        return ptr;
     }
 
     bool is_rb_tree()
@@ -225,6 +264,7 @@ private:
         if (ptr == nullptr || ptr2 == nullptr) return false;
 
         if (alg::eq(ptr->data_, ptr2->data_) &&
+            alg::eq(ptr->color_, ptr2->color_) &&
             check_same(ptr->left_tree_, ptr2->left_tree_) &&
             check_same(ptr->right_tree_, ptr2->right_tree_))
         {

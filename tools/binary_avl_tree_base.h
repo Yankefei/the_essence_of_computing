@@ -53,6 +53,14 @@ public:
 public:
     Base_Impl   _m_impl;
 
+    // 暂时未用
+    Node* buy_node(T&& val)  noexcept
+    {
+        pointer p = rebind_traits::allocate(_m_impl, 1);
+        rebind_traits::construct(_m_impl, p, std::forward<T>(val));
+        return static_cast<Node*>(p);
+    }
+
     Node* buy_node(const T& val)
     {
         pointer p = rebind_traits::allocate(_m_impl, 1);

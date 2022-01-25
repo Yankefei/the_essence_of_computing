@@ -293,7 +293,7 @@ public:
         _Base::_m_add_str_end();
     }
 
-    BString(BString&& rhs)
+    BString(BString&& rhs)  noexcept
     {
         swap(rhs);
     }
@@ -312,7 +312,7 @@ public:
     }
 
 
-    BString& operator=(BString&& rhs)
+    BString& operator=(BString&& rhs)  noexcept
     {
         if (this != &rhs)
         {

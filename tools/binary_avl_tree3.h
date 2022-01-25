@@ -39,6 +39,7 @@ template<typename T, typename Alloc = std::allocator<T> ,template <typename T1> 
 class AvlTree : protected AvlTree_Base<T, BNode, Alloc>
 {
     typedef AvlTree_Base<T, BNode, Alloc> AvlTreeBase;
+public:
     typedef typename AvlTreeBase::Node Node;
     typedef Node*  Root;
 
@@ -50,6 +51,37 @@ public:
 public:
     AvlTree() {}
     ~AvlTree() { destory(_m_impl._root); }
+
+    AvlTree(const AvlTree& rhs)
+    {
+        _m_impl._root = copy(rhs._m_impl._root);
+    }
+
+    AvlTree& operator=(const AvlTree& rhs)
+    {
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            _m_impl._root = copy(rhs._m_impl._root);
+        }
+        return *this;
+    }
+
+    AvlTree(AvlTree&& rhs)   noexcept
+    {
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+    }
+
+    AvlTree& operator=(AvlTree&& rhs)   noexcept
+    {
+        if (this != &rhs)
+        {
+            _m_impl._root = rhs._m_impl._root;
+            rhs._m_impl._root = nullptr;
+        }
+        return *this;
+    }
 
     bool insert2(const T& val)  // pass
     {
@@ -68,6 +100,7 @@ public:
     {
         return insert(&_m_impl._root, val);
     }
+
     // 非递归
     bool remove(const T& val)     // pass
     {
@@ -92,10 +125,10 @@ public:
                 assert(false);
             }
             f_min = ptr->data_;
-            stream << ptr->data_ << " ";
+            // stream << ptr->data_ << " ";
             e_size ++;
         }
-        stream << std::endl;
+        // stream << std::endl;
         return e_size;
     }
 
@@ -111,10 +144,10 @@ public:
                 assert(false);
             }
             f_max = ptr->data_;
-            stream << ptr->data_ << " ";
+            // stream << ptr->data_ << " ";
             e_size ++;
         }
-        stream << std::endl;
+        // stream << std::endl;
         return e_size;
     }
 
@@ -138,7 +171,87 @@ public:
         return _get_hight(_m_impl._root);
     }
 
+    bool is_same(const AvlTree& rhs)
+    {
+        return check_same(_m_impl._root, rhs._m_impl._root) &&
+               check_same2(_m_impl._root, rhs._m_impl._root);
+    }
+
 private:
+    // 复制一棵树, 返回新的ptr指针, 同时维护parent_指针
+    Node* copy(Node* ptr)
+    {
+        if (nullptr == ptr) return ptr;
+
+        // 先获取ptr树的left节点
+        Node* left = ptr;
+        while(left->left_tree_)
+            left = left->left_tree_;
+
+        Node* new_ptr = nullptr;
+        Node* new_ptr_next = nullptr; // new_ptr 的左子树
+        for(; left != ptr->parent_; left = left->parent_)
+        {
+            new_ptr_next = new_ptr;
+            new_ptr = buy_node(left->data_);
+            new_ptr->balance_ = left->balance_;
+            new_ptr->right_tree_ = copy(left->right_tree_);
+            if (new_ptr->right_tree_ != nullptr)
+                new_ptr->right_tree_->parent_ = new_ptr;
+            
+            if (new_ptr_next != nullptr)
+                new_ptr_next->parent_ = new_ptr;
+            new_ptr->left_tree_ = new_ptr_next;
+        }
+
+        return new_ptr;
+    }
+
+    // 递归检查
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        if (ptr == nullptr || ptr2 == nullptr) return false;
+
+        if (alg::eq(ptr->data_, ptr2->data_) &&
+            alg::eq(ptr->balance_, ptr2->balance_) &&
+            check_same(ptr->left_tree_, ptr2->left_tree_) &&
+            check_same(ptr->right_tree_, ptr2->right_tree_))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    // 正反遍历检查
+    bool check_same2(Node* root1, Node* root2)
+    {
+        {
+            Node* ptr = first(root1);
+            Node* ptr2 = first(root2);
+            for (; ptr != nullptr; ptr = next(ptr), ptr2 = next(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+
+        {
+            Node* ptr = last(root1);
+            Node* ptr2 = last(root2);
+            for (; ptr != nullptr; ptr = prev(ptr), ptr2 = prev(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+        return true;
+    }
+
     // 这里的taller是在递归中必须存在的，告知上层是否应该停止平衡判定的操作
     bool insert(Node*& ptr, const T&val, Node* f_ptr, bool& taller)
     {

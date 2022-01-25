@@ -38,7 +38,7 @@ public:
         push(T(val));
     }
 
-    void push(T&& val)
+    void push(T&& val)   noexcept
     {
         check_n_alloc();
         alloc_.construct(first_free_++, std::move(val));

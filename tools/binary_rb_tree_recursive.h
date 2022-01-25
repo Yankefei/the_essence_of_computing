@@ -161,6 +161,7 @@ private:
             return true;
         }
 
+        // 在递归调用之前检查节点的分裂，程序处理的方向就是自顶向下
         if (get_color(ptr->left_tree_) == Color::Red &&
             get_color(ptr->right_tree_) == Color::Red)
         {

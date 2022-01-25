@@ -4,7 +4,7 @@
 #include <memory>
 #include <cassert>
 
-// 必须含有parent_指针的node节点
+// 内部的node节点必须含有parent_指针
 #include "binary_rb_tree2.h"
 #include "binary_avl_tree3.h"
 

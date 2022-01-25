@@ -4,7 +4,7 @@
 #include <memory>
 #include <cassert>
 
-// 必须含有parent_指针的node节点
+// 内部的node节点必须含有parent_指针
 #include "binary_rb_tree2.h"
 #include "binary_avl_tree3.h"
 
@@ -19,18 +19,91 @@ namespace tools
 template<typename Key,
          typename Val,
          typename Alloc,
-         template <typename _T1> class Node,
+         template <typename _T1> class _Node,
          template <typename _T2,
                   typename _Alloc,
-                  template <typename _T3> class _Node> class Tree>
+                  template <typename _T3> class _Node1> class Tree>
 class Map
 {
-    typedef Tree<Pair<Key, Val>, Alloc, Node>  TreeImpl;
+    typedef Tree<Pair<Key, Val>, Alloc, _Node>  TreeImpl;
+    typedef Pair<Key, Val>          value_type;
+    typedef std::size_t             size_type;
+    
+    // TODO, 使用迭代器替换
+    typedef typename TreeImpl::Node*                   Iter;
+    typedef typename TreeImpl::Node const*             CIter;
 
 public:
+    Map() : impl_tree_() {};
+    ~Map() {}
+
+    Map(const Map& rhs) : impl_tree_(rhs.impl_tree_), ele_size_(rhs.ele_size_)
+    {}
+
+    Map& operator=(const Map& rhs)
+    {
+        if(this != &rhs)
+        {
+            impl_tree_ = rhs.impl_tree_;
+            ele_size_ = rhs.ele_size_;
+        }
+        return *this;
+    }
+
+    Map(Map&& rhs) noexcept
+    {
+        impl_tree_ = std::move(rhs.impl_tree_);
+        ele_size_ = rhs.ele_size_;
+    }
+
+    Map& operator=(Map&& rhs) noexcept
+    {
+        if (this != &rhs)
+        {
+            impl_tree_ = std::move(rhs.impl_tree_);
+            ele_size_ = rhs.ele_size_;
+        }
+        return *this;
+    }
+
+    bool insert(const value_type& val)
+    {
+        bool res = impl_tree_.insert(val);
+        if (res) ele_size_ ++;
+        return res;
+    }
+
+    size_type erase(const Key& key)
+    {
+        bool res = impl_tree_.remove(MakePair<Key, Val>(key, Val()));
+        size_type s = res ? 1 : 0;
+        return s;
+    }
+
+    Iter erase(CIter It)
+    {
+        // todo
+        Iter next = impl_tree_.next(It);
+    }
+
+    Val& operator[](const Key& key)
+    {
+
+    }
+
+    Iter find(const Key& key)
+    {
+
+    }
+
+    CIter find(const Key& key) const
+    {
+
+    }
 
 private:
-    TreeImpl  _impl_tree;
+    TreeImpl  impl_tree_;
+    size_type ele_size_{0};
 };
 
 // rb_tree map
