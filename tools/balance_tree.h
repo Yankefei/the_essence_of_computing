@@ -5,7 +5,9 @@
 #include <cassert>
 
 #include "balance_tree_base.h"
+#include "balance_tree_print_util.h"
 
+#include "pair.hpp"
 #include "algorithm.hpp"
 
 namespace tools
@@ -59,10 +61,10 @@ struct _BNode
 template<typename T,
         typename Alloc = std::allocator<T>,
         template <typename T1> class BNode = _BNode,
-        template <typename T2> class Entry = _Entry>
-class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, Entry>
+        template <typename T2> class BEntry = _Entry>
+class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, BEntry>
 {
-    typedef BalanceTree_Base<T, Alloc, BNode, Entry> BalanceTreeBase;
+    typedef BalanceTree_Base<T, Alloc, BNode, BEntry> BalanceTreeBase;
     typedef typename BalanceTreeBase::Node Node;
     typedef typename BalanceTreeBase::Entry Entry;
     typedef Node*  Root;
@@ -87,9 +89,8 @@ public:
     };
 
 public:
-    BalanceTree(size_t m/*B树的阶*/) : BalanceTreeBase(m), _m(m)
+    BalanceTree(size_t m/*B树的阶*/) : BalanceTreeBase(m), m_(m)
     {
-        // _m_impl._root = buy_node();
     }
 
     ~BalanceTree()
@@ -97,9 +98,42 @@ public:
         destory(_m_impl._root);
     }
 
+    // 自低向上 递归
     bool insert(const T& val)
     {
-        Node* ptr = insert(_m_impl._root, val, hight_);
+        bool change_min_ele = false;
+        if (_m_impl._root != nullptr && alg::le(val, _m_impl._root->array_[0]->data_))
+        {
+            change_min_ele = true;
+        }
+
+        auto res = insert(_m_impl._root, val, hight_);
+        if (!res.second) return false;
+
+        if (res.first != _m_impl._root)
+        {
+            hight_ ++;
+            if (_m_impl._root == nullptr)
+            {
+                _m_impl._root = res.first;
+            }
+            else
+            {
+                Node* new_root = buy_node();
+                new_root->array_[new_root->size_] = buy_entry(_m_impl._root->array_[0]->data_);
+                new_root->array_[new_root->size_++]->next_ = _m_impl._root;
+                new_root->array_[new_root->size_] = buy_entry(res.first->array_[0]->data_);
+                new_root->array_[new_root->size_++]->next_ = res.first;
+                _m_impl._root = new_root;
+            }
+        }
+        else
+        {
+            if (change_min_ele)
+                _m_impl._root->array_[0]->data_ = val;
+        }
+
+        ele_size_ ++;
 
         return true;
     }
@@ -124,46 +158,58 @@ public:
         return _m_impl._root;
     }
 
-public:
-    // 在递归调用之后检查节点的分裂，程序处理的方向就是自底向上
-    Node* insert(Node* ptr, const T& val, int hight)
+    void print_tree()
     {
-        Node* n_ptr = nullptr;      // 保存下层递归的返回值
-        Node* ret_ptr = ptr;        // 返回的指针
-        Result res{nullptr, 0, false};
+        draw_tree<Node>(_m_impl._root, hight_, m_);
+    }
+
+public:
+    using InsertRes = Pair<Node*, bool>;
+    // 在递归调用之后检查节点的分裂，程序处理的方向就是自底向上
+    InsertRes insert(Node* ptr, const T& val, int hight)
+    {
+        InsertRes n_res(nullptr, true);      // 保存下层递归的返回值
+        Node* ret_ptr = ptr;                 // 返回的指针
+        Result f_res{nullptr, 0, false};     // 返回查找返回值
         bool   change_min_ele = false;
         if (hight > 0)
         {
-            res = find_next(ptr, val);
-            if (alg::le(val, res.ptr_->array[0]->data_))
+            f_res = find_next(ptr, val);
+            if (alg::le(val, ptr->array_[0]->data_))
             {
                 //只有在val比B树最小值还小的时候, 才会进入该逻辑
                 change_min_ele = true;
             }
 
-            n_ptr = insert(res.ptr_, val, hight - 1);
+            n_res = insert(f_res.ptr_->next_, val, hight - 1);
             // 一致则说明下层未发生分裂
-            if (n_ptr == res.ptr_)
+            if (n_res.first == f_res.ptr_->next_)
             {
                 if (change_min_ele)
                 {
-                    n_ptr->array[0].data_ = val;
+                    n_res.first->array_[0]->data_ = val;
                 }
                 // 可能下游将最小值更新，所以这里需要再额外判断
-                return ret_ptr;
+                return n_res;
             }
         }
         else if (hight == 0)
         {
-            res = find_val(ptr, val);
-            if (res.tag_) return ret_ptr;   // 数据存在
+            f_res = find_val(ptr, val);
+            if (f_res.tag_)
+            {
+                n_res.first = ret_ptr;
+                n_res.second = false;
+                return n_res;   // 数据存在
+            }
         }
         else  // hight < 0
         {
-            assert (ptr == nullptr && ptr->size_ == 0);
+            assert (ptr == nullptr);
             ret_ptr = buy_node();
-            ptr->array_[ret_ptr->size_++] = buy_entry(val);
-            return ret_ptr;
+            ret_ptr->array_[ret_ptr->size_++] = buy_entry(val);
+            n_res.first = ret_ptr;
+            return n_res;
         }
 
         // 需要进行插入处理
@@ -173,9 +219,9 @@ public:
         {
             ret_ptr = split(ptr);
             static int32_t m_half = m_ / 2;
-            if (res.i_ > m_half)
+            if (f_res.i_ > m_half)
             {
-                res.i_ = res.i_ % m_half;  //插入的新位置
+                f_res.i_ = f_res.i_ % m_half;  //插入的新位置
                 ptr = ret_ptr;
             }
             else
@@ -183,29 +229,29 @@ public:
                 // 在原始的节点中更新最小值
                 if (change_min_ele)
                 {
-                    ptr->array[0].data_ = val;
+                    ptr->array_[0]->data_ = val;
                 }
             }
         }
 
         // ptr->size_ 是需要++的，因为这个时候数量还是之前的数量
-        for(int i = ptr->size_ ++; i > res.i_; i--)
+        for(int i = ptr->size_ ++; i > f_res.i_; i--)
         {
             ptr->array_[i] = ptr->array_[i - 1];
         }
         // 非叶子节点插入时, 可能需要更新
         if (hight > 0)
         {
-            ptr->array_[res.i_] = buy_entry(n_ptr->array[0]->data_);
-            ptr->array_[res.i_]->next_ = n_ptr;
+            ptr->array_[f_res.i_] = buy_entry(n_res.first->array_[0]->data_);
+            ptr->array_[f_res.i_]->next_ = n_res.first;
         }
         else
         {
-            ptr->array_[res.i_] = buy_entry(val);
+            ptr->array_[f_res.i_] = buy_entry(val);
         }
 
-        // 返回ret_ptr
-        return ret_ptr;
+        n_res.first = ret_ptr;
+        return n_res;
     }
 
     // 分裂节点, 返回分裂后Node节点指针
@@ -263,9 +309,10 @@ public:
             index = (begin_index + end_index) / 2;
             if (alg::eq(val, ptr->array_[index]->data_))
             {
+                res.ptr_ = ptr->array_[index];
                 res.i_ = index;
                 res.tag_ = true;
-                return true;
+                return res;
             }
             else if (alg::le(val, ptr->array_[index]->data_))
             {
@@ -313,7 +360,12 @@ public:
             else if (alg::le(ptr->array_[index]->data_, val))
                 begin_index = index + 1;
             else
-                return ptr->array_[index]->next_;
+            {
+                res.ptr_ = ptr->array_[index];
+                res.i_ = index;
+                res.tag_ = true;
+                return res;
+            }
         }
         // 如果找不到，那么就取下确界, 也就是end_index的指针部分返回
         // 这里是有意让其退出循环的
@@ -347,6 +399,7 @@ public:
         for(int i = 0; i < ptr->size_; i++)
         {
             destory(ptr->array_[i]->next_);
+            free_entry(ptr->array_[i]);
         }
         free_node(ptr);
     }

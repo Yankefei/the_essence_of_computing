@@ -102,7 +102,7 @@ public:
 
     void free_entry(Entry* ptr)
     {
-        entry_rebind_traits::destory(_m_entry_impl_, ptr);
+        entry_rebind_traits::destroy(_m_entry_impl_, ptr);
         entry_rebind_traits::deallocate(_m_entry_impl_, ptr, 1);
     }
 };

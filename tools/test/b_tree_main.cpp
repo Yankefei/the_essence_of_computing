@@ -7,32 +7,25 @@ using namespace tools;
 using namespace tools::b_tree;
 
 
-
 int main()
 {
-
-    stream << "sizeof BNode: " << sizeof(_BNode<int>)<< std::endl;
-
-    stream << "sizeof Entry: " << sizeof(Entry<int>)<< std::endl;
-    
-
     {
-        BalanceTree<int> my_tree(10);
+        stream << "sizeof BNode: " << sizeof(_BNode<int>)<< std::endl;
+        stream << "sizeof Entry: " << sizeof(_Entry<int>)<< std::endl;
+        
+        BalanceTree<int> my_tree(1000);
 
         stream << "sizeof BalanceTree is :"<< sizeof(BalanceTree<int>) << std::endl;
-    
-        auto ptr = my_tree.get_root();
-        ptr->m_ = 10;
-        for (int i = 0; i < 10; i ++)
-        {
-            ptr->array_[i].data_ = i;
-        }
+    }
 
-        for (int i = 0; i < 10; i ++)
+    {
+        BalanceTree<int> my_tree(5);
+        for (int i = 0; i < 20; i++)
         {
-            stream << ptr->array_[i].data_<<" ";
+            assert(my_tree.insert(i) == true);
+            stream << "insert i: " << i << " success" << std::endl;
+            my_tree.print_tree();
         }
-        stream << std::endl;
     }
 
     return 0;
