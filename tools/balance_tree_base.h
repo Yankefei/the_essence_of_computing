@@ -17,33 +17,41 @@ namespace tools
     // TODO 做法还是有点飘, 待完善
 */
 template<typename T,
-        template <typename T1> class BNode,
         typename Alloc,
-        std::size_t t_entry_size/* sizeof(Entry) */>
+        template <typename T1> class BNode,
+        template <typename T2> class BEntry>
 class BalanceTree_Base
 {
 public:
     // 一次申请的内存数为1字节
     typedef typename std::allocator_traits<Alloc>::template
         rebind_alloc<uint8_t> _Byte_alloc_type;   
-
     typedef typename std::allocator_traits<_Byte_alloc_type>
         byte_rebind_traits;
-
     typedef typename byte_rebind_traits::pointer  pointer;
 
     // 一次申请的内存数为 BNode大小
     typedef typename std::allocator_traits<Alloc>::template
-        rebind_alloc<BNode<T>> _BNode_alloc_type;
-
+        rebind_alloc<BEntry<T>> _BNode_alloc_type;
     typedef typename std::allocator_traits<_BNode_alloc_type>
         rebind_traits;
 
+    // 一次申请的内存数为 BEntry大小
+    typedef typename std::allocator_traits<Alloc>::template
+        rebind_alloc<BEntry<T>> _Entry_alloc_type;
+    typedef typename std::allocator_traits<_Entry_alloc_type>
+        entry_rebind_traits;
+    typedef typename entry_rebind_traits::pointer entry_pointer;
+
     typedef BNode<T>        Node;
+    typedef BEntry<T>       Entry; 
 
 private:
     struct ByteBase_Impl : public _Byte_alloc_type {};  // 仅仅用来申请内存
     static ByteBase_Impl _m_byte_impl_;                 // 设置为静态变量
+
+    struct EntryBase_Impl : public _Entry_alloc_type {};
+    static EntryBase_Impl _m_entry_impl_;                // 设置为静态变量
 
 public:
     struct Base_Impl : public _BNode_alloc_type
@@ -62,12 +70,12 @@ public:
         Node*     _root{nullptr};
     };
 
-    BalanceTree_Base(size_t m) : _m_size(m * t_entry_size) {}
+    BalanceTree_Base(size_t m) : _m_size(m * sizeof(Node*)) {}
     ~BalanceTree_Base() {} // 设置虚函数 BalanceTree_Base 会额外增加8字节内存
 
 public:
     Base_Impl   _m_impl;
-    size_t      _m_size;   // B树的阶 * sizeof(Entry)
+    size_t      _m_size;   // B树的阶 * sizeof(Node*)
 
     Node* buy_node()
     {
@@ -84,12 +92,34 @@ public:
         byte_rebind_traits::deallocate(_m_byte_impl_,
                 reinterpret_cast<pointer>(ptr), s_node_size);
     }
+
+    Entry* buy_entry(const T& val)
+    {
+        entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
+        entry_rebind_traits::construct(_m_entry_impl_, p, val);
+        return static_cast<Entry*>(p);
+    }
+
+    void free_entry(Entry* ptr)
+    {
+        entry_rebind_traits::destory(_m_entry_impl_, ptr);
+        entry_rebind_traits::deallocate(_m_entry_impl_, ptr, 1);
+    }
 };
 
-template<typename T, template <typename T1> class BNode, typename Alloc, std::size_t size>
-typename BalanceTree_Base<T, BNode, Alloc, size>::ByteBase_Impl
-    BalanceTree_Base<T, BNode, Alloc, size>::_m_byte_impl_;
+template <typename T,
+         typename Alloc,
+         template <typename T1> class BNode,
+         template <typename T2> class BEntry>
+typename BalanceTree_Base<T, Alloc, BNode, BEntry>::ByteBase_Impl
+    BalanceTree_Base<T, Alloc, BNode, BEntry>::_m_byte_impl_;
 
+template <typename T,
+         typename Alloc,
+         template <typename T1> class BNode,
+         template <typename T2> class BEntry>
+typename BalanceTree_Base<T, Alloc, BNode, BEntry>::EntryBase_Impl
+    BalanceTree_Base<T, Alloc, BNode, BEntry>::_m_entry_impl_;
 
 }
 
