@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BALANCE_PLUS_TREE_H_
-#define _TOOLS_BALANCE_PLUS_TREE_H_
+#ifndef _TOOLS_BALANCE_PLUS_TREE2_H_
+#define _TOOLS_BALANCE_PLUS_TREE2_H_
 
 #include <memory>
 #include <cassert>
@@ -10,7 +10,7 @@
 
 namespace tools
 {
-namespace b_plus_tree
+namespace b_plus_tree2
 {
 
 template<typename T>
@@ -31,6 +31,7 @@ template<typename T>
 struct _BNode
 {
     _BNode*    next_node_{nullptr};  // 指向下一个BNode的叶子节点(只有在叶子节点是才生效)
+    _BNode*    parent_{nullptr};     // 指向上级父节点的指针
     int        size_{0};                // 数组包含的元素个数
     Entry<T>   array_[0];            // 数据内存后置
 };

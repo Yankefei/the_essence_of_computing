@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BALANCE_TREE_H_
-#define _TOOLS_BALANCE_TREE_H_
+#ifndef _TOOLS_BALANCE_TREE2_H_
+#define _TOOLS_BALANCE_TREE2_H_
 
 #include <memory>
 #include <cassert>
@@ -11,7 +11,7 @@
 namespace tools
 {
 
-namespace b_tree
+namespace b_tree2
 {
 
 template<typename T>
@@ -34,6 +34,7 @@ struct _BNode
 {
     _BNode() = default;
     int      size_{0};          // 数组包含的元素个数
+    _BNode*  parent_{nullptr};  // 指向上级父节点的指针
     Entry<T> array_[0];      // 数据内存后置
 };
 
