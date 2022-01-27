@@ -33,7 +33,7 @@ void pre_order_tree(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
     for (; i < m; i ++)
         stream << " _,";
     stream << std::endl;
-    
+
     for (i = 0; i < ptr->size_; i++)
     {
         pre_order_tree(ptr->array_[i]->next_, hight - 1, total_hight, m);

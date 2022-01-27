@@ -20,7 +20,35 @@ int main()
 
     {
         BalanceTree<int> my_tree(4);
+        for (int i = 0; i <= 20; i++)
+        {
+            assert(my_tree.insert(i) == true);
+            assert(my_tree.is_b_tree() == true);
+            stream << "insert i: " << i << " success" << std::endl;
+        }
+        my_tree.print_tree();
+    }
+
+    {
+        BalanceTree<int> my_tree2(4);
+        for (int i = 20; i >= 0; i--)
+        {
+            assert(my_tree2.insert(i) == true);
+            assert(my_tree2.is_b_tree() == true);
+            stream << "insert i: " << i << " success" << std::endl;
+        }
+        my_tree2.print_tree();
+    }
+
+    {
+        BalanceTree<int> my_tree(4);
         for (int i = 0; i < 20; i++)
+        {
+            assert(my_tree.insert(i) == true);
+            assert(my_tree.is_b_tree() == true);
+            stream << "insert i: " << i << " success" << std::endl;
+        }
+        for (int i = 40; i >= 20; i--)
         {
             assert(my_tree.insert(i) == true);
             assert(my_tree.is_b_tree() == true);

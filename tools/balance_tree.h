@@ -36,8 +36,8 @@ template<typename T>
 struct _BNode
 {
     _BNode() = default;
-    int        size_{0};          // 数组包含的元素个数
-    _Entry<T>*  array_[0];         // 指针数据内存后置
+    int          size_{0};                 // 数组包含的元素个数
+    _Entry<T>**  array_{nullptr};          // 指针数组
 };
 
 /*B树*/
@@ -93,6 +93,7 @@ public:
     BalanceTree(size_t m/*B树的阶*/)
         : BalanceTreeBase(m >= 2 ? m : 2), m_(m >= 2 ? m : 2) // 最小阶为2
     {
+        m_half_ = m_ / 2;
     }
 
     ~BalanceTree()
@@ -221,10 +222,9 @@ public:
         if (ptr->size_ == m_)
         {
             ret_ptr = split(ptr);
-            static int32_t m_half = m_ / 2;
-            if (f_res.i_ > m_half || f_res.i_ == m_ - 1)  // 后面这种情况是处理m_为2的特殊情况
+            if (f_res.i_ > m_half_ || f_res.i_ == m_ - 1)  // 后面这种场景是处理m_为2的特殊情况
             {
-                f_res.i_ = f_res.i_ - m_half;  //插入的新位置
+                f_res.i_ = f_res.i_ - m_half_;  //插入的新位置
                 ptr = ret_ptr;
             }
             else
@@ -268,24 +268,23 @@ public:
     Node* split(Node* ptr)
     {
         assert(ptr->size_ == m_);
-        static int32_t m_half = m_ / 2;
-        static bool m_odd = m_ % 2 == 0 ? false : true;
+        bool m_odd = m_ % 2 == 0 ? false : true;
         Node* n_ptr = buy_node();
         // m_为奇数时, 在原节点保留元素的少, 迁移的元素较多
         int i = 0;
-        for (; i < m_half; i++)
+        for (; i < m_half_; i++)
         {
-            n_ptr->array_[i] = ptr->array_[m_half + i];
-            ptr->array_[m_half + i] = nullptr;
+            n_ptr->array_[i] = ptr->array_[m_half_ + i];
+            ptr->array_[m_half_ + i] = nullptr;
         }
         if (m_odd)
         {
-            n_ptr->array_[i] = ptr->array_[m_half + i];
-            ptr->array_[m_half + i] = nullptr;
+            n_ptr->array_[i] = ptr->array_[m_half_ + i];
+            ptr->array_[m_half_ + i] = nullptr;
         }
 
-        n_ptr->size_ = m_ - m_half;
-        ptr->size_ = m_half;
+        n_ptr->size_ = m_ - m_half_;
+        ptr->size_ = m_half_;
         return n_ptr;
     }
 
@@ -328,17 +327,26 @@ public:
                 res.tag_ = true;
                 return res;
             }
-            else if (alg::le(val, ptr->array_[index]->data_))
-            {
-                end_index = index - 1;
-            }
             else
             {
-                begin_index = index + 1;
+                if (begin_index == index)
+                {
+                    // 到最后该选择哪个index进行替换，还需要再判断
+                    if (alg::le(val, ptr->array_[begin_index]->data_))
+                        res.i_ = begin_index;
+                    else
+                        res.i_ = begin_index + 1;
+                    return res;
+                }
+
+                if (alg::le(val, ptr->array_[index]->data_))
+                    end_index = index - 1;
+                else
+                    begin_index = index + 1;
             }
         }
-        res.i_ = end_index;  // end_index < begin_index  未找到
-        return res;
+        // res.i_ = begin_index + 1;  // end_index < begin_index  未找到
+        // return res;
     }
 
     // 返回的Result中, i_的位置不会超过size_的位置
@@ -369,23 +377,33 @@ public:
         while(begin_index <= end_index)
         {
             index = (begin_index + end_index) / 2;
-            if (alg::le(val, ptr->array_[index]->data_))
-                end_index = index - 1;
-            else if (alg::le(ptr->array_[index]->data_, val))
-                begin_index = index + 1;
-            else
+            if (alg::eq(val, ptr->array_[index]->data_))
             {
                 res.ptr_ = ptr->array_[index];
                 res.i_ = index;
                 res.tag_ = true;
                 return res;
             }
+            else
+            {
+                if (begin_index == index)
+                {
+                    if (alg::le(val, ptr->array_[begin_index]->data_))
+                        res.i_ = begin_index - 1;
+                    else
+                        res.i_ = begin_index;
+                    res.ptr_ = ptr->array_[res.i_];
+                    return res;
+                }
+                if (alg::le(val, ptr->array_[index]->data_))
+                    end_index = index - 1;
+                else
+                    begin_index = index + 1;
+            }
         }
-        // 如果找不到，那么就取下确界, 也就是end_index的指针部分返回
-        // 这里是有意让其退出循环的
-        res.ptr_ = ptr->array_[end_index];
-        res.i_ = end_index;
-        return res;
+        // res.ptr_ = ptr->array_[begin_index];
+        // res.i_ = begin_index;
+        // return res;
     }
 
     // 判断是否为一棵符合规范的B树
@@ -416,13 +434,12 @@ public:
         {
             if (hight == hight_)
             {
-                if (ptr->size_ < 2)
+                if (ptr->size_ < 2)  // 根节点的元素数
                     return res;
             }
             else
             {
-                static int m_half = m_ / 2;
-                if (ptr->size_ < m_half)
+                if (ptr->size_ < m_half_)
                     return res;
             }
         }
@@ -430,7 +447,8 @@ public:
         do
         {
             int j = 0;
-            for (int i = 0 ; i < ptr->size_; i++)
+            int i = 0;
+            for (; i < ptr->size_; i++)
             {
                 assert(ptr->array_[i] != nullptr);
                 if (hight > 0)
@@ -449,13 +467,19 @@ public:
                         }
                     }
                 }
-                if (alg::le(ptr->array_[i]->data_, ptr->array_[j]->data_))
-                    break;
+                if (i > 0)
+                {
+                    if (!alg::gt(ptr->array_[i]->data_, ptr->array_[j]->data_))
+                        break;
+                }
                 j = i; // 让j落后i一位
 
                 if (!is_b_tree(ptr->array_[i]->next_, hight - 1))
                     break;
             }
+
+            if (i < ptr->size_)
+                break;
             res = true;
         }while(false);
 
@@ -481,6 +505,7 @@ public:
 
 private:
     int         m_;          // B树的阶
+    int         m_half_;     // 阶的一半，计算大量使用到
     int         hight_{-1};  // 树高, 单节点的B树默认树高为0, 空树默认树高为-1
     std::size_t ele_size_{0}; // 总元素数
 };
