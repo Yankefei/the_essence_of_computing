@@ -46,9 +46,10 @@ struct _BNode
     构造时作为参数传入
     这里实现的版本为Robert Sedgewich所提供的版本, 并非Mark Allen Weiss和国内教科书作者如严蔚敏等
     所提供的版本。 该版本的特点为：
-    1. 当节点内的元素个数为m个时，那么它下级的节点个数也是m个，而不是类似 2-3-4树那样定义的m+1个节点，
+    1. 所有的数据均存储在叶子节点上
+    2. 当节点内的元素个数为m个时，那么它下级的节点个数也是m个，而不是类似 2-3-4树那样定义的m+1个节点，
        所以这是一种更接近B+树定义的版本。
-    2. 节点内元素中存储的值为下级各节点中存储值的最小值，而不是最大值。
+    3. 节点内元素中存储的值为下级各节点中存储值的最小值，而不是最大值。
 
     下面是一棵3阶B树的示意图：
 
@@ -89,7 +90,8 @@ public:
     };
 
 public:
-    BalanceTree(size_t m/*B树的阶*/) : BalanceTreeBase(m), m_(m)
+    BalanceTree(size_t m/*B树的阶*/)
+        : BalanceTreeBase(m >= 2 ? m : 2), m_(m >= 2 ? m : 2) // 最小阶为2
     {
     }
 
@@ -150,7 +152,7 @@ public:
 
     bool is_b_tree()
     {
-
+        return is_b_tree(_m_impl._root, hight_);
     }
 
     Node* get_root()
@@ -185,11 +187,12 @@ public:
             // 一致则说明下层未发生分裂
             if (n_res.first == f_res.ptr_->next_)
             {
+                // 可能下游将最小值更新，所以这里需要再额外判断
                 if (change_min_ele)
                 {
                     n_res.first->array_[0]->data_ = val;
                 }
-                // 可能下游将最小值更新，所以这里需要再额外判断
+                n_res.first = ret_ptr;
                 return n_res;
             }
         }
@@ -219,9 +222,9 @@ public:
         {
             ret_ptr = split(ptr);
             static int32_t m_half = m_ / 2;
-            if (f_res.i_ > m_half)
+            if (f_res.i_ > m_half || f_res.i_ == m_ - 1)  // 后面这种情况是处理m_为2的特殊情况
             {
-                f_res.i_ = f_res.i_ % m_half;  //插入的新位置
+                f_res.i_ = f_res.i_ - m_half;  //插入的新位置
                 ptr = ret_ptr;
             }
             else
@@ -234,12 +237,19 @@ public:
             }
         }
 
+        // 非叶子节点插入时, 可能需要更新, 插入的到上一个节点的位置需要获取
+        if (hight > 0)
+        {
+            // 非叶结点和叶子节点的挪动方式稍不同, 顺延在 f_res.i_ 之后插入
+            f_res.i_ ++;
+        }
+
         // ptr->size_ 是需要++的，因为这个时候数量还是之前的数量
         for(int i = ptr->size_ ++; i > f_res.i_; i--)
         {
             ptr->array_[i] = ptr->array_[i - 1];
         }
-        // 非叶子节点插入时, 可能需要更新
+
         if (hight > 0)
         {
             ptr->array_[f_res.i_] = buy_entry(n_res.first->array_[0]->data_);
@@ -266,9 +276,13 @@ public:
         for (; i < m_half; i++)
         {
             n_ptr->array_[i] = ptr->array_[m_half + i];
+            ptr->array_[m_half + i] = nullptr;
         }
         if (m_odd)
+        {
             n_ptr->array_[i] = ptr->array_[m_half + i];
+            ptr->array_[m_half + i] = nullptr;
+        }
 
         n_ptr->size_ = m_ - m_half;
         ptr->size_ = m_half;
@@ -383,13 +397,74 @@ public:
         5. m个元素的非叶子节点下游存在m个节点
         6. 非叶子节点中保存的元素值均为下层叶子节点中最小值
     */
-    bool is_b_tree(Node* ptr, int hight_)
+    bool is_b_tree(Node* ptr, int hight)
     {
-        bool res = true;
-        for (int i = 0; i < ptr->size_; i ++)
+        if (ptr == nullptr)
         {
-
+            assert(hight == -1);
+            return true;  //空节点默认是B数
         }
+        if (hight_ == 0 && ptr->size_ == 0)
+            return true;   // 删除全部数据后，空节点也算是
+
+        assert(hight >= 0);
+        assert(ptr->size_ <= m_);
+        assert(ptr->size_ > 0);
+
+        bool res = false;
+        if (hight_ > 0)
+        {
+            if (hight == hight_)
+            {
+                if (ptr->size_ < 2)
+                    return res;
+            }
+            else
+            {
+                static int m_half = m_ / 2;
+                if (ptr->size_ < m_half)
+                    return res;
+            }
+        }
+
+        do
+        {
+            int j = 0;
+            for (int i = 0 ; i < ptr->size_; i++)
+            {
+                assert(ptr->array_[i] != nullptr);
+                if (hight > 0)
+                {
+                    assert(ptr->array_[i]->next_ != nullptr);
+                    if (!alg::eq(ptr->array_[i]->data_, ptr->array_[i]->next_->array_[0]->data_))
+                        break;
+                    
+                    if (i > 0)
+                    {
+                        int n_size = ptr->array_[j]->next_->size_;
+                        // 当前的值比前一位值的下级节点的最大值还要大，保证有序
+                        if (!alg::le(ptr->array_[j]->next_->array_[n_size - 1]->data_, ptr->array_[i]->data_))
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (alg::le(ptr->array_[i]->data_, ptr->array_[j]->data_))
+                    break;
+                j = i; // 让j落后i一位
+
+                if (!is_b_tree(ptr->array_[i]->next_, hight - 1))
+                    break;
+            }
+            res = true;
+        }while(false);
+
+        if (!res)
+        {
+            draw_tree<Node>(ptr, hight, m_);
+        }
+
+        return res;
     }
 
     void destory(Node* ptr)

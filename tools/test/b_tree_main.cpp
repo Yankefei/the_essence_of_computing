@@ -19,10 +19,11 @@ int main()
     }
 
     {
-        BalanceTree<int> my_tree(5);
+        BalanceTree<int> my_tree(4);
         for (int i = 0; i < 20; i++)
         {
             assert(my_tree.insert(i) == true);
+            assert(my_tree.is_b_tree() == true);
             stream << "insert i: " << i << " success" << std::endl;
             my_tree.print_tree();
         }
