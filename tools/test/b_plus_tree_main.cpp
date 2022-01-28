@@ -1,6 +1,6 @@
 #include "stream.h"
 
-#include "balance_plus_tree.h"
+#include "balance_tree/balance_plus_tree.h"
 
 
 using namespace tools;
@@ -12,7 +12,7 @@ int main()
 
     stream << "sizeof BNode: " << sizeof(_BNode<int>)<< std::endl;
 
-    stream << "sizeof Entry: " << sizeof(Entry<int>)<< std::endl;
+    stream << "sizeof Entry: " << sizeof(_Entry<int>)<< std::endl;
     
 
     {
@@ -20,18 +20,7 @@ int main()
 
         stream << "sizeof BalancePlusTree is :"<< sizeof(BalancePlusTree<int>) << std::endl;
     
-        auto ptr = my_tree.get_root();
-        ptr->m_ = 10;
-        for (int i = 0; i < 10; i ++)
-        {
-            ptr->array_[i].data_ = i;
-        }
 
-        for (int i = 0; i < 10; i ++)
-        {
-            stream << ptr->array_[i].data_<<" ";
-        }
-        stream << std::endl;
     }
 
     return 0;

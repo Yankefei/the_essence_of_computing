@@ -17,8 +17,9 @@ template<typename T>
 struct _BNode;
 
 template<typename T>
-struct Entry
+struct _Entry
 {
+    _Entry(const T& val) : data_(val) {}
     T data_;
     union
     {
@@ -30,26 +31,30 @@ struct Entry
 template<typename T>
 struct _BNode
 {
-    _BNode*    next_node_{nullptr};  // 指向下一个BNode的叶子节点(只有在叶子节点是才生效)
-    _BNode*    parent_{nullptr};     // 指向上级父节点的指针
-    int        size_{0};                // 数组包含的元素个数
-    Entry<T>   array_[0];            // 数据内存后置
+    _BNode*      next_node_{nullptr};  // 指向下一个BNode的叶子节点(只有在叶子节点是才生效)
+    _BNode*      parent_{nullptr};     // 指向上级父节点的指针
+    int          size_{0};                // 数组包含的元素个数
+    _Entry<T>**  array_{nullptr};            // 数据内存后置
 };
 
 
 /*B+树*/
 template<typename T,
         typename Alloc = std::allocator<T>,
-        template <typename T1> class BNode = _BNode>
-class BalancePlusTree : protected BalanceTree_Base<T, BNode, Alloc, sizeof(Entry<T>)>
+        template <typename T1> class BNode = _BNode,
+        template <typename T1> class Entry = _Entry>
+class BalancePlusTree : protected BalanceTree_Base<T, Alloc, BNode, Entry>
 {
-    typedef BalanceTree_Base<T, BNode, Alloc, sizeof(Entry<T>)> BalanceTreeBase;
+    typedef BalanceTree_Base<T, Alloc, BNode, Entry> BalanceTreeBase;
     typedef typename BalanceTreeBase::Node Node;
     typedef Node*  Root;
+
 public:
     using BalanceTreeBase::buy_node;
     using BalanceTreeBase::free_node;
     using BalanceTreeBase::_m_impl;
+    using BalanceTreeBase::buy_entry;
+    using BalanceTreeBase::free_entry;
 
 public:
     BalancePlusTree(size_t m/*B+树的阶*/) : BalanceTreeBase(m)
@@ -74,7 +79,7 @@ private:
 
         for(int i = 0; i < ptr->size_; i++)
         {
-            destory(ptr->array_[i].next_);
+            destory(ptr->array_[i]->next_);
         }
         free_node(ptr);
     }

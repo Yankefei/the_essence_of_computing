@@ -4,8 +4,8 @@
 #include <memory>
 #include <cassert>
 
-#include "balance_tree_base.h"
-#include "balance_tree_print_util.h"
+#include "balance_tree_base_debug.h"
+#include "balance_tree_print_util_debug.h"
 
 #include "pair.hpp"
 #include "algorithm.hpp"
@@ -37,7 +37,8 @@ struct _BNode
 {
     _BNode() = default;
     int          size_{0};                 // 数组包含的元素个数
-    _Entry<T>**  array_{nullptr};          // 指针数组
+    //_Entry<T>**  array_{nullptr};          // 指针数组 调试不容易,等程序稳定后再更换数据结构
+    _Entry<T>*     array_{nullptr};
 };
 
 /*B树*/
@@ -73,8 +74,8 @@ public:
     using BalanceTreeBase::buy_node;
     using BalanceTreeBase::free_node;
     using BalanceTreeBase::_m_impl;
-    using BalanceTreeBase::buy_entry;
-    using BalanceTreeBase::free_entry;
+    // using BalanceTreeBase::buy_entry;
+    // using BalanceTreeBase::free_entry;
 
     /*记录查询的结果*/
     struct Result
@@ -101,11 +102,11 @@ public:
         destory(_m_impl._root);
     }
 
-    // 自低向上 递归
+    // 自底向上 递归
     bool insert(const T& val)
     {
         bool change_min_ele = false;
-        if (_m_impl._root != nullptr && alg::le(val, _m_impl._root->array_[0]->data_))
+        if (_m_impl._root != nullptr && alg::le(val, _m_impl._root->array_[0].data_))
         {
             change_min_ele = true;
         }
@@ -123,17 +124,17 @@ public:
             else
             {
                 Node* new_root = buy_node();
-                new_root->array_[new_root->size_] = buy_entry(_m_impl._root->array_[0]->data_);
-                new_root->array_[new_root->size_++]->next_ = _m_impl._root;
-                new_root->array_[new_root->size_] = buy_entry(res.first->array_[0]->data_);
-                new_root->array_[new_root->size_++]->next_ = res.first;
+                new_root->array_[new_root->size_].data_ = _m_impl._root->array_[0].data_;
+                new_root->array_[new_root->size_++].next_ = _m_impl._root;
+                new_root->array_[new_root->size_].data_ = res.first->array_[0].data_;
+                new_root->array_[new_root->size_++].next_ = res.first;
                 _m_impl._root = new_root;
             }
         }
         else
         {
             if (change_min_ele)
-                _m_impl._root->array_[0]->data_ = val;
+                _m_impl._root->array_[0].data_ = val;
         }
 
         ele_size_ ++;
@@ -178,7 +179,7 @@ public:
         if (hight > 0)
         {
             f_res = find_next(ptr, val);
-            if (alg::le(val, ptr->array_[0]->data_))
+            if (alg::le(val, ptr->array_[0].data_))
             {
                 //只有在val比B树最小值还小的时候, 才会进入该逻辑
                 change_min_ele = true;
@@ -191,7 +192,7 @@ public:
                 // 可能下游将最小值更新，所以这里需要再额外判断
                 if (change_min_ele)
                 {
-                    n_res.first->array_[0]->data_ = val;
+                    n_res.first->array_[0].data_ = val;
                 }
                 n_res.first = ret_ptr;
                 return n_res;
@@ -211,7 +212,7 @@ public:
         {
             assert (ptr == nullptr);
             ret_ptr = buy_node();
-            ret_ptr->array_[ret_ptr->size_++] = buy_entry(val);
+            ret_ptr->array_[ret_ptr->size_++].data_ = val;
             n_res.first = ret_ptr;
             return n_res;
         }
@@ -219,29 +220,41 @@ public:
         // 需要进行插入处理
         // 需要先分裂，再插入
         // 这里复用ptr, 赋值为需要插入的节点
-        if (ptr->size_ == m_)
+        if (hight == 0)
         {
-            ret_ptr = split(ptr);
-            if (f_res.i_ > m_half_ || f_res.i_ == m_ - 1)  // 后面这种场景是处理m_为2的特殊情况
+            if (ptr->size_ == m_)
             {
-                f_res.i_ = f_res.i_ - m_half_;  //插入的新位置
-                ptr = ret_ptr;
-            }
-            else
-            {
-                // 在原始的节点中更新最小值
-                if (change_min_ele)
+                ret_ptr = split(ptr);
+                if (f_res.i_ > m_half_ || f_res.i_ == m_ - 1)  // 后面这种场景是处理m_为2的特殊情况
                 {
-                    ptr->array_[0]->data_ = val;
+                    f_res.i_ = f_res.i_ - m_half_;  //插入的新位置
+                    ptr = ret_ptr;// 重置ptr
                 }
             }
         }
-
-        // 非叶子节点插入时, 可能需要更新, 插入的到上一个节点的位置需要获取
-        if (hight > 0)
+        else
         {
-            // 非叶结点和叶子节点的挪动方式稍不同, 顺延在 f_res.i_ 之后插入
-            f_res.i_ ++;
+            if (ptr->size_ == m_)
+            {
+                ret_ptr = split(ptr);
+                if (f_res.i_ >= m_half_ || f_res.i_ == m_ - 1)  // 后面这种场景是处理m_为2的特殊情况
+                {
+                    f_res.i_ = f_res.i_ - m_half_;  //插入的新位置
+                    f_res.i_ ++;
+                    ptr = ret_ptr;// 重置ptr
+                }
+                else
+                {
+                    // 如果刚好m_half, 则不需要更新，因为这个位置为空，可以直接插入
+                    if (f_res.i_ != m_half_)
+                        f_res.i_ ++;
+                }
+            }
+            else
+            {
+                // 非叶子节点插入时, 可能需要更新, 插入的到上一个节点的位置需要获取
+                f_res.i_ ++;
+            }
         }
 
         // ptr->size_ 是需要++的，因为这个时候数量还是之前的数量
@@ -252,14 +265,20 @@ public:
 
         if (hight > 0)
         {
-            ptr->array_[f_res.i_] = buy_entry(n_res.first->array_[0]->data_);
-            ptr->array_[f_res.i_]->next_ = n_res.first;
+            ptr->array_[f_res.i_].data_ = n_res.first->array_[0].data_;
+            ptr->array_[f_res.i_].next_ = n_res.first;
+            // 在f_res.i_ 指向原始的节点时，判断是否更新最小值
+            if (change_min_ele)
+            {
+                ptr->array_[0].data_ = val;
+            }
         }
         else
         {
-            ptr->array_[f_res.i_] = buy_entry(val);
+            ptr->array_[f_res.i_].data_ = val;
         }
 
+        // 应该返回哪一个节点的指针？新增的节点指针或原ptr指针
         n_res.first = ret_ptr;
         return n_res;
     }
@@ -275,12 +294,14 @@ public:
         for (; i < m_half_; i++)
         {
             n_ptr->array_[i] = ptr->array_[m_half_ + i];
-            ptr->array_[m_half_ + i] = nullptr;
+            ptr->array_[m_half_ + i].next_ = nullptr;
+            ptr->array_[m_half_ + i].data_ = T();
         }
         if (m_odd)
         {
             n_ptr->array_[i] = ptr->array_[m_half_ + i];
-            ptr->array_[m_half_ + i] = nullptr;
+            ptr->array_[m_half_ + i].next_ = nullptr;
+            ptr->array_[m_half_ + i].data_ = T();
         }
 
         n_ptr->size_ = m_ - m_half_;
@@ -303,107 +324,139 @@ public:
     {
         Result res{nullptr, 0, false};
         if (ptr == nullptr || ptr->size_ == 0) return res;
-        // 二分查找
+        // 二分查找大于等于该值的最小区间, 用于寻找将val插入的位置
         int begin_index = 0;
         int end_index = ptr->size_ - 1;
-        if (alg::le(val, ptr->array_[begin_index]->data_))
+        if (alg::le(val, ptr->array_[begin_index].data_))
         {
             return res;
         }
-        if (alg::le(ptr->array_[end_index]->data_, val))
-        {
-            res.i_ = end_index + 1;
-            return res;
-        }
+        // if (alg::le(ptr->array_[end_index].data_, val))
+        // {
+        //     res.i_ = end_index + 1;
+        //     return res;
+        // }
 
         int index = 0;
         while(begin_index <= end_index)
         {
             index = (begin_index + end_index) / 2;
-            if (alg::eq(val, ptr->array_[index]->data_))
+            if (alg::eq(val, ptr->array_[index].data_))
             {
-                res.ptr_ = ptr->array_[index];
+                res.ptr_ = &ptr->array_[index];
                 res.i_ = index;
                 res.tag_ = true;
                 return res;
             }
             else
             {
-                if (begin_index == index)
+                if (end_index - begin_index <= 1)
                 {
-                    // 到最后该选择哪个index进行替换，还需要再判断
-                    if (alg::le(val, ptr->array_[begin_index]->data_))
-                        res.i_ = begin_index;
-                    else
-                        res.i_ = begin_index + 1;
-                    return res;
+                    break; // 进入了末端，逐个比较
                 }
-
-                if (alg::le(val, ptr->array_[index]->data_))
+                if (alg::le(val, ptr->array_[index].data_))
                     end_index = index - 1;
                 else
                     begin_index = index + 1;
             }
         }
-        // res.i_ = begin_index + 1;  // end_index < begin_index  未找到
-        // return res;
+
+        // 到最后该选择哪个位置进行替换，还需要再判断
+        int i = begin_index;
+        for (; i <= end_index; i++)
+        {
+            if (alg::eq(val, ptr->array_[i].data_))
+            {
+                res.i_ = i;
+                res.ptr_ = &ptr->array_[i];
+                res.tag_ = true;
+                return res;
+            }
+
+            if (alg::le(val, ptr->array_[i].data_))
+            {
+                // 返回第一个大于val的位置
+                res.i_ = i;
+                res.ptr_ = &ptr->array_[i];
+                return res;
+            }
+        }
+        res.i_ = i;
+        res.ptr_ = &ptr->array_[i];
+        return res;
     }
 
     // 返回的Result中, i_的位置不会超过size_的位置
     Result find_next(Node* ptr, const T& val) // pass
     {
-        // 二分查找
+        // 二分查找小于等于该值的最大区间，用于从区间的下层搜索val
         Result res = {nullptr, 0, false};
         int begin_index = 0;
         int end_index = ptr->size_ -1;
 
         assert(ptr->size_ != 0);
 
-        // 提前处理在begin end边界外的情况
-        if (alg::le(val, ptr->array_[begin_index]->data_))
+        // 提前处理在begin边界外的情况
+        if (alg::le(val, ptr->array_[begin_index].data_))
         {
-            res.ptr_ = ptr->array_[begin_index];
+            res.ptr_ = &ptr->array_[begin_index];
             return res;
         }
-        if (alg::gt(val, ptr->array_[end_index]->data_))
-        {
-            res.ptr_ = ptr->array_[end_index];
-            res.i_ = end_index;
-            return res;
-        }
+        // if (alg::gt(val, ptr->array_[end_index].data_))
+        // {
+        //     res.ptr_ = &ptr->array_[end_index];
+        //     res.i_ = end_index;
+        //     return res;
+        // }
 
         // 只要落在这个区间内，必然会有对应的指针返回
         int index = 0;
         while(begin_index <= end_index)
         {
             index = (begin_index + end_index) / 2;
-            if (alg::eq(val, ptr->array_[index]->data_))
+            if (alg::eq(val, ptr->array_[index].data_))
             {
-                res.ptr_ = ptr->array_[index];
+                res.ptr_ = &ptr->array_[index];
                 res.i_ = index;
                 res.tag_ = true;
                 return res;
             }
             else
             {
-                if (begin_index == index)
+                if (end_index - begin_index <= 1)
                 {
-                    if (alg::le(val, ptr->array_[begin_index]->data_))
-                        res.i_ = begin_index - 1;
-                    else
-                        res.i_ = begin_index;
-                    res.ptr_ = ptr->array_[res.i_];
-                    return res;
+                    break; // 进入了末端，逐个比较
                 }
-                if (alg::le(val, ptr->array_[index]->data_))
+                if (alg::le(val, ptr->array_[index].data_))
                     end_index = index - 1;
                 else
                     begin_index = index + 1;
             }
         }
-        // res.ptr_ = ptr->array_[begin_index];
-        // res.i_ = begin_index;
-        // return res;
+
+        int i = end_index;
+        for (; i >= begin_index; i--)
+        {
+            if (alg::eq(val, ptr->array_[i].data_))
+            {
+                res.ptr_ = &ptr->array_[i];
+                res.i_ = i;
+                res.tag_ = true;
+                return res;
+            }
+
+            if (alg::le(ptr->array_[i].data_, val))
+            {
+                // 返回第一个小于val的位置
+                res.i_ = i;
+                res.ptr_ = &ptr->array_[res.i_];
+                return res;
+            }
+        }
+
+        res.i_ = i;
+        res.ptr_ = &ptr->array_[res.i_];
+        return res;
     }
 
     // 判断是否为一棵符合规范的B树
@@ -450,18 +503,18 @@ public:
             int i = 0;
             for (; i < ptr->size_; i++)
             {
-                assert(ptr->array_[i] != nullptr);
+                //assert(ptr->array_[i] != nullptr);
                 if (hight > 0)
                 {
-                    assert(ptr->array_[i]->next_ != nullptr);
-                    if (!alg::eq(ptr->array_[i]->data_, ptr->array_[i]->next_->array_[0]->data_))
+                    assert(ptr->array_[i].next_ != nullptr);
+                    if (!alg::eq(ptr->array_[i].data_, ptr->array_[i].next_->array_[0].data_))
                         break;
                     
                     if (i > 0)
                     {
-                        int n_size = ptr->array_[j]->next_->size_;
+                        int n_size = ptr->array_[j].next_->size_;
                         // 当前的值比前一位值的下级节点的最大值还要大，保证有序
-                        if (!alg::le(ptr->array_[j]->next_->array_[n_size - 1]->data_, ptr->array_[i]->data_))
+                        if (!alg::le(ptr->array_[j].next_->array_[n_size - 1].data_, ptr->array_[i].data_))
                         {
                             break;
                         }
@@ -469,12 +522,12 @@ public:
                 }
                 if (i > 0)
                 {
-                    if (!alg::gt(ptr->array_[i]->data_, ptr->array_[j]->data_))
+                    if (!alg::gt(ptr->array_[i].data_, ptr->array_[j].data_))
                         break;
                 }
                 j = i; // 让j落后i一位
 
-                if (!is_b_tree(ptr->array_[i]->next_, hight - 1))
+                if (!is_b_tree(ptr->array_[i].next_, hight - 1))
                     break;
             }
 
@@ -485,7 +538,7 @@ public:
 
         if (!res)
         {
-            draw_tree<Node>(ptr, hight, m_);
+            // draw_tree<Node>(ptr, hight, m_);
         }
 
         return res;
@@ -497,8 +550,8 @@ public:
 
         for(int i = 0; i < ptr->size_; i++)
         {
-            destory(ptr->array_[i]->next_);
-            free_entry(ptr->array_[i]);
+            destory(ptr->array_[i].next_);
+            //free_entry(ptr->array_[i]);
         }
         free_node(ptr);
     }

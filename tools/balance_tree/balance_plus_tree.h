@@ -31,10 +31,10 @@ struct _Entry
 template<typename T>
 struct _BNode
 {
-     _BNode() = default;
+    _BNode() = default;
     _BNode*      next_node_{nullptr};  // 指向下一个BNode的叶子节点(只有在叶子节点是才生效)
     int          size_{0};                // 数组包含的元素个数
-    _Entry<T>*   array_[0];            // 数据内存后置
+    _Entry<T>**  array_{nullptr};            // 数据内存后置
 };
 
 
