@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BALANCE_TREE_PRINT_UTIL_H_
-#define _TOOLS_BALANCE_TREE_PRINT_UTIL_H_
+#ifndef _TOOLS_BALANCE_TREE_PRINT_UTIL_DEBUG_H_
+#define _TOOLS_BALANCE_TREE_PRINT_UTIL_DEBUG_H_
 
 #include <memory>
 #include <cassert>
@@ -81,7 +81,7 @@ void pre_order_tree2(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
     if (ptr == nullptr) return;
 
     assert(ptr->size_ <= m);
-    const int empty_size = 4;  //缩进的大小
+    static int empty_size = 4;  //缩进的大小
     int table_size = total_hight - hight;
 
     if (hight > 0)

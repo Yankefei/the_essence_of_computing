@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BALANCE_TREE_BASE_H_
-#define _TOOLS_BALANCE_TREE_BASE_H_
+#ifndef _TOOLS_BALANCE_TREE_BASE_DEBUG_H_
+#define _TOOLS_BALANCE_TREE_BASE_DEBUG_H_
 
 #include <memory>
 #include <cassert>
@@ -11,7 +11,8 @@ namespace tools
 {
 
 /*
-    申请BNode内存的时候，额外申请一块单独的内存给array_变量，作为指针数组的位置
+    申请BNode内存的时候，额外申请一块单独的内存给array_变量，作为Entry数组,
+    该内存布局版本为debug版本, 主要便于 gdb 调试
 */
 template<typename T,
         typename Alloc,

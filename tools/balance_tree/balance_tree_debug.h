@@ -1,5 +1,5 @@
-#ifndef _TOOLS_BALANCE_TREE_H_
-#define _TOOLS_BALANCE_TREE_H_
+#ifndef _TOOLS_BALANCE_TREE_DEBUG_H_
+#define _TOOLS_BALANCE_TREE_DEBUG_H_
 
 #include <memory>
 #include <cassert>
@@ -90,9 +90,16 @@ public:
         bool      tag_{false};      // 查找的结果，true/false  
     };
 
+    enum class Dir
+    {
+        Unknown,
+        Left,
+        Right
+    };
+
 public:
     BalanceTree(size_t m/*B树的阶*/)
-        : BalanceTreeBase(m >= 2 ? m : 2), m_(m >= 2 ? m : 2) // 最小阶为2
+        : BalanceTreeBase(m > 1 ? m : 2), m_(m > 1 ? m : 2) // 最小阶为2
     {
         m_half_ = m_ / 2;
     }
@@ -111,6 +118,7 @@ public:
             change_min_ele = true;
         }
 
+        // 返回指针指向的值大于原有指针指向的值, 所以需要尾加
         auto res = insert(_m_impl._root, val, hight_);
         if (!res.second) return false;
 
@@ -144,7 +152,17 @@ public:
 
     bool remove(const T& val)
     {
+        RemoveRes res{false, false};
+        if (hight_ == 0)
+        {
 
+        }
+        else
+        {
+            res = remove(_m_impl._root, nullptr, val, 1, hight_);
+        }
+
+        return res.first;
     }
 
     bool search(const T& val)
@@ -168,9 +186,169 @@ public:
     }
 
 public:
+    /*
+        当叶子节点的元素数 < m/2, 则向两边的兄弟节点借, 如果发现两边兄弟节点的元素数均 < m/2,
+        则合并两个叶子节点，将元素值较大的节点的元素挪到元素值较小的节点，然后删除前者的节点内存
+        非叶子节点的清理策略同叶子节点, 对根节点进行特殊处理
+        自底向上的删除
+        在递归调用之后检查节点是否需要继续合并，程序处理的方向就是自底向上
+    */
+    using RemoveRes = Pair<bool /*is remove ele ?*/, bool/*is combine Node struct?*/>;
+    // index 为 ptr在pptr中的位置信息
+    RemoveRes remove(Node* ptr, Node* pptr, int32_t index, const T& val, int32_t hight)
+    {
+        RemoveRes n_res(true, false);
+        if (ptr == nullptr) return n_res;
+        bool change_min_ele = false;
+
+        Result f_res{nullptr, 0, false};     // 返回查找返回值
+        if (hight > 0)
+        {
+            f_res = find_next(ptr, val);
+            if (alg::eq(val, ptr->array_[0].data_))
+            {
+                change_min_ele = true;
+            }
+
+            n_res = remove(f_res.ptr_->next_, ptr, f_res.i_, val, hight - 1);
+            if (!n_res.first)
+            {
+                return n_res;  // 直接返回
+            }
+
+            if (!n_res.second)
+            {
+                // 处理 change_min_ele时，需要更换非叶子节点的逻辑
+            }
+        }
+        else // hight == 0
+        {
+            f_res = find_val(ptr, val);
+            if (!f_res.tag_)
+            {
+                n_res.first = false;
+                return n_res;
+            }
+        }
+
+        remove_ele(ptr, f_res.i_);
+        if (ptr->size_ < m_half_)
+        {
+
+        }
+        
+        if (ptr->size_ == 0)  // m_为2的情况, 删除一个后就需要清理
+        {
+
+        }
+
+        // handle combine
+        if (ptr->size_ >= m_half_)
+        {
+            n_res.second = false;
+            return n_res;
+        }
+
+    }
+
+    // 合并两个叶子节点，将元素值较大的节点的元素挪到元素值较小的节点，然后删除前者的节点内存
+    // 先合并右节点，再合并左节点
+    /*
+        1. right_index的数据挪到left_index中
+        2. 释放right_index的内容
+        3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
+    */ 
+    void merge_node(Node* pptr, int32_t left_index, int32_t right_index)
+    {
+
+    }
+
+    // 先向右兄弟节点借, 再向左兄弟节点借
+    using LendRes = Pair<bool/*lend result*/, int32_t/*target_index*/>;
+    LendRes lend_ele(Node* ptr, int32_t debtor_index/*发起借贷的位置*/)
+    {
+        LendRes res(false, 0);
+        if (ptr == nullptr) return res;
+
+        assert(ptr->size_ >= debtor_index + 1);
+
+        do
+        {
+            if (debtor_index == 0)  // 左端点
+            {
+                if (ptr->size_ == 1 || ptr->array_[debtor_index + 1].next_->size_ == m_half_)
+                {
+                    break;
+                }
+                res.second = debtor_index + 1;
+            }
+            else if (debtor_index == ptr->size_ - 1)  // 右端点
+            {
+                if (ptr->array_[debtor_index - 1].next_->size_ == m_half_)
+                {
+                    break;
+                }
+                res.second = debtor_index - 1;
+            }
+            else
+            {
+                if (ptr->array_[debtor_index + 1].next_->size_ == m_half_)
+                {
+                    if (ptr->array_[debtor_index - 1].next_->size_ == m_half_)
+                    {
+                        break;   
+                    }
+                    else
+                    {
+                        res.second = debtor_index - 1;
+                    }
+                }
+                else
+                {
+                    res.second = debtor_index + 1;
+                }
+            }
+            res.first = true;
+        }while(false);
+
+        return res;
+    }
+
+    // 将src_ptr的节点转移到 dst_ptr中, src_ptr位于 dst_ptr的 dir位置
+    void shift_element(Node* dst_ptr, Node* src_ptr, Dir src_dir)
+    {
+        assert(dst_ptr->size_ < m_half_ && src_ptr->size_ > m_half_);
+        if (src_dir == Dir::Right)
+        {
+
+        }
+        else
+        {
+
+        }
+    }
+
+    // 删除完毕，进行重拍
+    void remove_ele(Node* ptr, int32_t index)
+    {
+        assert(ptr->size_ >= index + 1);
+        assert(ptr->array_[index].next_ == nullptr);  // 必须将待删除的节点信息全部维护完才能删除
+        int i = index + 1;
+        for (; i < ptr->size_; i++)
+        {
+            ptr->array_[i-1] = ptr->array_[i];
+        }
+        
+        if (i != index + 1)
+            ptr->array[i].next_ = nullptr;
+        else
+            ptr->array[index].next_ = nullptr;
+        ptr->size_ --;
+    }
+
     using InsertRes = Pair<Node*, bool>;
     // 在递归调用之后检查节点的分裂，程序处理的方向就是自底向上
-    InsertRes insert(Node* ptr, const T& val, int hight)
+    InsertRes insert(Node* ptr, const T& val, int32_t hight)
     {
         InsertRes n_res(nullptr, true);      // 保存下层递归的返回值
         Node* ret_ptr = ptr;                 // 返回的指针
@@ -475,7 +653,7 @@ public:
             assert(hight == -1);
             return true;  //空节点默认是B数
         }
-        if (hight_ == 0 && ptr->size_ == 0)
+        if (hight_ == 0 && ptr && ptr->size_ == 0)
             return true;   // 删除全部数据后，空节点也算是
 
         assert(hight >= 0);
