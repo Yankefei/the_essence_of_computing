@@ -18,6 +18,7 @@ int main()
     {
         using namespace tools::avl_tree_1;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -29,7 +30,7 @@ int main()
 
             TimerGuard timer("avl_tree_1");
             bool res = false;
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert(i))
@@ -56,6 +57,7 @@ int main()
     {
         using namespace tools::avl_tree_1;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -67,7 +69,7 @@ int main()
 
             TimerGuard timer("avl_tree_recurs_1");
             bool res = false;
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert2(i))
@@ -94,6 +96,7 @@ int main()
     {
         using namespace tools::avl_tree_2;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -105,7 +108,7 @@ int main()
 
             TimerGuard timer("avl_tree_recurs_2");
             bool res = false;
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert2(i))
@@ -132,6 +135,7 @@ int main()
     {
         using namespace tools::avl_tree_2;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -143,7 +147,7 @@ int main()
 
             TimerGuard timer("avl_tree_2");
             bool res = false;
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert(i))
@@ -170,6 +174,7 @@ int main()
     {
         using namespace tools::avl_tree_3;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -181,7 +186,7 @@ int main()
 
             TimerGuard timer("avl_tree_recurs_3");
             bool res = false;
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert2(i))
@@ -208,6 +213,7 @@ int main()
     {
         using namespace tools::avl_tree_3;
         int rang_index = 5;
+        AvlTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -219,7 +225,7 @@ int main()
 
             TimerGuard timer("avl_tree_3");
             bool res = false;
-            AvlTree<int> my_tree;
+
             for (auto& i : array)
             {
                 if (my_tree.insert(i))

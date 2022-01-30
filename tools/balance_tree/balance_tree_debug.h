@@ -150,12 +150,33 @@ public:
         return true;
     }
 
+    // 自底向上  递归
     bool remove(const T& val)
     {
         RemoveRes res{false, false};
-        res = remove(_m_impl._root, nullptr, val, 1/*未用*/, hight_);
+        res = remove(_m_impl._root, nullptr, 1/*未用*/,  val, hight_);
+        if (!res.first) return false;
 
-        return res.first;
+         // 更换根节点， 如果m_为2，3则可能存在单个元素链的场景，需要循环处理
+        while (hight_ > 0 && _m_impl._root->size_ == 1)
+        {
+            Node* ptr = _m_impl._root->array_[0].next_;
+            free_node(_m_impl._root);
+            _m_impl._root = ptr;
+            hight_ --;
+        }
+
+        // 删除完最后一个元素时，root节点， hight 变为 -1
+        if (_m_impl._root->size_ == 0)
+        {
+            free_node(_m_impl._root);
+            _m_impl._root = nullptr;
+            hight_ --;
+        }
+
+        ele_size_ --;
+
+        return true;
     }
 
     bool search(const T& val)
@@ -171,6 +192,11 @@ public:
     Node* get_root()
     {
         return _m_impl._root;
+    }
+
+    size_t size()
+    {
+        return ele_size_;
     }
 
     void print_tree1()
@@ -195,7 +221,7 @@ public:
     // index 为 ptr在pptr中的位置信息
     RemoveRes remove(Node* ptr, Node* pptr, int32_t index, const T& val, int32_t hight)
     {
-        RemoveRes n_res(true, false);
+        RemoveRes n_res(false, false);
         if (ptr == nullptr) return n_res;
         bool change_min_ele = false;
 
@@ -211,14 +237,19 @@ public:
             n_res = remove(f_res.ptr_->next_, ptr, f_res.i_, val, hight - 1);
             if (!n_res.first)  return n_res;  // 直接返回
 
-            if (!n_res.second) return n_res;
-            
             // 对最小值进行重新赋值
-            if (change_min_ele)
+            if (change_min_ele &&
+                ptr->size_ > 0 &&
+                ptr->array_[f_res.i_].next_ != nullptr)
+            {
                 ptr->array_[f_res.i_].data_
                     = ptr->array_[f_res.i_].next_->array_[0].data_;
+            }
 
-            if (ptr->size_ >= m_half_) return n_res;
+            if (!n_res.second || ptr->size_ >= m_half_)
+            {
+                return n_res;
+            }
         }
         else // hight == 0
         {
@@ -232,9 +263,10 @@ public:
         }
         n_res.first = true;
 
+        // 根节点
         if (pptr == nullptr)
         {
-            return n_res;  // 根节点
+            return n_res;
         }
 
         // 先处理节点删除后直接为空的情况, 阶为 2, 3时有这种可能
@@ -242,6 +274,11 @@ public:
         {
             // 处理逻辑是，先处理这一层的内容，上面的层数由退出递归时处理
             free_node(ptr);
+            // 挪动
+            for (int i = index + 1; i < pptr->size_; i++)
+            {
+                pptr->array_[i - 1] = pptr->array_[i];
+            }
             pptr->array_[pptr->size_ - 1].next_ = nullptr;
             pptr->size_--;
             n_res.second = true;
@@ -440,7 +477,7 @@ public:
         }
         
         if (i != index + 1)
-            ptr->array_[i].next_ = nullptr;
+            ptr->array_[i - 1].next_ = nullptr;
         else
             ptr->array_[index].next_ = nullptr;
         ptr->size_ --;

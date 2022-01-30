@@ -447,6 +447,7 @@ int main()
         using namespace tools::rb_tree_2;
         int index = 0;
         size_t ele_size = 0;
+        RbTree<int> my_tree;
         while(index ++ < 10)
         {
             Vector<int> array;
@@ -455,7 +456,7 @@ int main()
             {
                 array.push_back(rand());
             }
-            RbTree<int> my_tree;
+
             for (auto& i : array)
             {
                 if (my_tree.insert(i))

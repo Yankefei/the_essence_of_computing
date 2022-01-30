@@ -342,49 +342,54 @@ int main()
         }
     }
 
-
     {
-        Vector<int> array;
-        Rand<int> rand(1, 10000);
-        for(int i = 0; i < 1000; i++)
-        {
-            array.push_back(rand());
-        }
-
-        bool res = false;
-        size_t ele_size = 0;
+        using namespace tools::avl_tree_3;
         AvlTree<int> my_tree;
-        for (auto& i : array)
+        int index = 0;
+        while(index ++ < 10)
         {
-            if (my_tree.insert2(i))
-                ele_size++;
-            if (!my_tree.is_balance())
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < 1000; i++)
             {
-                stream << "insert: "<< i << " failed. " << std::endl;
-                // my_tree.print_tree();
-                // assert(false);
+                array.push_back(rand());
             }
-        }
-        stream << "tree hight: "<< my_tree.get_hight() << std::endl;
-        assert(ele_size == my_tree.NiceInOrder());
-        assert(ele_size == my_tree.ResNiceInOrder());
-        for (auto& i : array)
-        {
-            if (my_tree.remove2(i))
-                ele_size--;
-            if (!my_tree.is_balance())
-            {
-                stream << "remove: "<< i << " failed. " << std::endl;
-            }
-        }
 
-        assert(ele_size == 0);
+            bool res = false;
+            size_t ele_size = 0;
+            for (auto& i : array)
+            {
+                if (my_tree.insert2(i))
+                    ele_size++;
+                if (!my_tree.is_balance())
+                {
+                    stream << "insert: "<< i << " failed. " << std::endl;
+                    // my_tree.print_tree();
+                    // assert(false);
+                }
+            }
+            stream << "tree hight: "<< my_tree.get_hight() << std::endl;
+            assert(ele_size == my_tree.NiceInOrder());
+            assert(ele_size == my_tree.ResNiceInOrder());
+            for (auto& i : array)
+            {
+                if (my_tree.remove2(i))
+                    ele_size--;
+                if (!my_tree.is_balance())
+                {
+                    stream << "remove: "<< i << " failed. " << std::endl;
+                }
+            }
+
+            assert(ele_size == 0);
+        }
     }
 
     {
         using namespace tools::avl_tree_3;
         int index = 0;
         size_t ele_size = 0;
+        AvlTree<int> my_tree;
         while(index ++ < 10)
         {
             Vector<int> array;
@@ -393,7 +398,7 @@ int main()
             {
                 array.push_back(rand());
             }
-            AvlTree<int> my_tree;
+            
             for (auto& i : array)
             {
                 if (my_tree.insert(i))

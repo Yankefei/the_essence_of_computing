@@ -22,24 +22,27 @@ int main()
         stream << "sizeof BalanceTree is :"<< sizeof(BalanceTree<int>) << std::endl;
     }
 
+    stream << Boolalpha;
     {
-        BalanceTree<int> my_tree(2);
-        for (int i = 0; i <= 6; i++)
+        BalanceTree<int> my_tree(3);
+        for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.insert(i) == true);
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
 
-        //my_tree.print_tree1();
-        int kx;
+        my_tree.print_tree1();
 
+        int kx;
         while(std::cin>>kx, kx != -1)
         {
-            stream <<my_tree.remove(kx) ;
-            stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
+            stream <<my_tree.remove(kx) << std::endl;
             my_tree.print_tree1();
+            stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
         }
+
+        assert(my_tree.size() == 0);
     }
 
 #if 1

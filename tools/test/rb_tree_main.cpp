@@ -379,6 +379,7 @@ int main()
         using namespace tools::rb_tree_recurs_1;
         size_t ele_size = 0;
         int rang_index = 5;
+        RbTree<int> my_tree;
         while(rang_index -- > 0)
         {
             Vector<int> array;
@@ -393,9 +394,7 @@ int main()
             //     stream << i << ", ";
             // }
             // stream << std::endl;
-
             bool res = false;
-            RbTree<int> my_tree;
             for (auto& i : array)
             {
                 if (my_tree.insert(i))
