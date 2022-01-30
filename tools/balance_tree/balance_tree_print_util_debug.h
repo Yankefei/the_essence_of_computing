@@ -49,7 +49,7 @@ void pre_order_tree1(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
     if (ptr == nullptr) return;
 
     assert(ptr->size_ <= m);
-    const int empty_size = 4;  //缩进的大小
+    static int empty_size = 4;  //缩进的大小
     int i = 0;
     print_table_empty((total_hight - hight) * empty_size); // 打印缩进
     print_tree_node(ptr, m);
@@ -62,7 +62,7 @@ void pre_order_tree1(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
     for (i = 0; i < ptr->size_; i++)
     {
         if (hight > 1)
-            pre_order_tree(ptr->array_[i].next_, hight - 1, total_hight, m);
+            pre_order_tree1(ptr->array_[i].next_, hight - 1, total_hight, m);
         else
         {
             Node* n_ptr = ptr->array_[i].next_;
@@ -108,7 +108,6 @@ void pre_order_tree2(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
 template<typename Node>
 void draw_tree(Node* ptr, int32_t hight, int32_t m)
 {
-    // pre_order_tree1(ptr, hight, hight, m);
     if (hight > 0)
         pre_order_tree2(ptr, hight, hight, m);
     else
@@ -119,6 +118,12 @@ void draw_tree(Node* ptr, int32_t hight, int32_t m)
     }
 
     stream << std::endl;
+}
+
+template<typename Node>
+void draw_tree1(Node* ptr, int32_t hight, int32_t m)
+{
+    pre_order_tree1(ptr, hight, hight, m);
 }
 
 // template<typename Node>

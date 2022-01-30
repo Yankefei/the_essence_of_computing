@@ -1,3 +1,4 @@
+#include <iostream>
 #include "stream.h"
 
 //#include "balance_tree/balance_tree.h"
@@ -19,6 +20,26 @@ int main()
         BalanceTree<int> my_tree(1000);
 
         stream << "sizeof BalanceTree is :"<< sizeof(BalanceTree<int>) << std::endl;
+    }
+
+    {
+        BalanceTree<int> my_tree(2);
+        for (int i = 0; i <= 6; i++)
+        {
+            assert(my_tree.insert(i) == true);
+            assert(my_tree.is_b_tree() == true);
+            // stream << "insert i: " << i << " success" << std::endl;
+        }
+
+        //my_tree.print_tree1();
+        int kx;
+
+        while(std::cin>>kx, kx != -1)
+        {
+            stream <<my_tree.remove(kx) ;
+            stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
+            my_tree.print_tree1();
+        }
     }
 
 #if 1
@@ -167,7 +188,7 @@ int main()
 #if 1
     {
         size_t ele_size = 0;
-        int rang_index = 100;
+        int rang_index = 10;
         while(--rang_index > 1)
         {
             Vector<int> array;

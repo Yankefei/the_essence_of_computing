@@ -153,14 +153,7 @@ public:
     bool remove(const T& val)
     {
         RemoveRes res{false, false};
-        if (hight_ == 0)
-        {
-
-        }
-        else
-        {
-            res = remove(_m_impl._root, nullptr, val, 1, hight_);
-        }
+        res = remove(_m_impl._root, nullptr, val, 1/*未用*/, hight_);
 
         return res.first;
     }
@@ -178,6 +171,11 @@ public:
     Node* get_root()
     {
         return _m_impl._root;
+    }
+
+    void print_tree1()
+    {
+        draw_tree1<Node>(_m_impl._root, hight_, m_);
     }
 
     void print_tree()
@@ -205,21 +203,22 @@ public:
         if (hight > 0)
         {
             f_res = find_next(ptr, val);
-            if (alg::eq(val, ptr->array_[0].data_))
+            if (f_res.tag_ /*&& alg::eq(val, ptr->array_[0].data_)*/)
             {
                 change_min_ele = true;
             }
 
             n_res = remove(f_res.ptr_->next_, ptr, f_res.i_, val, hight - 1);
-            if (!n_res.first)
-            {
-                return n_res;  // 直接返回
-            }
+            if (!n_res.first)  return n_res;  // 直接返回
 
-            if (!n_res.second)
-            {
-                // 处理 change_min_ele时，需要更换非叶子节点的逻辑
-            }
+            if (!n_res.second) return n_res;
+            
+            // 对最小值进行重新赋值
+            if (change_min_ele)
+                ptr->array_[f_res.i_].data_
+                    = ptr->array_[f_res.i_].next_->array_[0].data_;
+
+            if (ptr->size_ >= m_half_) return n_res;
         }
         else // hight == 0
         {
@@ -229,58 +228,65 @@ public:
                 n_res.first = false;
                 return n_res;
             }
+            remove_ele(ptr, f_res.i_);
         }
+        n_res.first = true;
 
-        remove_ele(ptr, f_res.i_);
-        if (ptr->size_ < m_half_)
+        if (pptr == nullptr)
         {
-
+            return n_res;  // 根节点
         }
-        
-        if (ptr->size_ == 0)  // m_为2的情况, 删除一个后就需要清理
+
+        // 先处理节点删除后直接为空的情况, 阶为 2, 3时有这种可能
+        if (ptr->size_ == 0)
         {
-
+            // 处理逻辑是，先处理这一层的内容，上面的层数由退出递归时处理
+            free_node(ptr);
+            pptr->array_[pptr->size_ - 1].next_ = nullptr;
+            pptr->size_--;
+            n_res.second = true;
         }
-
-        // handle combine
-        if (ptr->size_ >= m_half_)
+        else if (ptr->size_ < m_half_)
         {
-            n_res.second = false;
-            return n_res;
+            if (lend_ele(pptr, index))
+            {
+                n_res.second = false;
+            }
+            else
+            {
+                // 处理完节点的合并，暂时无需更新非叶子节点的最小值
+                merge_node(pptr, index);
+                n_res.second = true;
+            }
         }
 
-    }
-
-    // 合并两个叶子节点，将元素值较大的节点的元素挪到元素值较小的节点，然后删除前者的节点内存
-    // 先合并右节点，再合并左节点
-    /*
-        1. right_index的数据挪到left_index中
-        2. 释放right_index的内容
-        3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
-    */ 
-    void merge_node(Node* pptr, int32_t left_index, int32_t right_index)
-    {
-
+        return n_res;
     }
 
     // 先向右兄弟节点借, 再向左兄弟节点借
-    using LendRes = Pair<bool/*lend result*/, int32_t/*target_index*/>;
-    LendRes lend_ele(Node* ptr, int32_t debtor_index/*发起借贷的位置*/)
+    // using LendRes = Pair<bool/*lend result*/, int32_t/*first_ele_change_index, 需要更新ptr中元素的位置*/>;
+    bool lend_ele(Node* ptr, int32_t debtor_index/*发起借贷的位置*/)
     {
-        LendRes res(false, 0);
+        bool res = false;
         if (ptr == nullptr) return res;
 
         assert(ptr->size_ >= debtor_index + 1);
-
+        Dir shift_dir = Dir::Unknown;
+        Node* left_ptr = nullptr;
+        Node* right_ptr = nullptr;
+        // int32_t first_ele_change_index = 0;
         do
         {
             if (debtor_index == 0)  // 左端点
             {
-                if (ptr->size_ == 1 || ptr->array_[debtor_index + 1].next_->size_ == m_half_)
+                if (/*ptr->size_ == 1 ||*/ ptr->array_[debtor_index + 1].next_->size_ == m_half_)
                 {
                     break;
                 }
-                res.second = debtor_index + 1;
+                shift_dir = Dir::Left;
+                left_ptr = ptr->array_[debtor_index].next_;
+                right_ptr = ptr->array_[debtor_index + 1].next_;
+                // first_ele_change_index = debtor_index + 1;
             }
             else if (debtor_index == ptr->size_ - 1)  // 右端点
             {
@@ -288,7 +294,10 @@ public:
                 {
                     break;
                 }
-                res.second = debtor_index - 1;
+                shift_dir = Dir::Right;
+                left_ptr = ptr->array_[debtor_index - 1].next_;
+                right_ptr = ptr->array_[debtor_index].next_;
+                // first_ele_change_index = debtor_index;
             }
             else
             {
@@ -300,35 +309,126 @@ public:
                     }
                     else
                     {
-                        res.second = debtor_index - 1;
+                        shift_dir = Dir::Right;
+                        left_ptr = ptr->array_[debtor_index -1].next_;
+                        right_ptr = ptr->array_[debtor_index].next_;
+                        // first_ele_change_index = debtor_index;
                     }
                 }
                 else
                 {
-                    res.second = debtor_index + 1;
+                    shift_dir = Dir::Left;
+                    left_ptr = ptr->array_[debtor_index].next_;
+                    right_ptr = ptr->array_[debtor_index + 1].next_;
+                    // first_ele_change_index = debtor_index + 1;
                 }
             }
-            res.first = true;
+            shift_element(left_ptr, right_ptr, shift_dir);
+            // 更新非叶子节点的数值
+            if (shift_dir == Dir::Left)
+            {
+                ptr->array_[debtor_index + 1].data_ = right_ptr->array_[0].data_;
+            }
+            else
+            {
+                ptr->array_[debtor_index].data_ = left_ptr->array_[0].data_;
+            }
+            res = true;
         }while(false);
 
         return res;
     }
 
-    // 将src_ptr的节点转移到 dst_ptr中, src_ptr位于 dst_ptr的 dir位置
-    void shift_element(Node* dst_ptr, Node* src_ptr, Dir src_dir)
+    // shift_dir 表示转移节点的方向
+    void shift_element(Node* left_ptr, Node* right_ptr, Dir shift_dir)
     {
-        assert(dst_ptr->size_ < m_half_ && src_ptr->size_ > m_half_);
-        if (src_dir == Dir::Right)
+        if (shift_dir == Dir::Left)
         {
-
+            assert(left_ptr->size_ < m_half_ && right_ptr->size_ > m_half_);
+            left_ptr->array_[left_ptr->size_++] = right_ptr->array_[0];
+            for (int i = 1; i < right_ptr->size_; i++)
+            {
+                right_ptr->array_[i - 1] = right_ptr->array_[i];
+            }
+            right_ptr->size_ --;
         }
         else
         {
-
+            assert(left_ptr->size_ > m_half_ && right_ptr->size_ < m_half_);
+            for (int i = right_ptr->size_; i > 0; i--)
+            {
+                right_ptr->array_[i] = right_ptr->array_[i - 1];
+            }
+            right_ptr->size_ ++;
+            right_ptr->array_[0] = left_ptr->array_[left_ptr->size_ - 1];
+            left_ptr->array_[left_ptr->size_ - 1].next_ = nullptr;
+            left_ptr->size_ --;
         }
     }
 
-    // 删除完毕，进行重拍
+    void merge_node(Node* pptr, int32_t index)
+    {
+        if (pptr == nullptr) return;
+
+        int32_t left_index = 0;
+        int32_t right_index = 0;
+        Dir lost_ele_dir = Dir::Unknown;
+        if (index == 0)
+        {
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        else if (index == pptr->size_ -1)
+        {
+            left_index = index - 1;
+            right_index = index;
+            lost_ele_dir = Dir::Right;
+        }
+        else
+        {
+            left_index = index;
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        handle_merge_node(pptr, left_index, right_index, lost_ele_dir);
+    }
+
+    // 合并两个叶子节点，将右边的节点合并到左边
+    // 当需要左右两个节点均可以合并时，先合并右节点，再合并左节点
+    /*
+        1. right_index的数据挪到left_index中
+        2. 释放right_index的内容
+        3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
+    */ 
+    void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir)
+    {
+        assert(pptr->size_ >= right_index);
+        shift_node(pptr->array_[left_index].next_, pptr->array_[right_index].next_, lost_ele_dir);
+        free_node(pptr->array_[right_index].next_);
+        for (int i = right_index + 1; i < pptr->size_; i++)
+        {
+            pptr->array_[i - 1] = pptr->array_[i];
+        }
+        pptr->array_[pptr->size_ - 1].next_ = nullptr;
+        pptr->size_ --;
+    }
+
+    // 将src_ptr的所有节点转移到 dst_ptr中, src在右，dst在左, lost_ele_dir 表示两者哪一个是删除元素的节点
+    void shift_node(Node* dst_ptr, Node* src_ptr, Dir lost_ele_dir)
+    {
+        if (lost_ele_dir == Dir::Left)
+            assert(dst_ptr->size_ < m_half_ && src_ptr->size_ == m_half_);
+        else
+            assert(dst_ptr->size_ == m_half_ && src_ptr->size_ < m_half_);
+
+        int i = 0;
+        for (; i < src_ptr->size_; i++)
+        {
+            dst_ptr->array_[dst_ptr->size_++] = src_ptr->array_[i];
+        }
+    }
+
+    // 删除完毕，进行重排
     void remove_ele(Node* ptr, int32_t index)
     {
         assert(ptr->size_ >= index + 1);
@@ -340,9 +440,9 @@ public:
         }
         
         if (i != index + 1)
-            ptr->array[i].next_ = nullptr;
+            ptr->array_[i].next_ = nullptr;
         else
-            ptr->array[index].next_ = nullptr;
+            ptr->array_[index].next_ = nullptr;
         ptr->size_ --;
     }
 
