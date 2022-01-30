@@ -361,14 +361,14 @@ public:
                 }
             }
             shift_element(left_ptr, right_ptr, shift_dir);
-            // 更新非叶子节点的数值
+            // 更新非叶子节点的数值, first_ele_change_index的值可以用方向来区分
             if (shift_dir == Dir::Left)
             {
                 ptr->array_[debtor_index + 1].data_ = right_ptr->array_[0].data_;
             }
             else
             {
-                ptr->array_[debtor_index].data_ = left_ptr->array_[0].data_;
+                ptr->array_[debtor_index].data_ = right_ptr->array_[0].data_;
             }
             res = true;
         }while(false);

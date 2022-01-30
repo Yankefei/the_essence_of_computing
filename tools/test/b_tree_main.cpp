@@ -32,15 +32,21 @@ int main()
             // stream << "insert i: " << i << " success" << std::endl;
         }
 
-        my_tree.print_tree1();
+        // my_tree.print_tree1();
 
-        int kx;
-        while(std::cin>>kx, kx != -1)
+        for (int i = 0; i <= 10; i++)
         {
-            stream <<my_tree.remove(kx) << std::endl;
-            my_tree.print_tree1();
-            stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
+            assert(my_tree.remove(i) == true);
+            assert(my_tree.is_b_tree() == true);
         }
+
+        // int kx;
+        // while(std::cin>>kx, kx != -1)
+        // {
+        //     stream <<my_tree.remove(kx) << std::endl;
+        //     my_tree.print_tree1();
+        //     stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
+        // }
 
         assert(my_tree.size() == 0);
     }
@@ -160,27 +166,47 @@ int main()
 
 #if 1
     {
-        Vector<int> array{287, 361, 202, 761, 940, 886, 371, 223, 712, 454, 771,
-                          128, 459, 570, 363, 303, 963, 908, 400, 730, 309, 120,
-                          236, 469, 64, 76, 252, 920, 25, 712, 140, 240, 674, 210,
-                          969, 656, 745, 328, 633, 969, 237, 608, 542, 253, 140, 511,
-                          575, 525, 625, 606, 948, 247, 666, 748, 218, 103, 231, 811,
-                          675, 515, 586, 872, 192, 164, 274, 610, 145, 328, 658, 473,
-                          941, 493, 751, 106, 760, 930, 418, 147, 696, 560, 597, 237,
-                          878, 211, 873, 158, 815, 187, 438, 619, 668, 87, 718, 30, 595,
-                          109, 129, 432, 969, 265};
+        size_t ele_size = 0;
+        // Vector<int> array{287, 361, 202, 761, 940, 886, 371, 223, 712, 454, 771,
+        //                   128, 459, 570, 363, 303, 963, 908, 400, 730, 309, 120,
+        //                   236, 469, 64, 76, 252, 920, 25, 712, 140, 240, 674, 210,
+        //                   969, 656, 745, 328, 633, 969, 237, 608, 542, 253, 140, 511,
+        //                   575, 525, 625, 606, 948, 247, 666, 748, 218, 103, 231, 811,
+        //                   675, 515, 586, 872, 192, 164, 274, 610, 145, 328, 658, 473,
+        //                   941, 493, 751, 106, 760, 930, 418, 147, 696, 560, 597, 237,
+        //                   878, 211, 873, 158, 815, 187, 438, 619, 668, 87, 718, 30, 595,
+        //                   109, 129, 432, 969, 265};
+        Vector<int> array{552, 135, 14, 883, 765, 29, 703, 674,
+                          253, 888, 720, 983, 296, 793, 406, 834,
+                          217, 460, 600, 841, 487, 299, 471, 996,
+                          862, 746, 178, 169, 507, 106};
         bool res = false;
-        BalanceTree<int> my_tree(5);
+        BalanceTree<int> my_tree(4);
         for (auto& i : array)
         {
-            my_tree.insert(i);
+            if (my_tree.insert(i))
+                ele_size ++;
 
-            // if (i == 597)
-            //     my_tree.print_tree();
+
 
             if (!my_tree.is_b_tree())
             {
                 stream << "insert: "<< i << " failed. " << std::endl;
+                my_tree.print_tree();
+                assert(false);
+            }
+        }
+        for (auto& i : array)
+        {
+            if (my_tree.remove(i))
+                ele_size --;
+
+            if (i == 674)
+                my_tree.print_tree();
+
+            if (!my_tree.is_b_tree())
+            {
+                stream << "remove: "<< i << " failed. " << std::endl;
                 my_tree.print_tree();
                 assert(false);
             }
@@ -194,36 +220,54 @@ int main()
         int rang_index = 10;
         while(--rang_index > 1)
         {
-            Vector<int> array;
-            Rand<int> rand(1, 100000);
-            for(int i = 0; i < 10000; i++)
-            {
-                array.push_back(rand());
-            }
-
-            // for (auto i : array)
-            // {
-            //     stream << i << ", ";
-            // }
-            // stream << std::endl;
-
-            bool res = false;
             BalanceTree<int> my_tree(rang_index);
-            for (auto& i : array)
+            int num = 10;
+            while (num -- > 0)
             {
-                my_tree.insert(i);
-
-                // my_tree.print_tree();
-                // stream << "insert: "<< i << std::endl;
-
-                if (!my_tree.is_b_tree())
+                Vector<int> array;
+                Rand<int> rand(1, 10000);
+                for(int i = 0; i < 1000; i++)
                 {
-                    stream << "insert: "<< i << " failed. ";
-                    my_tree.print_tree();
-                    assert(false);
+                    array.push_back(rand());
                 }
+
+                // for (auto i : array)
+                // {
+                //     stream << i << ", ";
+                // }
+                // stream << std::endl;
+                
+                for (auto& i : array)
+                {
+                    if (my_tree.insert(i))
+                        ele_size ++;
+
+                    // my_tree.print_tree();
+                    // stream << "insert: "<< i << std::endl;
+
+                    if (!my_tree.is_b_tree())
+                    {
+                        stream << "insert: "<< i << " failed. " << std::endl;
+                        my_tree.print_tree();
+                        assert(false);
+                    }
+                }
+                for (auto& i : array)
+                {
+                    if (my_tree.remove(i))
+                        ele_size --;
+
+                    if (!my_tree.is_b_tree())
+                    {
+                        stream << "remove: "<< i << " failed. " << std::endl;
+                        my_tree.print_tree();
+                        assert(false);
+                    }
+                }
+                assert(my_tree.get_root() == nullptr);
+                assert(my_tree.size() == 0);
+                stream << "range_index : "<< rang_index << std::endl;
             }
-            stream << "range_index : "<< rang_index << std::endl;
         }
         stream << "last rang_index: "<< rang_index << std::endl;
     }
