@@ -101,10 +101,10 @@ public:
     // 自底向上  非递归
     bool remove(const T& val)
     {
-        bool res = remove(_m_impl._root, val, hight_);
+        bool res = remove(&_m_impl._root, val, hight_);
         if (res)
             ele_size_ --;
-        
+
         return res;
     }
 
@@ -222,7 +222,6 @@ private:
                     {
                         ptr->array_[0].data_ = val;
                     }
-                    // st.clear();
                     continue;
                 }
 
@@ -292,22 +291,62 @@ private:
     }
 
     // 自底向上
-    bool remove(Node* ptr, const T& val, int32_t hight)
+    // 算法主体和递归的删除版本过程一致
+    bool remove(Node** p_ptr, const T& val, int32_t hight)
     {
+        Node* ptr = *p_ptr;
         if (ptr == nullptr) return false;
 
-        if (hight > 0)
-        {
+        bool rm_res = false;
+        Result f_res{nullptr, 0, false};
+        int32_t change_min_ele_hight = -1;
+        
 
-        }
-        else if (hight == 0)
+        Stack<StackInfo> st;
+        while(hight >= 0)
         {
+            ptr = f_res.ptr_ != nullptr ? f_res.ptr_->next_ : ptr;
+            st.push(StackInfo{ptr, 0});
+            if (hight > 0)
+            {
+                f_res = find_next(ptr, val);
+                if (f_res.tag_)
+                    change_min_ele_hight = hight; // 至少说明从该层之下的非叶子节点删除时需要更新内容
+            }
+            else
+            {
+                f_res = find_val(ptr, val);
+                if (!f_res.tag_)
+                {
+                    return rm_res; // 没有找到直接返回
+                }
+                remove_ele(ptr, f_res.i_);
+            }
+            st.top().index = f_res.i_;
 
+            hight --;
         }
-        else
+
+        Node* pptr = nullptr;      // 父指针
+        bool is_combin_node = false;
+        StackInfo s_node;
+        while(++hight <= hight_)
         {
+            s_node = st.top();
+            st.pop();
+            ptr = st.ptr;
 
+            if (hight == 0)
+            {
+
+            }
+            else
+            {
+
+            }
         }
+
+        return rm_res;
     }
 
     // 分裂节点, 返回分裂后Node节点指针
