@@ -120,6 +120,7 @@ void draw_tree(Node* ptr, int32_t hight, int32_t m)
     stream << std::endl;
 }
 
+// 紧凑版
 template<typename Node>
 void draw_tree1(Node* ptr, int32_t hight, int32_t m)
 {

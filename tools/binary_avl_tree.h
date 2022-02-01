@@ -109,7 +109,7 @@ public:
     }
 
 private:
-    // 递归
+    // 递归 自底向上
     bool insert(Node*& ptr, const T& val)
     {
         if (ptr == nullptr)
@@ -328,6 +328,7 @@ private:
     }
 
     // 递归的另外一个版本, 正确的版本，逻辑都是简单清晰的
+    // 自底向上
     bool _remove(Node*& ptr, const T& val)
     {
         if (ptr == nullptr) return false;

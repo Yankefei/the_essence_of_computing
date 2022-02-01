@@ -30,6 +30,9 @@ int main()
 
         Stack<int> stack_int_temp = stack_int;
         stream << stack_int_temp.size() << " " << stack_int_temp.capacity()<<  " " << stack_int_temp.top() << std::endl;
+    
+        stack_int_temp.clear();
+        stream << stack_int_temp.size() << " " << stack_int_temp.capacity() << std::endl;
     }
 
     return 0;

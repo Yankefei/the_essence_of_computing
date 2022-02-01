@@ -62,6 +62,14 @@ public:
         return size() == 0;
     }
 
+    void clear()
+    {
+        for (; first_free_ != element_; )
+        {
+            alloc_.destroy(-- first_free_);
+        }
+    }
+
     std::size_t size() const
     {
         return first_free_ - element_;
