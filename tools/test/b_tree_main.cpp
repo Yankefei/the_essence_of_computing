@@ -1,14 +1,15 @@
 #include <iostream>
 #include "stream.h"
 
-//#include "balance_tree/balance_tree.h"
-#include "balance_tree/balance_tree_debug.h"
+#include "balance_tree_debug/balance_tree_debug.h"
+//#include "balance_tree_debug/balance_tree_recursive_debug.h"
 
 #include "rand.h"
 #include "vector.hpp"
 
 using namespace tools;
 using namespace tools::b_tree;
+//using namespace tools::b_tree_recursive;
 
 
 int main()
@@ -32,7 +33,7 @@ int main()
             // stream << "insert i: " << i << " success" << std::endl;
         }
 
-        // my_tree.print_tree1();
+        my_tree.print_tree1();
 
         for (int i = 0; i <= 10; i++)
         {
@@ -53,7 +54,12 @@ int main()
 
 #if 1
     {
-        BalanceTree<int> my_tree(4);
+    int m = 7;
+    while(m-- > 1)
+    {
+
+    {
+        BalanceTree<int> my_tree(m);
         for (int i = 0; i <= 20; i++)
         {
             assert(my_tree.insert(i) == true);
@@ -64,22 +70,22 @@ int main()
     }
 
     {
-        BalanceTree<int> my_tree2(4);
+        BalanceTree<int> my_tree2(m);
         for (int i = 20; i >= 0; i--)
         {
             if (i == 10)
                 assert(my_tree2.insert(i) == true);
             else
                 assert(my_tree2.insert(i) == true);
-            assert(my_tree2.is_b_tree() == true);
+            
             // stream << "insert i: " << i << " success" << std::endl;
-            //my_tree2.print_tree();
+            // my_tree2.print_tree();
+            assert(my_tree2.is_b_tree() == true);
         }
-        
     }
 
     {
-        BalanceTree<int> my_tree(4);
+        BalanceTree<int> my_tree(m);
         for (int i = 0; i < 20; i++)
         {
             assert(my_tree.insert(i) == true);
@@ -91,6 +97,7 @@ int main()
             if (i == 30 || i == 31)
             {
                 assert(my_tree.insert(i) == true);
+                // stream << "after insert : "<< i << std::endl;
                 // my_tree.print_tree();
             }
             else
@@ -106,6 +113,9 @@ int main()
 
         }
     }
+    } // while
+    }
+
 #endif
 
 #if 1
@@ -201,7 +211,7 @@ int main()
             if (my_tree.remove(i))
                 ele_size --;
 
-            if (i == 674)
+            if (i == 299)
                 my_tree.print_tree();
 
             if (!my_tree.is_b_tree())
@@ -252,6 +262,12 @@ int main()
                         assert(false);
                     }
                 }
+
+                for (auto& i : array)
+                {
+                    assert(my_tree.search(i) == true);
+                }
+
                 for (auto& i : array)
                 {
                     if (my_tree.remove(i))

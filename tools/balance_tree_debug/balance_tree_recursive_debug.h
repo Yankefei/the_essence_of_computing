@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "balance_tree_base_debug.h"
+#include "balance_tree_util_base_debug.h"
 #include "balance_tree_print_util_debug.h"
 
 #include "pair.hpp"
@@ -448,7 +449,10 @@ private:
         {
             ptr->array_[f_res.i_].data_ = n_res.first->array_[0].data_;
             ptr->array_[f_res.i_].next_ = n_res.first;
-            // 在f_res.i_ 指向原始的节点时，判断是否更新最小值
+            // 当下级新增了一个B树最小值时，如果新增了Node, 那么该Node将会插入到
+            // 当前层的1号索引位，所以需要将s_node.index + 1，0号索引位还是指向了
+            // 之前已有的节点，指向是不需要修改的。但是内部的值在这种情况下还是需要
+            // 替换.
             if (change_min_ele)
             {
                 ptr->array_[0].data_ = val;

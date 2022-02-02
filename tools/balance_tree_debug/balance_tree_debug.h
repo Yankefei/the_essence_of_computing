@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "balance_tree_base_debug.h"
+#include "balance_tree_util_base_debug.h"
 #include "balance_tree_print_util_debug.h"
 
 #include "pair.hpp"
