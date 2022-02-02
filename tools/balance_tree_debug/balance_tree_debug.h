@@ -72,6 +72,7 @@ public:
     using BalanceUtil::remove_ele;
     using BalanceUtil::find_val;
     using BalanceUtil::find_next;
+    using BalanceUtil::find;
 
     using BalanceUtil::m_;
     using BalanceUtil::m_half_;
@@ -147,9 +148,15 @@ private:
     {
         StackInfo() = default;
         StackInfo(Node* _ptr, int32_t _i) : ptr(_ptr), index(_i) {}
+
         Node*   ptr = nullptr; //指向当前层Node的指针
-        int32_t index = 0;     //目标在当前Node中的位置
+        /*
+            insert函数中，该值表示在下级的目标节点在当前Node中的位置
+            remove函数中，该值表示当前Node在上级pptr中的位置
+        */
+        int32_t index = -1;    
     };
+
     // 自底向上，在没有parent_指针时，类似AVL树的算法逻辑，必须使用堆栈来记录指针
     // 红黑树那种自顶向下的逻辑就不需要
     // 算法主体和递归的插入版本过程一致
@@ -290,65 +297,6 @@ private:
         return ins_res;
     }
 
-    // 自底向上
-    // 算法主体和递归的删除版本过程一致
-    bool remove(Node** p_ptr, const T& val, int32_t hight)
-    {
-        Node* ptr = *p_ptr;
-        if (ptr == nullptr) return false;
-
-        bool rm_res = false;
-        Result f_res{nullptr, 0, false};
-        int32_t change_min_ele_hight = -1;
-        
-
-        Stack<StackInfo> st;
-        while(hight >= 0)
-        {
-            ptr = f_res.ptr_ != nullptr ? f_res.ptr_->next_ : ptr;
-            st.push(StackInfo{ptr, 0});
-            if (hight > 0)
-            {
-                f_res = find_next(ptr, val);
-                if (f_res.tag_)
-                    change_min_ele_hight = hight; // 至少说明从该层之下的非叶子节点删除时需要更新内容
-            }
-            else
-            {
-                f_res = find_val(ptr, val);
-                if (!f_res.tag_)
-                {
-                    return rm_res; // 没有找到直接返回
-                }
-                remove_ele(ptr, f_res.i_);
-            }
-            st.top().index = f_res.i_;
-
-            hight --;
-        }
-
-        Node* pptr = nullptr;      // 父指针
-        bool is_combin_node = false;
-        StackInfo s_node;
-        while(++hight <= hight_)
-        {
-            s_node = st.top();
-            st.pop();
-            ptr = st.ptr;
-
-            if (hight == 0)
-            {
-
-            }
-            else
-            {
-
-            }
-        }
-
-        return rm_res;
-    }
-
     // 分裂节点, 返回分裂后Node节点指针
     Node* split(Node* ptr)
     {
@@ -373,6 +321,186 @@ private:
         n_ptr->size_ = m_ - m_half_;
         ptr->size_ = m_half_;
         return n_ptr;
+    }
+
+    // 自底向上
+    // 算法主体和递归的删除版本过程一致
+    bool remove(Node** p_ptr, const T& val, int32_t hight)
+    {
+        Node* ptr = *p_ptr;
+        if (ptr == nullptr) return false;
+
+        bool rm_res = false;
+        Result f_res{nullptr, 0, false};
+        int32_t change_min_ele_hight = -1;
+
+        Stack<StackInfo> st;
+        // Note:
+        // 表示 ptr 在上层 pptr中的位置索引，和insert函数中的函数以有差别
+        // 根节点的 pptr索引不会用到，所以直接赋值为0
+        int index = 0;  
+        while(hight >= 0)
+        {
+            ptr = f_res.ptr_ != nullptr ? f_res.ptr_->next_ : ptr;
+            st.push(StackInfo{ptr, index});
+            if (hight > 0)
+            {
+                f_res = find_next(ptr, val);
+                if (f_res.tag_ && change_min_ele_hight == -1)
+                    change_min_ele_hight = hight; // 至少说明从该层之下的非叶子节点删除时需要更新内容
+            }
+            else
+            {
+                f_res = find_val(ptr, val);
+                if (!f_res.tag_)
+                {
+                    return rm_res; // 没有找到直接返回
+                }
+            }
+            index = f_res.i_;
+
+            hight --;
+        }
+
+        // 删除叶子节点
+        remove_ele(ptr, f_res.i_);
+        rm_res = true;
+
+        Node* pptr = nullptr;      // 父指针
+        bool is_combin_node = false; // 是否合并过节点
+        int32_t next_index = -1;   // 记录ptr的下一级节点的索引位置
+        StackInfo s_node;
+        while(++hight <= hight_)
+        {
+            if (s_node.index != -1)
+                next_index = s_node.index;
+            s_node = st.top();
+            st.pop();
+            if (!st.empty())
+                pptr = st.top().ptr;
+            else
+                pptr = nullptr; // 当到达根节点时，需要将pptr的指针恢复为nullptr, 准备退出
+            ptr = s_node.ptr;
+
+            if (hight > 0)
+            {
+                if (hight <= change_min_ele_hight)
+                {
+                    // 这里处理的情况是，当ptr的下层节点的节点数 > m_half, 那么删除后
+                    // 本层是不需要做任何节点指向层面的修改，但是有可能下层修改了最小节点的值
+                    // 如 hight <= change_min_ele_hight时必然发生该情况，所以需要进行
+                    // data_值的更换
+                    if (ptr->size_ > 0 &&
+                        ptr->array_[next_index].next_ != nullptr)
+                    {
+                        ptr->array_[next_index].data_
+                            = ptr->array_[next_index].next_->array_[0].data_;
+                    }
+                }
+
+                if (!is_combin_node || ptr->size_ >= m_half_)
+                {
+                    continue;
+                }
+            }
+
+            // 根节点
+            if (pptr == nullptr)
+                break;
+
+            if (ptr->size_ == 0)
+            {
+                free_node(ptr);
+                for (int i = s_node.index + 1; i < pptr->size_; i++)
+                {
+                    pptr->array_[i - 1] = pptr->array_[i];
+                }
+                pptr->array_[pptr->size_ - 1].next_ = nullptr;
+                pptr->size_ --;
+                is_combin_node = true;
+            }
+            else if (ptr->size_ < m_half_)
+            {
+                // 向左右兄弟节点借一个节点，否则将对下级节点进行合并处理
+                if (lend_ele(pptr, s_node.index))
+                {
+                    is_combin_node = false;
+                }
+                else
+                {
+                    merge_node(pptr, s_node.index);
+                    is_combin_node = true;
+                }
+            }
+            else
+                is_combin_node = false;
+        }
+
+        // 根节点特殊处理
+        Node*& root = *p_ptr;
+        while(hight_ > 0 && root->size_ == 1)
+        {
+            Node* ptr = root->array_[0].next_;
+            free_node(root);
+            root = ptr;
+            hight_ --;
+        }
+
+        if (root->size_ == 0)
+        {
+            free_node(root);
+            root = nullptr;
+            hight_ --;
+        }
+
+        return rm_res;
+    }
+
+    void merge_node(Node* pptr, int32_t index)
+    {
+        if (pptr == nullptr) return;
+
+        int32_t left_index = 0;
+        int32_t right_index = 0;
+        Dir lost_ele_dir = Dir::Unknown;
+        if (index == 0)
+        {
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        else if (index == pptr->size_ -1)
+        {
+            left_index = index - 1;
+            right_index = index;
+            lost_ele_dir = Dir::Right;
+        }
+        else
+        {
+            left_index = index;
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        handle_merge_node(pptr, left_index, right_index, lost_ele_dir);
+    }
+
+    // 合并两个叶子节点，将右边的节点合并到左边
+    // 当需要左右两个节点均可以合并时，先合并右节点，再合并左节点
+    /*
+        1. right_index的数据挪到left_index中
+        2. 释放right_index的内容
+        3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
+    */ 
+    void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir)
+    {
+        assert(pptr->size_ >= right_index);
+        shift_node(pptr->array_[left_index].next_, pptr->array_[right_index].next_, lost_ele_dir);
+        free_node(pptr->array_[right_index].next_);
+        for (int i = right_index + 1; i < pptr->size_; i++)
+        {
+            pptr->array_[i - 1] = pptr->array_[i];
+        }
+        pptr->array_[pptr->size_ - 1].next_ = nullptr;
+        pptr->size_ --;
     }
 
     // 判断是否为一棵符合规范的B树
