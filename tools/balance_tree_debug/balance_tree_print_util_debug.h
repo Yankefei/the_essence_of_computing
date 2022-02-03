@@ -125,6 +125,7 @@ template<typename Node>
 void draw_tree1(Node* ptr, int32_t hight, int32_t m)
 {
     pre_order_tree1(ptr, hight, hight, m);
+    stream << std::endl;
 }
 
 // template<typename Node>
