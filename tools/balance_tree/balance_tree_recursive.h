@@ -566,7 +566,7 @@ private:
             int i = 0;
             for (; i < ptr->size_; i++)
             {
-                //assert(ptr->array_[i] != nullptr);
+                assert(ptr->array_[i] != nullptr);
                 if (hight > 0)
                 {
                     assert(ptr->array_[i]->next_ != nullptr);

@@ -5,9 +5,11 @@
 #include <cassert>
 
 #include "balance_tree_base.h"
+#include "balance_tree_util_base.h"
 #include "balance_tree_print_util.h"
 
 #include "pair.hpp"
+#include "stack.h"
 #include "algorithm.hpp"
 
 namespace tools
@@ -37,63 +39,49 @@ struct _BNode
 {
     _BNode() = default;
     int          size_{0};                 // 数组包含的元素个数
-    _Entry<T>**  array_{nullptr};          // 指针数组 调试不容易,等程序稳定后再更换数据结构
+    _Entry<T>**  array_{nullptr};          // 指针数组
 };
 
-/*B树*/
-/*
-    B树的版本为：所有的数据头存储在树叶上，也就是非叶子节点的索引值均可以在叶子节点中找到, B树的阶在
-    构造时作为参数传入
-    这里实现的版本为Robert Sedgewich所提供的版本, 并非Mark Allen Weiss和国内教科书作者如严蔚敏等
-    所提供的版本。 该版本的特点为：
-    1. 所有的数据均存储在叶子节点上
-    2. 当节点内的元素个数为m个时，那么它下级的节点个数也是m个，而不是类似 2-3-4树那样定义的m+1个节点，
-       所以这是一种更接近B+树定义的版本。
-    3. 节点内元素中存储的值为下级各节点中存储值的最小值，而不是最大值。
-
-    下面是一棵3阶B树的示意图：
-
-                                  10-63
-                             /              \
-                        10-21-51              63-81
-                    /     |     \             /    \
-               10-15  21-37-44   51-59     63-72   81-91-97
-*/
+/*B树 非递归版本*/
 template<typename T,
         typename Alloc = std::allocator<T>,
         template <typename T1> class BNode = _BNode,
         template <typename T2> class BEntry = _Entry>
-class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, BEntry>
+class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, BEntry>,
+                    protected BalanceTree_Util<T, BNode, BEntry>
 {
     typedef BalanceTree_Base<T, Alloc, BNode, BEntry> BalanceTreeBase;
     typedef typename BalanceTreeBase::Node Node;
     typedef typename BalanceTreeBase::Entry Entry;
     typedef Node*  Root;
+
+    typedef BalanceTree_Util<T, BNode, BEntry> BalanceUtil;
+    typedef typename BalanceUtil::Result Result;
+    typedef typename BalanceUtil::Dir    Dir;
+
 public:
     using BalanceTreeBase::buy_node;
     using BalanceTreeBase::free_node;
     using BalanceTreeBase::_m_impl;
     using BalanceTreeBase::buy_entry;
     using BalanceTreeBase::free_entry;
+    using BalanceTreeBase::alloc_balance;
 
-    /*记录查询的结果*/
-    struct Result
-    {
-        Result(Entry* ptr, int32_t i, bool tag): ptr_(ptr), i_(i), tag_(tag)
-        {}
-        Entry*    ptr_{nullptr};    // 指向找到的节点
-                                    // 在叶子节点中，如果tag_为false, 则为nullptr
-                                    // 在非叶子节点中，该ptr_不为空
-        int32_t   i_{0};            // 在pt_节点中的关键字序号, 待插入或者访问
-                                    // 若tag_为false, 则可以在i_位置进行插入
-        bool      tag_{false};      // 查找的结果，true/false  
-    };
+    using BalanceUtil::lend_ele;
+    using BalanceUtil::shift_element;
+    using BalanceUtil::shift_node;
+    using BalanceUtil::find_val;
+    using BalanceUtil::find_next;
+    using BalanceUtil::find;
+
+    using BalanceUtil::m_;
+    using BalanceUtil::m_half_;
 
 public:
     BalanceTree(size_t m/*B树的阶*/)
-        : BalanceTreeBase(m >= 2 ? m : 2), m_(m >= 2 ? m : 2) // 最小阶为2
+        : BalanceTreeBase(m > 1 ? m : 2),
+          BalanceUtil(m > 1 ? m : 2) // 最小阶为2
     {
-        m_half_ = m_ / 2;
     }
 
     ~BalanceTree()
@@ -101,54 +89,32 @@ public:
         destory(_m_impl._root);
     }
 
-    // 自低向上 递归
+    // 自底向上 非递归
     bool insert(const T& val)
     {
-        bool change_min_ele = false;
-        if (_m_impl._root != nullptr && alg::le(val, _m_impl._root->array_[0]->data_))
-        {
-            change_min_ele = true;
-        }
-
-        auto res = insert(_m_impl._root, val, hight_);
-        if (!res.second) return false;
-
-        if (res.first != _m_impl._root)
-        {
-            hight_ ++;
-            if (_m_impl._root == nullptr)
-            {
-                _m_impl._root = res.first;
-            }
-            else
-            {
-                Node* new_root = buy_node();
-                new_root->array_[new_root->size_] = buy_entry(_m_impl._root->array_[0]->data_);
-                new_root->array_[new_root->size_++]->next_ = _m_impl._root;
-                new_root->array_[new_root->size_] = buy_entry(res.first->array_[0]->data_);
-                new_root->array_[new_root->size_++]->next_ = res.first;
-                _m_impl._root = new_root;
-            }
-        }
-        else
-        {
-            if (change_min_ele)
-                _m_impl._root->array_[0]->data_ = val;
-        }
-
-        ele_size_ ++;
-
-        return true;
+        bool res = insert(&_m_impl._root, val, hight_);
+        if (res)
+            ele_size_ ++;
+        
+        return res;
     }
 
+    // 自底向上  非递归
     bool remove(const T& val)
     {
+        bool res = remove(&_m_impl._root, val, hight_);
+        if (res)
+            ele_size_ --;
 
+        return res;
     }
 
     bool search(const T& val)
     {
-        return true;
+        if (_m_impl._root == nullptr) return false;
+
+        Result res = find(_m_impl._root, val, hight_);
+        return res.tag_;
     }
 
     bool is_b_tree()
@@ -161,107 +127,179 @@ public:
         return _m_impl._root;
     }
 
+    size_t size()
+    {
+        return ele_size_;
+    }
+
+    bool memory_alloc_balance()
+    {
+        return alloc_balance();
+    }
+
+    void print_tree1()
+    {
+        draw_tree1<Node>(_m_impl._root, hight_, m_);
+    }
+
     void print_tree()
     {
         draw_tree<Node>(_m_impl._root, hight_, m_);
     }
 
 public:
-    using InsertRes = Pair<Node*, bool>;
-    // 在递归调用之后检查节点的分裂，程序处理的方向就是自底向上
-    InsertRes insert(Node* ptr, const T& val, int hight)
+    // 堆栈中的信息
+    struct StackInfo
     {
-        InsertRes n_res(nullptr, true);      // 保存下层递归的返回值
-        Node* ret_ptr = ptr;                 // 返回的指针
-        Result f_res{nullptr, 0, false};     // 返回查找返回值
-        bool   change_min_ele = false;
-        if (hight > 0)
-        {
-            f_res = find_next(ptr, val);
-            if (alg::le(val, ptr->array_[0]->data_))
-            {
-                //只有在val比B树最小值还小的时候, 才会进入该逻辑
-                change_min_ele = true;
-            }
+        StackInfo() = default;
+        StackInfo(Node* _ptr, int32_t _i) : ptr(_ptr), index(_i) {}
 
-            n_res = insert(f_res.ptr_->next_, val, hight - 1);
-            // 一致则说明下层未发生分裂
-            if (n_res.first == f_res.ptr_->next_)
+        Node*   ptr = nullptr; //指向当前层Node的指针
+        /*
+            insert函数中，该值表示在下级的目标节点在当前Node中的位置
+            remove函数中，该值表示当前Node在上级pptr中的位置
+        */
+        int32_t index = -1;    
+    };
+
+    // 自底向上，在没有parent_指针时，类似AVL树的算法逻辑，必须使用堆栈来记录指针
+    // 红黑树那种自顶向下的逻辑就不需要
+    // 算法主体和递归的插入版本过程一致
+    bool insert(Node** p_ptr, const T& val, int32_t hight)
+    {
+        Node* ptr = *p_ptr;
+        if (hight == -1)
+        {
+            assert(ptr == nullptr);
+            ptr = buy_node();
+            ptr->array_[ptr->size_++] = buy_entry(val);
+            *p_ptr = ptr;
+            hight_ ++;
+            return true;
+        }
+
+        bool ins_res = false;
+        Result f_res{nullptr, 0, false};
+        // 只有比B树最小值还小时，才会进入该逻辑内
+        bool change_min_ele = alg::le(val, ptr->array_[0]->data_) ? true : false;
+
+        Stack<StackInfo> st;
+        while(hight >= 0)
+        {
+            ptr = f_res.ptr_ != nullptr ? f_res.ptr_->next_ : ptr;
+            st.push(StackInfo{ptr, 0});
+            if (hight > 0)
             {
-                // 可能下游将最小值更新，所以这里需要再额外判断
-                if (change_min_ele)
+                f_res = find_next(ptr, val);
+            }
+            else // hight == 0
+            {
+                f_res = find_val(ptr, val);
+                if (f_res.tag_)
                 {
-                    n_res.first->array_[0]->data_ = val;
+                    return ins_res;  // 数据存在
                 }
-                n_res.first = ret_ptr;
-                return n_res;
             }
-        }
-        else if (hight == 0)
-        {
-            f_res = find_val(ptr, val);
-            if (f_res.tag_)
-            {
-                n_res.first = ret_ptr;
-                n_res.second = false;
-                return n_res;   // 数据存在
-            }
-        }
-        else  // hight < 0
-        {
-            assert (ptr == nullptr);
-            ret_ptr = buy_node();
-            ret_ptr->array_[ret_ptr->size_++] = buy_entry(val);
-            n_res.first = ret_ptr;
-            return n_res;
+            st.top().index = f_res.i_;  // 替换下层节点在ptr指针的位置
+            hight --;
         }
 
-        // 需要进行插入处理
-        // 需要先分裂，再插入
-        // 这里复用ptr, 赋值为需要插入的节点
-        if (ptr->size_ == m_)
+        Node* new_ptr = nullptr;  // 用于记录新增的节点指针，将来会和原指针作比较
+        Node* old_ptr = nullptr;  // 记录之前下一级新增的节点指针
+        StackInfo s_node;
+        while(++hight <= hight_)
         {
-            ret_ptr = split(ptr);
-            if (f_res.i_ > m_half_ || f_res.i_ == m_ - 1)  // 后面这种场景是处理m_为2的特殊情况
+            s_node = st.top();
+            st.pop();
+            old_ptr = new_ptr;
+            ptr = s_node.ptr;
+            if (hight == 0)
             {
-                f_res.i_ = f_res.i_ - m_half_;  //插入的新位置
-                ptr = ret_ptr;
+                if (ptr->size_ == m_)
+                {
+                    new_ptr = split(ptr);
+                    if (s_node.index > m_half_ || s_node.index == m_ - 1)
+                    {
+                        s_node.index = s_node.index - m_half_;
+                        ptr = new_ptr;     // 复用ptr
+                    }
+                }
             }
             else
             {
-                // 在原始的节点中更新最小值
+                if (new_ptr == nullptr) // 表示下级没有分裂，直接处理返回
+                {
+                    // 往上的每一层都需要修改
+                    if (change_min_ele)
+                    {
+                        ptr->array_[0]->data_ = val;
+                    }
+                    continue;
+                }
+
+                if (ptr->size_ == m_)
+                {
+                    new_ptr = split(ptr);
+                    // 这里需要包含 == m_half_ 这种情况
+                    if (s_node.index >= m_half_ || s_node.index == m_ -1)
+                    {
+                        s_node.index = s_node.index - m_half_;
+                        s_node.index ++;
+                        ptr = new_ptr;
+                    }
+                    else
+                    {
+                        if (s_node.index != m_half_) // 在分界点不需要挪动索引位置
+                            s_node.index ++;
+                    }
+                }
+                else
+                {
+                    s_node.index ++; // 非叶子节点的插入位置在原索引位置 +1 的位置
+                    new_ptr = nullptr; // 向上过程中如果分裂停止，则将new_ptr置空
+                }
+            }
+
+            for (int i = ptr->size_ ++; i > s_node.index; i--)
+            {
+                ptr->array_[i] = ptr->array_[i - 1];
+            }
+
+            if (hight > 0)
+            {
+                assert(old_ptr != nullptr);
+                ptr->array_[s_node.index] = buy_entry(old_ptr->array_[0]->data_);
+                ptr->array_[s_node.index]->next_ = old_ptr;
+                // 当下级新增了一个B树最小值时，如果新增了Node, 那么该Node将会插入到
+                // 当前层的1号索引位，所以需要将s_node.index + 1，0号索引位还是指向了
+                // 之前已有的节点，指向是不需要修改的。但是内部的值在这种情况下还是需要
+                // 替换.
                 if (change_min_ele)
                 {
                     ptr->array_[0]->data_ = val;
                 }
             }
+            else
+            {
+                ptr->array_[s_node.index] = buy_entry(val);
+                ins_res = true;
+            }
+        }
+        assert(st.empty());
+
+        if (new_ptr != nullptr)
+        {
+            Node* new_root = buy_node();
+            Node* old_root = *p_ptr;
+            new_root->array_[new_root->size_] = buy_entry(old_root->array_[0]->data_);
+            new_root->array_[new_root->size_++]->next_ = old_root;
+            new_root->array_[new_root->size_]= buy_entry(new_ptr->array_[0]->data_);
+            new_root->array_[new_root->size_++]->next_ = new_ptr;
+            *p_ptr = new_root;
+            hight_ ++;
         }
 
-        // 非叶子节点插入时, 可能需要更新, 插入的到上一个节点的位置需要获取
-        if (hight > 0)
-        {
-            // 非叶结点和叶子节点的挪动方式稍不同, 顺延在 f_res.i_ 之后插入
-            f_res.i_ ++;
-        }
-
-        // ptr->size_ 是需要++的，因为这个时候数量还是之前的数量
-        for(int i = ptr->size_ ++; i > f_res.i_; i--)
-        {
-            ptr->array_[i] = ptr->array_[i - 1];
-        }
-
-        if (hight > 0)
-        {
-            ptr->array_[f_res.i_] = buy_entry(n_res.first->array_[0]->data_);
-            ptr->array_[f_res.i_]->next_ = n_res.first;
-        }
-        else
-        {
-            ptr->array_[f_res.i_] = buy_entry(val);
-        }
-
-        n_res.first = ret_ptr;
-        return n_res;
+        return ins_res;
     }
 
     // 分裂节点, 返回分裂后Node节点指针
@@ -288,122 +326,209 @@ public:
         return n_ptr;
     }
 
-    Result find(Node* ptr, const T& val, int hight)
+    // 自底向上
+    // 算法主体和递归的删除版本过程一致
+    bool remove(Node** p_ptr, const T& val, int32_t hight)
     {
-        while(hight > 0)
+        Node* ptr = *p_ptr;
+        if (ptr == nullptr) return false;
+
+        bool rm_res = false;
+        Result f_res{nullptr, 0, false};
+        int32_t change_min_ele_hight = -1;
+
+        Stack<StackInfo> st;
+        // Note:
+        // 表示 ptr 在上层 pptr中的位置索引，和insert函数中的函数以有差别
+        // 根节点的 pptr索引不会用到，所以直接赋值为0
+        int index = 0;
+        while(hight >= 0)
         {
-            ptr = find_next(ptr, val);
+            ptr = f_res.ptr_ != nullptr ? f_res.ptr_->next_ : ptr;
+            st.push(StackInfo{ptr, index});
+            if (hight > 0)
+            {
+                f_res = find_next(ptr, val);
+                if (f_res.tag_ && change_min_ele_hight == -1)
+                    change_min_ele_hight = hight; // 至少说明从该层之下的非叶子节点删除时需要更新内容
+            }
+            else
+            {
+                f_res = find_val(ptr, val);
+                if (!f_res.tag_)
+                {
+                    return rm_res; // 没有找到直接返回
+                }
+            }
+            index = f_res.i_;
+
             hight --;
         }
-        return find_val(ptr, val);
-    }
 
-    // 返回的Result中, 可能存在位置 i_ >= size_, 表示未来的插入位置可能不需要位置挪动, 或者在新的节点中
-    Result find_val(Node* ptr, const T& val)   // pass
-    {
-        Result res{nullptr, 0, false};
-        if (ptr == nullptr || ptr->size_ == 0) return res;
-        // 二分查找
-        int begin_index = 0;
-        int end_index = ptr->size_ - 1;
-        if (alg::le(val, ptr->array_[begin_index]->data_))
-        {
-            return res;
-        }
-        if (alg::le(ptr->array_[end_index]->data_, val))
-        {
-            res.i_ = end_index + 1;
-            return res;
-        }
+        // 删除叶子节点
+        remove_ele(ptr, f_res.i_);
+        rm_res = true;
 
-        int index = 0;
-        while(begin_index <= end_index)
+        Node* pptr = nullptr;      // 父指针
+        bool is_combin_node = false; // 是否合并过节点
+        int32_t next_index = -1;   // 记录ptr的下一级节点的索引位置
+        StackInfo s_node;
+        while(++hight <= hight_)
         {
-            index = (begin_index + end_index) / 2;
-            if (alg::eq(val, ptr->array_[index]->data_))
-            {
-                res.ptr_ = ptr->array_[index];
-                res.i_ = index;
-                res.tag_ = true;
-                return res;
-            }
+            if (hight != 0)
+                next_index = s_node.index;
+            s_node = st.top();
+            st.pop();
+            if (!st.empty())
+                pptr = st.top().ptr;
             else
+                pptr = nullptr; // 当到达根节点时，需要将pptr的指针恢复为nullptr, 准备退出
+            ptr = s_node.ptr;
+
+            if (hight > 0)
             {
-                if (begin_index == index)
+                if (hight <= change_min_ele_hight)
                 {
-                    // 到最后该选择哪个index进行替换，还需要再判断
-                    if (alg::le(val, ptr->array_[begin_index]->data_))
-                        res.i_ = begin_index;
-                    else
-                        res.i_ = begin_index + 1;
-                    return res;
+                    // 这里处理的情况是，当ptr的下层节点的节点数 > m_half, 那么删除后
+                    // 本层是不需要做任何节点指向层面的修改，但是有可能下层修改了最小节点的值
+                    // 如 hight <= change_min_ele_hight时必然发生该情况，所以需要进行
+                    // data_值的更换
+                    if (ptr->size_ > next_index)
+                    {
+                        assert(ptr->array_[next_index]->next_ != nullptr);
+                        ptr->array_[next_index]->data_
+                            = ptr->array_[next_index]->next_->array_[0]->data_;
+                    }
                 }
 
-                if (alg::le(val, ptr->array_[index]->data_))
-                    end_index = index - 1;
-                else
-                    begin_index = index + 1;
+                if (!is_combin_node || ptr->size_ >= m_half_)
+                {
+                    continue;
+                }
             }
-        }
-        // res.i_ = begin_index + 1;  // end_index < begin_index  未找到
-        // return res;
-    }
 
-    // 返回的Result中, i_的位置不会超过size_的位置
-    Result find_next(Node* ptr, const T& val) // pass
-    {
-        // 二分查找
-        Result res = {nullptr, 0, false};
-        int begin_index = 0;
-        int end_index = ptr->size_ -1;
+            // 根节点
+            if (pptr == nullptr)
+                break;
 
-        assert(ptr->size_ != 0);
-
-        // 提前处理在begin end边界外的情况
-        if (alg::le(val, ptr->array_[begin_index]->data_))
-        {
-            res.ptr_ = ptr->array_[begin_index];
-            return res;
-        }
-        if (alg::gt(val, ptr->array_[end_index]->data_))
-        {
-            res.ptr_ = ptr->array_[end_index];
-            res.i_ = end_index;
-            return res;
-        }
-
-        // 只要落在这个区间内，必然会有对应的指针返回
-        int index = 0;
-        while(begin_index <= end_index)
-        {
-            index = (begin_index + end_index) / 2;
-            if (alg::eq(val, ptr->array_[index]->data_))
+            if (ptr->size_ == 0)
             {
-                res.ptr_ = ptr->array_[index];
-                res.i_ = index;
-                res.tag_ = true;
-                return res;
+                free_node(ptr);
+                free_entry(pptr->array_[s_node.index]);
+                for (int i = s_node.index + 1; i < pptr->size_; i++)
+                {
+                    pptr->array_[i - 1] = pptr->array_[i];
+                }
+                pptr->array_[pptr->size_ - 1] = nullptr;
+                pptr->size_ --;
+                is_combin_node = true;
+            }
+            else if (ptr->size_ < m_half_)
+            {
+                // 向左右兄弟节点借一个节点，否则将对下级节点进行合并处理
+                if (lend_ele(pptr, s_node.index))
+                {
+                    is_combin_node = false;
+                }
+                else
+                {
+                    merge_node(pptr, s_node.index);
+                    is_combin_node = true;
+                }
             }
             else
-            {
-                if (begin_index == index)
-                {
-                    if (alg::le(val, ptr->array_[begin_index]->data_))
-                        res.i_ = begin_index - 1;
-                    else
-                        res.i_ = begin_index;
-                    res.ptr_ = ptr->array_[res.i_];
-                    return res;
-                }
-                if (alg::le(val, ptr->array_[index]->data_))
-                    end_index = index - 1;
-                else
-                    begin_index = index + 1;
-            }
+                is_combin_node = false;
         }
-        // res.ptr_ = ptr->array_[begin_index];
-        // res.i_ = begin_index;
-        // return res;
+
+        // 根节点特殊处理
+        Node*& root = *p_ptr;
+        while(hight_ > 0 && root->size_ == 1)
+        {
+            Node* ptr = root->array_[0]->next_;
+            free_entry(root->array_[0]);
+            root->size_ --;
+            free_node(root);
+            root = ptr;
+            hight_ --;
+        }
+
+        if (root->size_ == 0)
+        {
+            free_node(root);
+            root = nullptr;
+            hight_ --;
+        }
+
+        return rm_res;
+    }
+
+    // 删除完毕，进行重排, 需要回收内存
+    void remove_ele(Node* ptr, int32_t index)
+    {
+        assert(ptr->size_ >= index + 1);
+        assert(ptr->array_[index]->next_ == nullptr);  // 必须将待删除的节点信息全部维护完才能删除
+        
+        free_entry(ptr->array_[index]);
+
+        int i = index + 1;
+        for (; i < ptr->size_; i++)
+        {
+            ptr->array_[i-1] = ptr->array_[i];
+        }
+
+        ptr->array_[ptr->size_ - 1] = nullptr;
+        ptr->size_ --;
+    }
+
+    void merge_node(Node* pptr, int32_t index)
+    {
+        if (pptr == nullptr) return;
+
+        int32_t left_index = 0;
+        int32_t right_index = 0;
+        Dir lost_ele_dir = Dir::Unknown;
+        if (index == 0)
+        {
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        else if (index == pptr->size_ -1)
+        {
+            left_index = index - 1;
+            right_index = index;
+            lost_ele_dir = Dir::Right;
+        }
+        else
+        {
+            left_index = index;
+            right_index = index + 1;
+            lost_ele_dir = Dir::Left;
+        }
+        handle_merge_node(pptr, left_index, right_index, lost_ele_dir);
+    }
+
+    // 合并两个叶子节点，将右边的节点合并到左边
+    // 当需要左右两个节点均可以合并时，先合并右节点，再合并左节点
+    /*
+        1. right_index的数据挪到left_index中
+        2. 释放right_index的内容
+        3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
+    */ 
+    // 需要回收内存
+    void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir)
+    {
+        assert(pptr->size_ >= right_index);
+        shift_node(pptr->array_[left_index]->next_, pptr->array_[right_index]->next_, lost_ele_dir);
+        
+        free_node(pptr->array_[right_index]->next_);
+        free_entry(pptr->array_[right_index]);
+
+        for (int i = right_index + 1; i < pptr->size_; i++)
+        {
+            pptr->array_[i - 1] = pptr->array_[i];
+        }
+        pptr->array_[pptr->size_ - 1] = nullptr;
+        pptr->size_ --;
     }
 
     // 判断是否为一棵符合规范的B树
@@ -422,7 +547,7 @@ public:
             assert(hight == -1);
             return true;  //空节点默认是B数
         }
-        if (hight_ == 0 && ptr->size_ == 0)
+        if (hight_ == 0 && ptr && ptr->size_ == 0)
             return true;   // 删除全部数据后，空节点也算是
 
         assert(hight >= 0);
@@ -485,7 +610,7 @@ public:
 
         if (!res)
         {
-            draw_tree<Node>(ptr, hight, m_);
+            // draw_tree<Node>(ptr, hight, m_);
         }
 
         return res;
@@ -504,8 +629,6 @@ public:
     }
 
 private:
-    int         m_;          // B树的阶
-    int         m_half_;     // 阶的一半，计算大量使用到
     int         hight_{-1};  // 树高, 单节点的B树默认树高为0, 空树默认树高为-1
     std::size_t ele_size_{0}; // 总元素数
 };

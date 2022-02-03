@@ -433,9 +433,9 @@ private:
                     // 本层是不需要做任何节点指向层面的修改，但是有可能下层修改了最小节点的值
                     // 如 hight <= change_min_ele_hight时必然发生该情况，所以需要进行
                     // data_值的更换
-                    if (ptr->size_ > 0 &&
-                        ptr->array_[next_index].next_ != nullptr)
+                    if (ptr->size_ > next_index)
                     {
+                        assert(ptr->array_[next_index].next_ != nullptr);
                         ptr->array_[next_index].data_
                             = ptr->array_[next_index].next_->array_[0].data_;
                     }

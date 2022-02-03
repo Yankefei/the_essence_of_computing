@@ -171,11 +171,8 @@ public:
         {
             ptr->array_[i-1] = ptr->array_[i];
         }
-        
-        if (i != index + 1)
-            ptr->array_[i - 1].next_ = nullptr;
-        else
-            ptr->array_[index].next_ = nullptr;
+
+        ptr->array_[ptr->size_ - 1].next_ = nullptr;
         ptr->size_ --;
     }
 
