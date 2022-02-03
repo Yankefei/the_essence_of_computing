@@ -77,6 +77,27 @@ public:
     size_t      _m;
     size_t      _array_size;   // entry指针数组所需要申请内存的大小
 
+    // 入参为需要申请的int32_t数组的长度
+    int32_t* buy_array(size_t size)
+    {
+        if (size == 0) return nullptr;
+        size_t total_size = (size + 1) * sizeof(int32_t);
+        byte_pointer b_p = byte_rebind_traits::allocate(_m_byte_impl_, total_size);
+        memset(b_p, 0, total_size);
+        int32_t* s_p = reinterpret_cast<int32_t*>(b_p);
+        *s_p = size; // 数组头部放置数组的长度信息
+        return static_cast<int32_t*>(s_p + 1);
+    }
+
+    void free_array(int32_t* array)
+    {
+        assert(array != nullptr);
+        int32_t* s_p = array - 1;
+        size_t total_size = (*s_p + 1) * sizeof(int32_t);
+        byte_rebind_traits::deallocate(_m_byte_impl_,
+            reinterpret_cast<byte_pointer>(s_p), total_size);
+    }
+
     Node* buy_node()
     {
         node_pointer p = node_rebind_traits::allocate(_m_impl, 1);

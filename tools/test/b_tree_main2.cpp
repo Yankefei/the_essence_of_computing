@@ -1,15 +1,15 @@
 #include <iostream>
 #include "stream.h"
 
-//#include "balance_tree_debug/balance_tree_debug2.h"
-#include "balance_tree_debug/balance_tree_recursive_debug2.h"
+#include "balance_tree_debug/balance_tree_debug2.h"
+//#include "balance_tree_debug/balance_tree_recursive_debug2.h"
 
 #include "rand.h"
 #include "vector.hpp"
 
 using namespace tools;
-//using namespace tools::b_tree2;
-using namespace tools::b_tree_recursive2;
+using namespace tools::b_tree2;
+//using namespace tools::b_tree_recursive2;
 
 
 int main()

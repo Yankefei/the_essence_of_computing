@@ -498,6 +498,7 @@ private:
 
         n_ptr->size_ = m_ - m_half_;
         ptr->size_ = m_half_;
+        n_ptr->parent_ = ptr->parent_;   // 维护新建节点的父指针
         return n_ptr;
     }
 
