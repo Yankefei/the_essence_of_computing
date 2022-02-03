@@ -242,9 +242,9 @@ private:
 
             // 对最小值进行重新赋值
             if (change_min_ele &&
-                ptr->size_ > 0 &&
-                ptr->array_[f_res.i_].next_ != nullptr)
+                ptr->size_ > f_res.i_ /*&& ptr->array_[f_res.i_].next_ != nullptr*/)
             {
+                assert(ptr->array_[f_res.i_].next_ != nullptr);
                 ptr->array_[f_res.i_].data_
                     = ptr->array_[f_res.i_].next_->array_[0].data_;
             }

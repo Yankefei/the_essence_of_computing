@@ -75,6 +75,27 @@ public:
     Base_Impl   _m_impl;
     size_t      _array_size;   // entry指针数组所需要申请内存的大小
 
+    // 入参为需要申请的int32_t数组的长度
+    int32_t* buy_array(size_t size)
+    {
+        if (size == 0) return nullptr;
+        size_t total_size = (size + 1) * sizeof(int32_t);
+        byte_pointer b_p = byte_rebind_traits::allocate(_m_byte_impl_, total_size);
+        memset(b_p, 0, total_size);
+        int32_t* s_p = reinterpret_cast<int32_t*>(b_p);
+        *s_p = size; // 数组头部放置数组的长度信息
+        return static_cast<int32_t*>(s_p + 1);
+    }
+
+    void free_array(int32_t* array)
+    {
+        assert(array != nullptr);
+        int32_t* s_p = array - 1;
+        size_t total_size = (*s_p + 1) * sizeof(int32_t);
+        byte_rebind_traits::deallocate(_m_byte_impl_,
+            reinterpret_cast<byte_pointer>(s_p), total_size);
+    }
+
     Node* buy_node()
     {
         node_pointer p = node_rebind_traits::allocate(_m_impl, 1);
@@ -84,6 +105,7 @@ public:
         byte_pointer b_p = byte_rebind_traits::allocate(_m_byte_impl_, _array_size);
         memset(b_p, 0, _array_size);
         ptr->array_ = reinterpret_cast<Entry**>(b_p);
+        alloc_node_size_ ++;
         return ptr;
     }
 
@@ -93,10 +115,12 @@ public:
             reinterpret_cast<byte_pointer>(ptr->array_), _array_size);
         node_rebind_traits::destroy(_m_impl, ptr);
         node_rebind_traits::deallocate(_m_impl, ptr, 1);
+        alloc_node_size_ --;
     }
 
     Entry* buy_entry(const T& val)
     {
+        alloc_entry_size_ ++;
         entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
         entry_rebind_traits::construct(_m_entry_impl_, p, val);
         return static_cast<Entry*>(p);
@@ -106,7 +130,17 @@ public:
     {
         entry_rebind_traits::destroy(_m_entry_impl_, ptr);
         entry_rebind_traits::deallocate(_m_entry_impl_, ptr, 1);
+        alloc_entry_size_ --;
     }
+
+    bool alloc_balance()
+    {
+        return alloc_node_size_ == 0 && alloc_entry_size_ == 0;
+    }
+
+private:
+    int32_t alloc_node_size_{0};
+    int32_t alloc_entry_size_{0};
 };
 
 template <typename T,

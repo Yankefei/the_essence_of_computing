@@ -62,7 +62,7 @@ void pre_order_tree1(Node* ptr, int32_t hight, int32_t total_hight, int32_t m)
     for (i = 0; i < ptr->size_; i++)
     {
         if (hight > 1)
-            pre_order_tree(ptr->array_[i]->next_, hight - 1, total_hight, m);
+            pre_order_tree1(ptr->array_[i]->next_, hight - 1, total_hight, m);
         else
         {
             Node* n_ptr = ptr->array_[i]->next_;
@@ -118,6 +118,14 @@ void draw_tree(Node* ptr, int32_t hight, int32_t m)
         print_tree_node(ptr, m);
     }
 
+    stream << std::endl;
+}
+
+// 紧凑版
+template<typename Node>
+void draw_tree1(Node* ptr, int32_t hight, int32_t m)
+{
+    pre_order_tree1(ptr, hight, hight, m);
     stream << std::endl;
 }
 
