@@ -1,12 +1,12 @@
-#ifndef _TOOLS_BALANCE_PLUS_TREE_RECURSIVE_DEBUG_H_
-#define _TOOLS_BALANCE_PLUS_TREE_RECURSIVE_DEBUG_H_
+#ifndef _TOOLS_BALANCE_PLUS_TREE_RECURSIVE_DEBUG2_H_
+#define _TOOLS_BALANCE_PLUS_TREE_RECURSIVE_DEBUG2_H_
 
 #include <memory>
 #include <cassert>
 
 #include "../balance_tree_debug/balance_tree_base_debug.h"
 #include "../balance_tree_debug/balance_tree_print_util_debug.h"
-#include "balance_plus_tree_util_base_debug.h"
+#include "balance_plus_tree_util_base_debug2.h"
 
 #include "pair.hpp"
 #include "algorithm.hpp"
@@ -14,7 +14,7 @@
 namespace tools
 {
 
-namespace bp_tree_recursive
+namespace bp_tree_recursive2
 {
 
 template<typename T>
@@ -37,11 +37,12 @@ struct _BNode
 {
     _BNode() = default;
     int          size_{0};                // 数组包含的元素个数
-    _BNode*      next_node_{nullptr};     // 指向下一个BNode的叶子节点(只有在叶子节点才生效)
-    _Entry<T>*   array_{nullptr};         // 数据内存后置, 调试模式的内存结构
+    _BNode*      parent_{nullptr};        // 指向父节点
+    _BNode*      next_node_{nullptr};  // 指向下一个BNode的叶子节点(只有在叶子节点才生效)
+    _Entry<T>*   array_{nullptr};          // 数据内存后置
 };
 
-/*B+树 递归版本*/
+/*B+树 携带父指针的递归版本*/
 template<typename T,
         typename Alloc = std::allocator<T>,
         template <typename T1> class BNode = _BNode,
@@ -76,6 +77,12 @@ public:
 
     // 遍历函数
     using BalancePlusUtil::nice_in_order;
+    using BalancePlusUtil::first;
+    using BalancePlusUtil::next;
+    using BalancePlusUtil::last;
+    using BalancePlusUtil::prev;
+    using BalancePlusUtil::in_order;
+    using BalancePlusUtil::prev_in_order;
 
     // 成员变量
     using BalancePlusUtil::m_;
@@ -94,7 +101,7 @@ public:
     }
 
     // 自底向上 递归
-    bool insert(const T& val)
+    bool insert(const T& val)    // pass
     {
         bool change_min_ele = false;
         if (_m_impl._root != nullptr && alg::le(val, _m_impl._root->array_[0].data_))
@@ -118,8 +125,10 @@ public:
                 Node* new_root = buy_node();
                 new_root->array_[new_root->size_].data_ = _m_impl._root->array_[0].data_;
                 new_root->array_[new_root->size_++].next_ = _m_impl._root;
+                _m_impl._root->parent_ = new_root;
                 new_root->array_[new_root->size_].data_ = res.first->array_[0].data_;
                 new_root->array_[new_root->size_++].next_ = res.first;
+                res.first->parent_ = new_root;
                 _m_impl._root = new_root;
             }
         }
@@ -135,10 +144,10 @@ public:
     }
 
     // 自底向上  递归
-    bool remove(const T& val)
+    bool remove(const T& val)    // pass
     {
         RemoveRes res{false, false};
-        res = remove(_m_impl._root, nullptr, 0/*根节点则未用到*/,  val, hight_);
+        res = remove(_m_impl._root, 0/*根节点则未用到*/,  val, hight_);
         if (!res.first) return false;
 
          // 更换根节点， 如果m_为2，3则可能存在单个元素链的场景，需要循环处理
@@ -147,6 +156,7 @@ public:
             Node* ptr = _m_impl._root->array_[0].next_;
             free_node(_m_impl._root);
             _m_impl._root = ptr;
+            ptr->parent_ = nullptr;
             hight_ --;
         }
 
@@ -169,6 +179,18 @@ public:
 
         Result res = find(_m_impl._root, val, hight_);
         return res.tag_;
+    }
+
+    // 返回元素个数
+    size_t InOrder()
+    {
+        return in_order(_m_impl._root, hight_);
+    }
+
+    // 返回元素个数
+    size_t PrevInOrder()
+    {
+        return prev_in_order(_m_impl._root, hight_);
     }
 
     bool is_b_plus_tree()
@@ -203,7 +225,7 @@ public:
 
 private:
     using InsertRes = Pair<Node*, bool>;
-    // 在递归调用之后检查节点的分裂，程序处理的方向就是自底向上
+    // 自底向上的插入，算法主体和没有父节点的递归版本一致
     InsertRes insert(Node* ptr, const T& val, int32_t hight)
     {
         InsertRes n_res(nullptr, true);      // 保存下层递归的返回值
@@ -215,7 +237,7 @@ private:
             f_res = find_next(ptr, val);
             if (alg::le(val, ptr->array_[0].data_))
             {
-                //只有在val比B+树最小值还小的时候, 才会进入该逻辑
+                //只有在val比B树最小值还小的时候, 才会进入该逻辑
                 change_min_ele = true;
             }
 
@@ -242,7 +264,7 @@ private:
                 return n_res;   // 数据存在
             }
         }
-        else  // hight < 0
+        else
         {
             assert (ptr == nullptr);
             ret_ptr = buy_node();
@@ -304,10 +326,9 @@ private:
         {
             ptr->array_[f_res.i_].data_ = n_res.first->array_[0].data_;
             ptr->array_[f_res.i_].next_ = n_res.first;
-            // 当下级新增了一个B+树最小值时，如果新增了Node, 那么该Node将会插入到
-            // 当前层的1号索引位，所以需要将s_node.index + 1，0号索引位还是指向了
-            // 之前已有的节点，指向是不需要修改的。但是内部的值在这种情况下还是需要
-            // 替换.
+            // n_res是下级新增的节点，序维护parent_指针
+            n_res.first->parent_ = ptr;
+
             if (change_min_ele)
             {
                 ptr->array_[0].data_ = val;
@@ -336,30 +357,32 @@ private:
             n_ptr->array_[i] = ptr->array_[m_half_ + i];
             ptr->array_[m_half_ + i].next_ = nullptr;
             ptr->array_[m_half_ + i].data_ = T();
+            if (n_ptr->array_[i].next_ != nullptr)
+            {
+                n_ptr->array_[i].next_->parent_ = n_ptr;  // 维护父指针
+            }
         }
         if (m_odd)
         {
             n_ptr->array_[i] = ptr->array_[m_half_ + i];
             ptr->array_[m_half_ + i].next_ = nullptr;
             ptr->array_[m_half_ + i].data_ = T();
+            if (n_ptr->array_[i].next_ != nullptr)
+            {
+                n_ptr->array_[i].next_->parent_ = n_ptr;   // 维护父指针
+            }
         }
 
         n_ptr->size_ = m_ - m_half_;
         ptr->size_ = m_half_;
+        n_ptr->parent_ = ptr->parent_;   // 维护新建节点的父指针
         return n_ptr;
     }
 
-    /*
-        当叶子节点的元素数 < m/2, 则向两边的兄弟节点借, 如果发现两边兄弟节点的元素数均 < m/2,
-        则合并两个叶子节点，将元素值较大的节点的元素挪到元素值较小的节点，然后删除前者的节点内存
-        非叶子节点的清理策略同叶子节点, 对根节点进行特殊处理
-        同时维护begin_ptr_指针和叶子节点的next_node_指针
-        自底向上的删除
-        在递归调用之后检查节点是否需要继续合并，程序处理的方向就是自底向上
-    */
+    // 自底向上的删除，算法主体和没有父节点的递归版本一致
     using RemoveRes = Pair<bool /*is remove ele ?*/, bool/*is combine Node struct?*/>;
-    // index 为 ptr在pptr中的位置信息
-    RemoveRes remove(Node* ptr, Node* pptr, int32_t index, const T& val, int32_t hight)
+    // index 为ptr在父节点中的位置信息
+    RemoveRes remove(Node* ptr, int32_t index, const T& val, int32_t hight)
     {
         RemoveRes n_res(false, false);
         if (ptr == nullptr) return n_res;
@@ -374,7 +397,7 @@ private:
                 change_min_ele = true;
             }
 
-            n_res = remove(f_res.ptr_->next_, ptr, f_res.i_, val, hight - 1);
+            n_res = remove(f_res.ptr_->next_, f_res.i_, val, hight - 1);
             if (!n_res.first)  return n_res;  // 直接返回
 
             // 对最小值进行重新赋值
@@ -403,11 +426,9 @@ private:
         }
         n_res.first = true;
 
-        // 根节点
+        Node* pptr = ptr->parent_;
         if (pptr == nullptr)
-        {
             return n_res;
-        }
 
         // 先处理节点删除后直接为空的情况, 阶为 2, 3时有这种可能
         if (ptr->size_ == 0)
@@ -427,7 +448,9 @@ private:
                     }
                     else
                     {
-                        // 获取ptr的前置节点目前由于没有 parent_指针，暂时采用从begin_ptr_开始遍历的方式
+                        // 使用parent_指针来获取ptr的前置节点, 但是需要额外的find_val来确定ptr
+                        // 在pptr中的位置，所以这里还是直接使用遍历 begin_ptr_的方式，到了非递归
+                        // 的版本中, 存在remove_array_保存了该信息，则可以直接使用
                         Node* begin = begin_ptr_;
                         while(begin->next_node_ != ptr)
                         {
@@ -500,19 +523,19 @@ private:
         2. 释放right_index的内容
         3. 重排pptr节点的内容，将right_index后面的内容全部向前挪动一位
     */ 
-    void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir,
-                           int32_t hight)
+    void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir, int32_t hight)
     {
         assert(pptr->size_ >= right_index);
         Node* left_ptr = pptr->array_[left_index].next_;
         Node* right_ptr = pptr->array_[right_index].next_;
-        
+
         shift_node(left_ptr, right_ptr, lost_ele_dir);
         if (hight == 0)
         {
             left_ptr->next_node_ = right_ptr->next_node_;
         }
         free_node(right_ptr);
+
         for (int i = right_index + 1; i < pptr->size_; i++)
         {
             pptr->array_[i - 1] = pptr->array_[i];
