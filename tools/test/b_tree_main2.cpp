@@ -1,8 +1,8 @@
 #include <iostream>
 #include "stream.h"
 
-#include "balance_tree_debug/balance_tree_debug2.h"
-//#include "balance_tree_debug/balance_tree_recursive_debug2.h"
+#include "balance_tree/balance_tree2.h"
+//#include "balance_tree/balance_tree_recursive2.h"
 
 #include "rand.h"
 #include "vector.hpp"
@@ -30,7 +30,7 @@ int main()
         {
             assert(my_tree.insert(i) == true);
             assert(my_tree.is_b_tree() == true);
-            // my_tree.print_tree1();
+            my_tree.print_tree1();
             my_tree.InOrder();
             my_tree.PrevInOrder();
             // stream << "insert i: " << i << " success" << std::endl;
@@ -41,7 +41,9 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.remove(i) == true);
-            //my_tree.print_tree1();
+            //my_tree.InOrder();
+            //my_tree.PrevInOrder();
+            my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
         }
 
@@ -298,6 +300,7 @@ int main()
                 }
                 assert(my_tree.get_root() == nullptr);
                 assert(my_tree.size() == 0);
+                assert(my_tree.memory_alloc_balance() == true);
                 stream << "range_index : "<< rang_index << std::endl;
             }
         }

@@ -1,8 +1,8 @@
 #include <iostream>
 #include "stream.h"
 
-#include "balance_tree_debug/balance_tree_debug.h"
-//#include "balance_tree_debug/balance_tree_recursive_debug.h"
+//#include "balance_tree/balance_tree_recursive.h"
+#include "balance_tree/balance_tree.h"
 
 #include "rand.h"
 #include "vector.hpp"
@@ -38,6 +38,7 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.remove(i) == true);
+            my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
         }
 
@@ -211,7 +212,7 @@ int main()
             if (my_tree.remove(i))
                 ele_size --;
 
-            if (i == 299)
+            if (i == 720)
                 my_tree.print_tree();
 
             if (!my_tree.is_b_tree())
@@ -282,6 +283,7 @@ int main()
                 }
                 assert(my_tree.get_root() == nullptr);
                 assert(my_tree.size() == 0);
+                assert(my_tree.memory_alloc_balance() == true);
                 stream << "range_index : "<< rang_index << std::endl;
             }
         }
