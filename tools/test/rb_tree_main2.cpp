@@ -3,8 +3,8 @@
 
 #include "rand.h"
 
-#include "binary_rb_tree2.h"
-//#include "binary_rb_tree_recursive2.h"
+#include "binary_rb_tree/binary_rb_tree2.h"
+//#include "binary_rb_tree/binary_rb_tree_recursive2.h"
 #include "vector.hpp"
 
 using namespace tools;

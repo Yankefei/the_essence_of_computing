@@ -5,8 +5,8 @@
 #include <cassert>
 
 // 内部的node节点必须含有parent_指针
-#include "binary_rb_tree2.h"
-#include "binary_avl_tree3.h"
+#include "binary_rb_tree/binary_rb_tree2.h"
+#include "binary_avl_tree/binary_avl_tree3.h"
 
 #include "pair.hpp"
 

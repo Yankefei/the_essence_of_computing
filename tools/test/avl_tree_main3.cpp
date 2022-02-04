@@ -1,7 +1,7 @@
 #include <iostream>
 #include "stream.h"
 
-#include "binary_avl_tree3.h"
+#include "binary_avl_tree/binary_avl_tree3.h"
 
 #include "vector.hpp"
 #include "rand.h"

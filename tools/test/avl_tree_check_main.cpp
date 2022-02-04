@@ -1,9 +1,9 @@
 #include <iostream>
 #include "stream.h"
 
-#include "binary_avl_tree.h"
-#include "binary_avl_tree2.h"
-#include "binary_avl_tree3.h"
+#include "binary_avl_tree/binary_avl_tree.h"
+#include "binary_avl_tree/binary_avl_tree2.h"
+#include "binary_avl_tree/binary_avl_tree3.h"
 
 #include "timer_guard.h"
 

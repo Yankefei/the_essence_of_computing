@@ -1,8 +1,8 @@
 #include <iostream>
 #include "stream.h"
 
-#include "binary_rb_tree_recursive.h"
-#include "binary_rb_tree.h"
+#include "binary_rb_tree/binary_rb_tree_recursive.h"
+#include "binary_rb_tree/binary_rb_tree.h"
 #include "vector.hpp"
 
 #include "rand.h"

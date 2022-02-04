@@ -1,11 +1,11 @@
 #include <iostream>
 #include "stream.h"
 
-#include "binary_rb_tree.h"
-#include "binary_rb_tree_recursive.h"
+#include "binary_rb_tree/binary_rb_tree.h"
+#include "binary_rb_tree/binary_rb_tree_recursive.h"
 
-#include "binary_rb_tree2.h"
-#include "binary_rb_tree_recursive2.h"
+#include "binary_rb_tree/binary_rb_tree2.h"
+#include "binary_rb_tree/binary_rb_tree_recursive2.h"
 
 #include "timer_guard.h"
 
