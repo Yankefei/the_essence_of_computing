@@ -74,6 +74,9 @@ public:
     using BalancePlusUtil::find_val;
     using BalancePlusUtil::find_next;
 
+    // 遍历函数
+    using BalancePlusUtil::nice_in_order;
+
     // 成员变量
     using BalancePlusUtil::m_;
     using BalancePlusUtil::m_half_;
@@ -602,19 +605,6 @@ private:
         }
 
         return res;
-    }
-
-    void nice_in_order(Node* begin_ptr)
-    {
-        Entry* entry_ptr = nullptr;
-        for (; begin_ptr != nullptr; begin_ptr = begin_ptr->next_node_)
-        {
-            for (int i = 0; i < begin_ptr->size_; i++)
-            {
-                stream << begin_ptr->array_[i].data_ << " ";
-            }
-        }
-        stream << std::endl;
     }
 
     // 遍历叶子节点，查看是否有序，且数量是否正确

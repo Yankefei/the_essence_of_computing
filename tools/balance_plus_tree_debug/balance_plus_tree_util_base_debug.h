@@ -327,6 +327,19 @@ public:
         return res;
     }
 
+    void nice_in_order(Node* begin_ptr)
+    {
+        Entry* entry_ptr = nullptr;
+        for (; begin_ptr != nullptr; begin_ptr = begin_ptr->next_node_)
+        {
+            for (int i = 0; i < begin_ptr->size_; i++)
+            {
+                stream << begin_ptr->array_[i].data_ << " ";
+            }
+        }
+        stream << std::endl;
+    }
+
 public:
     int         m_;          // B树的阶
     int         m_half_;     // 阶的一半，计算大量使用到

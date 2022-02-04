@@ -1,12 +1,13 @@
 #include "stream.h"
 
-#include "balance_plus_tree_debug/balance_plus_tree_recursive_debug.h"
+//#include "balance_plus_tree_debug/balance_plus_tree_recursive_debug.h"
+#include "balance_plus_tree_debug/balance_plus_tree_debug.h"
 
 #include "rand.h"
 
 using namespace tools;
-using namespace tools::bp_tree_recursive;
-
+//using namespace tools::bp_tree_recursive;
+using namespace tools::bp_tree;
 
 int main()
 {
