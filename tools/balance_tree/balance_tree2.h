@@ -97,6 +97,10 @@ public:
     ~BalanceTree()
     {
         destory(_m_impl._root);
+        if (insert_array_ != nullptr)
+            free_array(insert_array_);
+        if (remove_array_ != nullptr)
+            free_array(remove_array_);
     }
 
     // 自底向上 非递归 去掉对堆栈的依赖
