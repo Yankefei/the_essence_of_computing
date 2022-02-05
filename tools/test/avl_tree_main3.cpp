@@ -387,6 +387,7 @@ int main()
 
     {
         using namespace tools::avl_tree_3;
+        stream << "check copy func" << std::endl;
         int index = 0;
         size_t ele_size = 0;
         AvlTree<int> my_tree;
@@ -415,27 +416,48 @@ int main()
             assert(ele_size == my_tree.NiceInOrder());
             assert(ele_size == my_tree.ResNiceInOrder());
 
-            AvlTree<int> my_tree2;
-            my_tree2 = std::move(my_tree);
-            //my_tree2.in_order();
-            //my_tree2.print_tree();
-            assert(ele_size == my_tree2.NiceInOrder());
-            assert(ele_size == my_tree2.ResNiceInOrder());
+            {
+                AvlTree<int> my_tree_move = std::move(my_tree);
+                assert(my_tree.get_root() == nullptr);
 
-            // assert(my_tree2.is_same(my_tree) == true);
+                AvlTree<int> my_tree_copy = my_tree_move;
+                assert(my_tree_move.is_same(my_tree_copy) == true);
 
-            if (!my_tree2.is_balance())
+                my_tree = std::move(my_tree_copy);
+                assert(my_tree.is_same(my_tree_move) == true);
+                assert(my_tree_copy.get_root() == nullptr);
+            }
+
+            {
+                AvlTree<int> my_tree_move;
+                my_tree_move = std::move(my_tree);
+                assert(my_tree.get_root() == nullptr);
+
+                AvlTree<int> my_tree_copy;
+                my_tree_copy = my_tree_move;
+                assert(my_tree_move.is_same(my_tree_copy) == true);
+
+                my_tree = std::move(my_tree_copy);
+                assert(my_tree.is_same(my_tree_move) == true);
+
+                assert(my_tree_copy.get_root() == nullptr);
+            }
+
+            assert(ele_size == my_tree.NiceInOrder());
+            assert(ele_size == my_tree.ResNiceInOrder());
+
+            if (!my_tree.is_balance())
             {
                 assert(false);
             }
 
             for (auto& i : array)
             {
-                if (/*my_tree.remove(i) && */my_tree2.remove(i))
+                if (/*my_tree.remove(i) && */my_tree.remove(i))
                     ele_size --;
             }
             //assert(my_tree.get_root() == nullptr);
-            assert(my_tree2.get_root() == nullptr);
+            assert(my_tree.get_root() == nullptr);
 
             assert(ele_size == 0);
         }

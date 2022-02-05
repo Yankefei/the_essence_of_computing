@@ -76,9 +76,8 @@ public:
 
     ~RbTree()
     {
-        if (_m_impl._root->right_tree_ != null_node_)
-            destory(_m_impl._root->right_tree_);
-        free_node(_m_impl._root);   
+        destory(_m_impl._root);
+        _m_impl._root = nullptr;
     }
 
     // 自顶向下插入 非递归
@@ -486,7 +485,7 @@ private:
     }
 
 private:
-    /*static*/ Node*  null_node_;
+    /*static*/ Node*  null_node_{nullptr};
 };
 
 // template<typename T, template <typename T1> class RbNode, typename Alloc>

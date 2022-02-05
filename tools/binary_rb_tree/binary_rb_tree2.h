@@ -84,9 +84,8 @@ public:
 
     ~RbTree()
     {
-        if (_m_impl._root->right_tree_ != null_node_)
-            destory(_m_impl._root->right_tree_);
-        free_node(_m_impl._root);
+        destory(_m_impl._root);
+        _m_impl._root = nullptr;
     }
 
     RbTree(const RbTree& rhs)
@@ -99,7 +98,7 @@ public:
     {
         if (this != &rhs)
         {
-            if (_m_impl._root->right_tree_ != null_node_)
+            if (_m_impl._root->right_tree_ != nullptr)
                 destory(_m_impl._root->right_tree_);
             _m_impl._root->right_tree_ = copy(rhs._m_impl._root->right_tree_);
         }
@@ -108,16 +107,19 @@ public:
 
     RbTree(RbTree&& rhs)   noexcept
     {
-        _m_impl._root = rhs._m_impl._root;
-        rhs._m_impl._root = nullptr;
+        initialize();
+        _m_impl._root->right_tree_ = rhs._m_impl._root->right_tree_;
+        // 确保对象生存周期内任何情况下 _m_impl._root 都不空
+        rhs._m_impl._root->right_tree_ = nullptr;
     }
 
     RbTree& operator=(RbTree&& rhs)  noexcept
     {
         if (this != &rhs)
         {
-            _m_impl._root = rhs._m_impl._root;
-            rhs._m_impl._root = nullptr;
+            _m_impl._root->right_tree_ = rhs._m_impl._root->right_tree_;
+            // 确保对象生存周期内任何情况下 _m_impl._root 都不空
+            rhs._m_impl._root->right_tree_ = nullptr;
         }
         return *this;
     }
@@ -667,7 +669,7 @@ private:
 
 private:
     // TODO static 需要处理生命周期线程安全
-    /*static*/ Node* null_node_;
+    /*static*/ Node* null_node_{nullptr};
 };
 
 // template<typename T, typename Alloc, template <typename T1> class RbNode>
