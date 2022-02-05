@@ -329,7 +329,7 @@ public:
         Node* res_ptr = new_ptr;  // 将跟节点指针返回
 
         Stack<CpyStackInfo> st;
-        st.push(CpyStackInfo(ptr, 0, new_ptr));
+        st.push(ptr, 0, new_ptr);
 
         CpyStackInfo  st_info;        
         Node* last_leaf_ptr = nullptr;
@@ -342,7 +342,7 @@ public:
             {
                 st_info.com_ptr->array_[st_info.index + 1] =
                     buy_entry(st_info.ptr->array_[st_info.index + 1]->data_);
-                st.push(CpyStackInfo(st_info.ptr, st_info.index + 1, st_info.com_ptr));
+                st.push(st_info.ptr, st_info.index + 1, st_info.com_ptr);
             }
 
             ptr = st_info.ptr->array_[st_info.index]->next_;
@@ -353,7 +353,7 @@ public:
                 new_ptr->parent_ = st_info.com_ptr;   // 维护parent_指针
                 new_ptr->size_ = ptr->size_;
                 new_ptr->array_[0] = buy_entry(ptr->array_[0]->data_);
-                st.push(CpyStackInfo(ptr, 0, new_ptr));
+                st.push(ptr, 0, new_ptr);
             }
             else
             {

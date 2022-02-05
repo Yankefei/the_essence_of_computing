@@ -44,6 +44,13 @@ public:
         alloc_.construct(first_free_++, std::move(val));
     }
 
+    template<typename... Args>
+    void push(Args&&... args)  noexcept
+    {
+        check_n_alloc();
+        alloc_.construct(first_free_++, std::forward<Args>(args)...);
+    }
+
     T& top()
     {
         assert(size() != 0);

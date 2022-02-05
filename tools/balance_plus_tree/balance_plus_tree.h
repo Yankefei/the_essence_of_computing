@@ -244,7 +244,7 @@ public:
         Node* res_ptr = new_ptr;
 
         Stack<CpyStackInfo> st;
-        st.push(CpyStackInfo(ptr, 0, new_ptr));
+        st.push(ptr, 0, new_ptr);
 
         CpyStackInfo  st_info;        
         Node* last_leaf_ptr = nullptr;
@@ -257,7 +257,7 @@ public:
             {
                 st_info.com_ptr->array_[st_info.index + 1] =
                     buy_entry(st_info.ptr->array_[st_info.index + 1]->data_);
-                st.push(CpyStackInfo(st_info.ptr, st_info.index + 1, st_info.com_ptr));
+                st.push(st_info.ptr, st_info.index + 1, st_info.com_ptr);
             }
 
             ptr = st_info.ptr->array_[st_info.index]->next_;
@@ -267,7 +267,7 @@ public:
                 st_info.com_ptr->array_[st_info.index]->next_ = new_ptr;
                 new_ptr->size_ = ptr->size_;
                 new_ptr->array_[0] = buy_entry(ptr->array_[0]->data_);
-                st.push(CpyStackInfo(ptr, 0, new_ptr));
+                st.push(ptr, 0, new_ptr);
             }
             else
             {
@@ -905,7 +905,7 @@ private:
     int         hight_{-1};  // 树高, 单节点的B树默认树高为0, 空树默认树高为-1
     std::size_t ele_size_{0}; // 总元素数
 
-    Node*       begin_ptr_{nullptr};  // 指向
+    Node*       begin_ptr_{nullptr};  // 指向最小Node叶子节点的指针
 };
 
 }

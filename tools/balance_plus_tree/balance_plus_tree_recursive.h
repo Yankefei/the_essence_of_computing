@@ -677,7 +677,7 @@ private:
     int         hight_{-1};  // 树高, 单节点的B树默认树高为0, 空树默认树高为-1
     std::size_t ele_size_{0}; // 总元素数
 
-    Node*       begin_ptr_{nullptr};  // 指向
+    Node*       begin_ptr_{nullptr};  // 指向最小Node叶子节点的指针
 };
 
 }
