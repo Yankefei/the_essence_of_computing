@@ -71,6 +71,34 @@ public:
     BalanceTree_Base(size_t m) : _array_size(m * sizeof(Entry*)) {}
     ~BalanceTree_Base() {} // 设置虚函数 BalanceTree_Base 会额外增加8字节内存
 
+    BalanceTree_Base(const BalanceTree_Base& rhs)
+    {
+        copy_status(rhs);
+    }
+
+    void copy_status(const BalanceTree_Base& rhs)
+    {
+        _array_size = rhs._array_size;
+
+        // _m_impl._root由外部单独赋值
+        // alloc_node_size_ 和 alloc_entry_size_ 会伴随增长
+    }
+
+    void shift_alloc_size(BalanceTree_Base& rhs)
+    {
+        alloc_node_size_ = rhs.alloc_node_size_;
+        alloc_entry_size_ = rhs.alloc_entry_size_;
+        rhs.alloc_node_size_ = 0;
+        rhs.alloc_entry_size_ = 0;
+    }
+
+    bool check_base_same(const BalanceTree_Base& rhs)
+    {
+        return _array_size == rhs._array_size &&
+               alloc_node_size_ == rhs.alloc_node_size_ &&
+               alloc_entry_size_ == rhs.alloc_entry_size_;
+    }
+
 public:
     Base_Impl   _m_impl;
     size_t      _array_size;   // entry指针数组所需要申请内存的大小

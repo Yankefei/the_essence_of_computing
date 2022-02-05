@@ -48,14 +48,14 @@ template<typename T,
         template <typename T1> class BNode = _BNode,
         template <typename T2> class BEntry = _Entry>
 class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, BEntry>,
-                    protected BalanceTree_Util<T, BNode, BEntry>
+                    protected BalanceTree_Util2<T, BNode, BEntry>
 {
     typedef BalanceTree_Base<T, Alloc, BNode, BEntry> BalanceTreeBase;
     typedef typename BalanceTreeBase::Node Node;
     typedef typename BalanceTreeBase::Entry Entry;
     typedef Node*  Root;
 
-    typedef BalanceTree_Util<T, BNode, BEntry> BalanceUtil;
+    typedef BalanceTree_Util2<T, BNode, BEntry> BalanceUtil;
     typedef typename BalanceUtil::Result Result;
     typedef typename BalanceUtil::Dir    Dir;
 

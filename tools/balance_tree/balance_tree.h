@@ -66,7 +66,11 @@ public:
     using BalanceTreeBase::buy_entry;
     using BalanceTreeBase::free_entry;
     using BalanceTreeBase::alloc_balance;
+    using BalanceTreeBase::copy_status;
+    using BalanceTreeBase::check_base_same;
+    using BalanceTreeBase::shift_alloc_size;
 
+    using BalanceUtil::copy;
     using BalanceUtil::lend_ele;
     using BalanceUtil::shift_element;
     using BalanceUtil::shift_node;
@@ -87,6 +91,54 @@ public:
     ~BalanceTree()
     {
         destory(_m_impl._root);
+        hight_ = -1;
+        ele_size_ = 0;
+    }
+
+    BalanceTree(const BalanceTree& rhs)
+        : BalanceTreeBase(rhs),
+          BalanceUtil(rhs)
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        _m_impl._root = copy_data(rhs._m_impl._root);
+    }
+
+    BalanceTree& operator=(const BalanceTree& rhs)
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            Node* root = copy_data(rhs._m_impl._root);
+
+            //BalanceTreeBase::copy_status(rhs);
+            //BalanceUtil::copy(rhs);
+            hight_ = rhs.hight_;
+            ele_size_ = rhs.ele_size_;
+            _m_impl._root = root;
+        }
+        return *this;
+    }
+
+    BalanceTree(BalanceTree&& rhs)   noexcept
+        : BalanceTreeBase(rhs),
+          BalanceUtil(rhs)
+    {
+        move_tree(std::forward<BalanceTree>(rhs));
+    }
+
+    BalanceTree& operator=(BalanceTree&& rhs) noexcept
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            //BalanceTreeBase::copy_status(rhs);
+            //BalanceUtil::copy(rhs);
+            move_tree(std::forward<BalanceTree>(rhs));
+        }
+        return *this;
     }
 
     // 自底向上 非递归
@@ -147,7 +199,78 @@ public:
         draw_tree<Node>(_m_impl._root, hight_, m_);
     }
 
+    bool is_same(const BalanceTree& rhs)
+    {
+        return check_same(_m_impl._root, rhs._m_impl._root) &&
+                m_ == rhs.m_ &&
+                m_half_ == rhs.m_half_ &&
+                hight_ == rhs.hight_ &&
+                ele_size_ == rhs.ele_size_ &&
+                check_base_same(rhs);
+    }
+
 public:
+    // 复制一棵B树，返回新的ptr指针
+    Node* copy_data(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+
+        Node* new_ptr = buy_node();
+        new_ptr->size_ = ptr->size_;
+        for (int i = 0; i < ptr->size_; i++)
+        {
+            Entry* e = ptr->array_[i];
+            Entry*& new_e = new_ptr->array_[i];
+            new_e = buy_entry(e->data_);
+            new_e->next_ = copy_data(e->next_);
+        }
+        return new_ptr;
+    }
+
+    void move_tree(BalanceTree&& rhs) noexcept
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        rhs.hight_ = -1;
+        rhs.ele_size_ = 0;
+
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+
+        shift_alloc_size(rhs);
+    }
+
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        bool res = false;
+        do
+        {
+            if (ptr == nullptr || ptr2 == nullptr)
+                break;
+
+            if (!alg::eq(ptr->size_, ptr2->size_))
+                break;
+
+            int i = 0;
+            for (; i < ptr->size_ ; i++)
+            {
+                Entry* e1 = ptr->array_[i];
+                Entry* e2 = ptr2->array_[i];
+                if (!alg::eq(e1->data_, e2->data_))
+                    break;
+                if (!check_same(e1->next_, e2->next_))
+                    break;
+            }
+
+            if (i == ptr->size_) res = true;
+        } while (false);
+        
+        return res;
+    }
+
+private:
     // 堆栈中的信息
     struct StackInfo
     {

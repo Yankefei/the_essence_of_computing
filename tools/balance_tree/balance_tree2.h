@@ -48,16 +48,17 @@ template<typename T,
         template <typename T1> class BNode = _BNode,
         template <typename T2> class BEntry = _Entry>
 class BalanceTree : protected BalanceTree_Base<T, Alloc, BNode, BEntry>,
-                    protected BalanceTree_Util<T, BNode, BEntry>
+                    protected BalanceTree_Util2<T, BNode, BEntry>
 {
     typedef BalanceTree_Base<T, Alloc, BNode, BEntry> BalanceTreeBase;
     typedef typename BalanceTreeBase::Node Node;
     typedef typename BalanceTreeBase::Entry Entry;
     typedef Node*  Root;
 
-    typedef BalanceTree_Util<T, BNode, BEntry> BalanceUtil;
+    typedef BalanceTree_Util2<T, BNode, BEntry> BalanceUtil;
     typedef typename BalanceUtil::Result Result;
     typedef typename BalanceUtil::Dir    Dir;
+    typedef typename BalanceUtil::IterResult  IterResult;
 
 public:
     using BalanceTreeBase::buy_node;
@@ -68,6 +69,8 @@ public:
     using BalanceTreeBase::buy_entry;
     using BalanceTreeBase::free_entry;
     using BalanceTreeBase::alloc_balance;
+    using BalanceTreeBase::check_base_same;
+    using BalanceTreeBase::shift_alloc_size;
 
     using BalanceUtil::lend_ele;
     using BalanceUtil::shift_element;
@@ -101,6 +104,79 @@ public:
             free_array(insert_array_);
         if (remove_array_ != nullptr)
             free_array(remove_array_);
+    }
+
+    BalanceTree(const BalanceTree& rhs)
+        : BalanceTreeBase(rhs),
+          BalanceUtil(rhs)
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        if (rhs.insert_array_ != nullptr)
+        {
+            insert_array_ = buy_array(*(rhs.insert_array_ - 1));
+        }
+        if (rhs.remove_array_ != nullptr)
+        {
+            remove_array_ = buy_array(*(rhs.remove_array_ - 1));
+        }
+        _m_impl._root = copy_data(rhs._m_impl._root);
+    }
+
+    BalanceTree& operator=(const BalanceTree& rhs)
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            //BalanceTreeBase::copy_status(rhs);
+            //BalanceUtil::copy(rhs);
+            hight_ = rhs.hight_;
+            ele_size_ = rhs.ele_size_;
+            if (rhs.insert_array_ != nullptr)
+            {
+                int32_t insert_array_len = *(rhs.insert_array_ - 1);
+                if (insert_array_ != nullptr)
+                    free_array(insert_array_);
+                insert_array_ = buy_array(insert_array_len);
+            }
+            if (rhs.remove_array_ != nullptr)
+            {
+                int32_t remove_array_len = *(rhs.remove_array_ - 1);
+                if (remove_array_ != nullptr)
+                    free_array(remove_array_);
+                remove_array_ = buy_array(remove_array_len);
+            }
+
+            _m_impl._root = copy_data(rhs._m_impl._root);
+        }
+        return *this;
+    }
+
+    BalanceTree(BalanceTree&& rhs)   noexcept
+        : BalanceTreeBase(rhs),
+          BalanceUtil(rhs)
+    {
+        move_tree(std::forward<BalanceTree>(rhs));
+    }
+
+    BalanceTree& operator=(BalanceTree&& rhs)   noexcept
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            //BalanceTreeBase::copy_status(rhs);
+            //BalanceUtil::copy(rhs);
+
+            if (insert_array_ != nullptr)
+                free_array(insert_array_);
+            if (remove_array_ != nullptr)
+                free_array(remove_array_);
+
+            move_tree(std::forward<BalanceTree>(rhs));
+        }
+        return *this;
     }
 
     // 自底向上 非递归 去掉对堆栈的依赖
@@ -204,7 +280,138 @@ public:
         draw_tree<Node>(_m_impl._root, hight_, m_);
     }
 
+    bool is_same(const BalanceTree& rhs)
+    {
+        return check_same(_m_impl._root, rhs._m_impl._root) &&
+                m_ == rhs.m_ &&
+                m_half_ == rhs.m_half_ &&
+                hight_ == rhs.hight_ &&
+                ele_size_ == rhs.ele_size_ &&
+                check_base_same(rhs) &&
+                check_same2(_m_impl._root, rhs._m_impl._root);
+    }
+
 public:
+    // 复制一棵B树，返回新的ptr指针, 同时维护 parent_ 指针
+    Node* copy_data(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+
+        // 先获取B树的最小节点指针
+        Node* left = ptr;
+        while(left->array_[0]->next_)
+            left = left->array_[0]->next_;
+
+        Node* new_ptr = nullptr;
+        Node* new_ptr_next = nullptr;
+        // 依次向上遍历，然后递归处理其他部分
+        for (; left != ptr->parent_; left = left->parent_)
+        {
+            new_ptr_next = new_ptr;
+            new_ptr = buy_node();
+            new_ptr->size_ = left->size_;
+            for (int i = 0; i < left->size_; i++)
+            {
+                Entry* e = left->array_[i];
+                Entry*& new_e = new_ptr->array_[i];
+                new_e = buy_entry(e->data_);
+                if (i == 0)
+                {
+                    // 处理最左边的情况
+                    new_e->next_ = new_ptr_next;
+                    if (new_ptr_next != nullptr)
+                        new_ptr_next->parent_ = new_ptr;
+                }
+                else
+                {
+                    // 处理其他情况
+                    new_e->next_ = copy_data(e->next_);
+                    if (new_e->next_ != nullptr)
+                        new_e->next_->parent_ = new_ptr;
+                }
+            }
+        }
+
+        return new_ptr;
+    }
+
+    void move_tree(BalanceTree&& rhs)   noexcept
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        rhs.hight_ = -1;
+        rhs.ele_size_ = 0;
+
+        insert_array_ = rhs.insert_array_;
+        rhs.insert_array_ = nullptr;
+
+        remove_array_ = rhs.remove_array_;
+        rhs.remove_array_ = nullptr;
+
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+
+        shift_alloc_size(rhs);
+    }
+
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        bool res = false;
+        do
+        {
+            if (ptr == nullptr || ptr2 == nullptr)
+                break;
+
+            if (!alg::eq(ptr->size_, ptr2->size_))
+                break;
+
+            int i = 0;
+            for (; i < ptr->size_ ; i++)
+            {
+                Entry* e1 = ptr->array_[i];
+                Entry* e2 = ptr2->array_[i];
+                if (!alg::eq(e1->data_, e2->data_))
+                    break;
+                if (!check_same(e1->next_, e2->next_))
+                    break;
+            }
+
+            if (i == ptr->size_) res = true;
+        } while (false);
+        
+        return res;
+    }
+
+    // 检查parent_指针是否指向一致
+    bool check_same2(Node* root1, Node* root2)
+    {
+        {
+            IterResult begin = first(root1, hight_);
+            IterResult begin2 = first(root2, hight_);
+            for (; begin.node_ptr != nullptr; begin = next(begin), begin2 = next(begin2))
+            {
+                if (alg::neq(begin.entry_ptr->data_, begin2.entry_ptr->data_))
+                    return false;
+            }
+            if (begin2.node_ptr != nullptr) return false;
+        }
+
+        {
+            IterResult end = last(root1, hight_);
+            IterResult end2 = last(root2, hight_);
+            for (; end.node_ptr != nullptr; end = prev(end), end2 = prev(end2))
+            {
+                if (alg::neq(end.entry_ptr->data_, end2.entry_ptr->data_))
+                    return false;
+            }
+            if (end2.node_ptr != nullptr) return false;
+        }
+        return true;
+    }
+
+private:
     // 自底向上
     // 算法主体和递归的插入版本过程一致
     bool insert(Node** p_ptr, const T& val, int32_t hight)

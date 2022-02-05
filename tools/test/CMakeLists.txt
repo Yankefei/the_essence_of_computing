@@ -87,3 +87,6 @@ target_link_libraries(bp_tree_main  tools)
 
 add_executable(bp_tree_main2 b_plus_tree_main2.cpp)
 target_link_libraries(bp_tree_main2  tools)
+
+add_executable(b_and_p_tree_copy_check_main b_and_p_tree_copy_check_main.cpp)
+target_link_libraries(b_and_p_tree_copy_check_main  tools)
