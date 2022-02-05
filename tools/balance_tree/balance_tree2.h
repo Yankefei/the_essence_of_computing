@@ -293,6 +293,7 @@ public:
 
 public:
     // 复制一棵B树，返回新的ptr指针, 同时维护 parent_ 指针
+    // 使用中序遍历的方式
     Node* copy_data(Node* ptr)
     {
         if (ptr == nullptr) return ptr;

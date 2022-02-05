@@ -13,7 +13,7 @@ namespace tools
 template<typename T,
         template <typename T1> class BNode,
         template <typename T2> class BEntry>
-class BalancePlusTree_Util
+class BalancePlusTree_Util2
 {
     typedef BNode<T>  Node;
     typedef BEntry<T>  Entry; 
@@ -50,8 +50,19 @@ public:
     };
 
 public:
-    BalancePlusTree_Util(int m) : m_(m), m_half_(m_ / 2)
+    BalancePlusTree_Util2(int m) : m_(m), m_half_(m_ / 2)
     {
+    }
+
+    BalancePlusTree_Util2(const BalancePlusTree_Util2& rhs)
+    {
+        copy(rhs);
+    }
+
+    void copy(const BalancePlusTree_Util2& rhs)
+    {
+        m_ = rhs.m_;
+        m_half_ = rhs.m_half_;
     }
 
     // 先向右兄弟节点借, 再向左兄弟节点借

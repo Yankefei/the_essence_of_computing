@@ -66,6 +66,9 @@ public:
     using BalanceTreeBase::buy_entry;
     using BalanceTreeBase::free_entry;
     using BalanceTreeBase::alloc_balance;
+    using BalanceTreeBase::copy_status;
+    using BalanceTreeBase::check_base_same;
+    using BalanceTreeBase::shift_alloc_size;
 
     // 算法函数
     using BalancePlusUtil::lend_ele;
@@ -92,6 +95,53 @@ public:
     ~BalancePlusTree()
     {
         destory(_m_impl._root);
+        hight_ = -1;
+        ele_size_ = 0;
+        begin_ptr_ = nullptr;
+    }
+
+    BalancePlusTree(const BalancePlusTree& rhs)
+        : BalanceTreeBase(rhs),
+          BalancePlusUtil(rhs)
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        _m_impl._root = copy_data(rhs._m_impl._root);
+    }
+
+    BalancePlusTree& operator=(const BalancePlusTree& rhs)
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            //BalanceTreeBase::copy_status(rhs);
+            //BalancePlusUtil::copy(rhs);
+            hight_ = rhs.hight_;
+            ele_size_ = rhs.ele_size_;
+            _m_impl._root = copy_data(rhs._m_impl._root);
+        }
+        return *this;
+    }
+
+    BalancePlusTree(BalancePlusTree&& rhs)   noexcept
+        : BalanceTreeBase(rhs),
+          BalancePlusUtil(rhs)
+    {
+        move_tree(std::forward<BalancePlusTree>(rhs));
+    }
+
+    BalancePlusTree& operator=(BalancePlusTree&& rhs) noexcept
+    {
+        assert(rhs.m_ == m_);
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            //BalanceTreeBase::copy_status(rhs);
+            //BalancePlusUtil::copy(rhs);
+            move_tree(std::forward<BalancePlusTree>(rhs));
+        }
+        return *this;
     }
 
     // 自底向上 非递归
@@ -157,7 +207,156 @@ public:
         draw_tree<Node>(_m_impl._root, hight_, m_);
     }
 
+    bool is_same(const BalancePlusTree& rhs)
+    {
+        return check_same(_m_impl._root, rhs._m_impl._root) &&
+                m_ == rhs.m_ &&
+                m_half_ == rhs.m_half_ &&
+                hight_ == rhs.hight_ &&
+                ele_size_ == rhs.ele_size_ &&
+                check_base_same(rhs) &&
+                check_same2(begin_ptr_, rhs.begin_ptr_);
+    }
+
 public:
+    struct CpyStackInfo
+    {
+        CpyStackInfo() = default;
+        CpyStackInfo(Node* _ptr, int32_t _index, Node* _new_ptr)
+            : ptr(_ptr), index(_index), com_ptr(_new_ptr)
+        {}
+        Node* ptr{nullptr};
+        int32_t index{-1};
+        Node* com_ptr{nullptr};  // 伴随指针
+    };
+
+    // 复制一棵B+树，返回新的ptr指针
+    // 使用先序遍历, 依赖堆栈
+    // 在内部直接将 begin_ptr_ 赋值
+    Node* copy_data(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+
+        Node* new_ptr = buy_node();
+        new_ptr->size_ = ptr->size_;
+        new_ptr->array_[0] = buy_entry(ptr->array_[0]->data_);
+
+        Node* res_ptr = new_ptr;
+
+        Stack<CpyStackInfo> st;
+        st.push(CpyStackInfo(ptr, 0, new_ptr));
+
+        CpyStackInfo  st_info;        
+        Node* last_leaf_ptr = nullptr;
+
+        while(!st.empty())
+        {
+            st_info = st.top();
+            st.pop();
+            if (st_info.index < st_info.ptr->size_ - 1)
+            {
+                st_info.com_ptr->array_[st_info.index + 1] =
+                    buy_entry(st_info.ptr->array_[st_info.index + 1]->data_);
+                st.push(CpyStackInfo(st_info.ptr, st_info.index + 1, st_info.com_ptr));
+            }
+
+            ptr = st_info.ptr->array_[st_info.index]->next_;
+            if (ptr != nullptr)
+            {
+                new_ptr = buy_node();
+                st_info.com_ptr->array_[st_info.index]->next_ = new_ptr;
+                new_ptr->size_ = ptr->size_;
+                new_ptr->array_[0] = buy_entry(ptr->array_[0]->data_);
+                st.push(CpyStackInfo(ptr, 0, new_ptr));
+            }
+            else
+            {
+                if (st_info.index == 0)  // 第一次到叶子节点, 才更新 next_node_ 指针
+                {
+                    if (last_leaf_ptr == nullptr)
+                    {
+                        // 在内部直接将 begin_ptr_ 赋值
+                        last_leaf_ptr = begin_ptr_ = st_info.com_ptr;
+                    }
+                    else
+                    {
+                        last_leaf_ptr->next_node_ = st_info.com_ptr;
+                        last_leaf_ptr = st_info.com_ptr;
+                    }
+                }
+            }
+        }
+
+        return res_ptr;
+    }
+
+    void move_tree(BalancePlusTree&& rhs) noexcept
+    {
+        hight_ = rhs.hight_;
+        ele_size_ = rhs.ele_size_;
+        rhs.hight_ = -1;
+        rhs.ele_size_ = 0;
+
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+
+        begin_ptr_ = rhs.begin_ptr_;
+        rhs.begin_ptr_ = nullptr;
+
+        shift_alloc_size(rhs);
+    }
+
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        bool res = false;
+        do
+        {
+            if (ptr == nullptr || ptr2 == nullptr)
+                break;
+
+            if (!alg::eq(ptr->size_, ptr2->size_))
+                break;
+
+            int i = 0;
+            for (; i < ptr->size_ ; i++)
+            {
+                Entry* e1 = ptr->array_[i];
+                Entry* e2 = ptr2->array_[i];
+                if (!alg::eq(e1->data_, e2->data_))
+                    break;
+                if (!check_same(e1->next_, e2->next_))
+                    break;
+            }
+
+            if (i == ptr->size_) res = true;
+        } while (false);
+        
+        return res;
+    }
+
+    bool check_same2(Node* begin_ptr, Node* begin_ptr2)
+    {
+        for (; begin_ptr != nullptr;
+                begin_ptr = begin_ptr->next_node_, begin_ptr2 = begin_ptr2->next_node_)
+        {
+            if (begin_ptr->size_ != begin_ptr2->size_)
+                return false;
+            for (int i = 0; i < begin_ptr->size_; i++)
+            {
+                if (alg::neq(begin_ptr->array_[i]->data_, begin_ptr2->array_[i]->data_))
+                {
+                    return false;
+                }
+            }
+        }
+
+        assert(begin_ptr2 == nullptr);
+        return true;
+    }
+
+private:
     // 堆栈中的信息
     struct StackInfo
     {

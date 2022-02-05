@@ -43,6 +43,17 @@ public:
     {
     }
 
+    BalancePlusTree_Util(const BalancePlusTree_Util& rhs)
+    {
+        copy(rhs);
+    }
+
+    void copy(const BalancePlusTree_Util& rhs)
+    {
+        m_ = rhs.m_;
+        m_half_ = rhs.m_half_;
+    }
+
     // 先向右兄弟节点借, 再向左兄弟节点借
     // using LendRes = Pair<bool/*lend result*/, int32_t/*first_ele_change_index, 需要更新ptr中元素的位置*/>;
     bool lend_ele(Node* ptr, int32_t debtor_index/*发起借贷的位置*/)
