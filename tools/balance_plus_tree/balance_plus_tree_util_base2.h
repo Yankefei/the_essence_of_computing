@@ -50,7 +50,7 @@ public:
     };
 
 public:
-    BalancePlusTree_Util2(int m) : m_(m), m_half_(m_ / 2)
+    BalancePlusTree_Util2(int m) : m_(m), m_half_(m % 2 == 0 ? m/2 : m/2 + 1)
     {
     }
 

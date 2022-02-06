@@ -352,20 +352,21 @@ private:
         if (m_odd)
         {
             int i = 0;
-            if (index > m_half_)
+            int half = m_half_ - 1; // 下确界
+            if (index > half)
             {
                 // 开始迁移的起点有差别
                 i = 1;
                 shift_node = true;
                 // 修改最终index的值
-                index = index - m_half_ - 1;
+                index = index - half - 1;
             }
             int j = 0;
-            n_ptr->size_ = m_ - m_half_ - i;
-            for (; i <= m_half_; i++, j++)
+            n_ptr->size_ = m_ - half - i;
+            for (; i <= half; i++, j++)
             {
-                n_ptr->array_[j] = ptr->array_[m_half_ + i];
-                ptr->array_[m_half_ + i].next_ = nullptr;
+                n_ptr->array_[j] = ptr->array_[half + i];
+                ptr->array_[half + i].next_ = nullptr;
                 if (n_ptr->array_[j].next_ != nullptr)
                 {
                     n_ptr->array_[j].next_->parent_ = n_ptr;  // 维护父指针
