@@ -223,14 +223,14 @@ private:
             {
                 if (ptr->size_ == m_)
                 {
-                    new_ptr = split(ptr);
+                    auto pair = split(ptr, s_node.index);
+                    new_ptr = pair.first;
                     // 维护叶子节点的指针
                     new_ptr->next_node_ = ptr->next_node_;
                     ptr->next_node_ = new_ptr;
-                    if (s_node.index > m_half_ || s_node.index == m_ - 1)
+                    if (pair.second)
                     {
-                        s_node.index = s_node.index - m_half_;
-                        ptr = new_ptr;     // 复用ptr
+                        ptr = new_ptr;
                     }
                 }
             }
@@ -248,18 +248,12 @@ private:
 
                 if (ptr->size_ == m_)
                 {
-                    new_ptr = split(ptr);
-                    // 这里需要包含 == m_half_ 这种情况
-                    if (s_node.index >= m_half_ || s_node.index == m_ -1)
+                    s_node.index += 1;
+                    auto pair = split(ptr, s_node.index);
+                    new_ptr = pair.first;
+                    if (pair.second)
                     {
-                        s_node.index = s_node.index - m_half_;
-                        s_node.index ++;
                         ptr = new_ptr;
-                    }
-                    else
-                    {
-                        if (s_node.index != m_half_) // 在分界点不需要挪动索引位置
-                            s_node.index ++;
                     }
                 }
                 else
@@ -311,30 +305,53 @@ private:
         return ins_res;
     }
 
-    // 分裂节点, 返回分裂后Node节点指针
-    Node* split(Node* ptr)
+    /*
+        @note  分裂节点, 返回分裂后Node节点指针, bool 表示是否将插入到返回的Node节点上
+        @param index表示将需要向Node中插入的位置，返回后会被程序修改为实际应该插入的位置
+    */
+    Pair<Node*, bool> split(Node* ptr, int32_t& index)
     {
         assert(ptr->size_ == m_);
         bool m_odd = m_ % 2 == 0 ? false : true;
+        bool shift_node = false;   // 是否应该转换节点
         Node* n_ptr = buy_node();
-        // m_为奇数时, 在原节点保留元素的少, 迁移的元素较多
-        int i = 0;
-        for (; i < m_half_; i++)
-        {
-            n_ptr->array_[i] = ptr->array_[m_half_ + i];
-            ptr->array_[m_half_ + i].next_ = nullptr;
-            ptr->array_[m_half_ + i].data_ = T();
-        }
+        // m_为奇数时, 根据index的值来选择迁移元素的数目，保证最终插入后两边数量一致
         if (m_odd)
         {
-            n_ptr->array_[i] = ptr->array_[m_half_ + i];
-            ptr->array_[m_half_ + i].next_ = nullptr;
-            ptr->array_[m_half_ + i].data_ = T();
+            int i = 0;
+            if (index > m_half_)
+            {
+                // 开始迁移的起点有差别
+                i = 1;
+                shift_node = true;
+                // 修改最终index的值
+                index = index - m_half_ - 1;
+            }
+            int j = 0;
+            n_ptr->size_ = m_ - m_half_ - i;
+            for (; i <= m_half_; i++, j++)
+            {
+                n_ptr->array_[j] = ptr->array_[m_half_ + i];
+                ptr->array_[m_half_ + i].next_ = nullptr;
+            }
         }
+        else
+        {
+            for (int i = 0; i < m_half_; i++)
+            {
+                n_ptr->array_[i] = ptr->array_[m_half_ + i];
+                ptr->array_[m_half_ + i].next_ = nullptr;
+            }
+            n_ptr->size_ = m_ - m_half_;
+            if (index > m_half_)
+            {
+                index = index - m_half_;
+                shift_node = true;
+            }
+        }
+        ptr->size_ = m_ - n_ptr->size_;
 
-        n_ptr->size_ = m_ - m_half_;
-        ptr->size_ = m_half_;
-        return n_ptr;
+        return Pair<Node*, bool>{n_ptr, shift_node};
     }
 
     // 自底向上
