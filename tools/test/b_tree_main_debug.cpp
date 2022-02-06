@@ -29,6 +29,7 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.insert(i) == true);
+            // my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
@@ -38,7 +39,7 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.remove(i) == true);
-            my_tree.print_tree1();
+            // my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
         }
 
@@ -64,6 +65,7 @@ int main()
         for (int i = 0; i <= 20; i++)
         {
             assert(my_tree.insert(i) == true);
+            //my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
