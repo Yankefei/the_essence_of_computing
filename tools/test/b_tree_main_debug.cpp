@@ -39,7 +39,7 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.remove(i) == true);
-            // my_tree.print_tree1();
+            my_tree.print_tree1();
             assert(my_tree.is_b_tree() == true);
         }
 
