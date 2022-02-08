@@ -34,6 +34,20 @@ void print_empty(uint32_t num)
     }
 }
 
+
+/* 绘制一棵二叉树，用于调试问题。二叉树输出效果如下:
+
+                7
+
+        4               13
+
+    2       6       11       15
+
+  1   3   5       9   12   14   16
+
+                 8 10
+
+*/
 template<typename Node>
 void draw_tree(Node* ptr)
 {

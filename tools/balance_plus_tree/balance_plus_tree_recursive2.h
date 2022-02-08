@@ -360,25 +360,36 @@ private:
         // m_为奇数时, 根据index的值来选择迁移元素的数目，保证最终插入后两边数量一致
         if (m_odd)
         {
-            int i = 0;
-            int half = m_half_ - 1; // 下确界
-            if (index > half)
-            {
-                // 开始迁移的起点有差别
-                i = 1;
-                shift_node = true;
-                // 修改最终index的值
-                index = index - half - 1;
-            }
             int j = 0;
-            n_ptr->size_ = m_ - half - i;
-            for (; i <= half; i++, j++)
+            // 以m_half_为边界进行划分
+            if (index >= m_half_)
             {
-                n_ptr->array_[j] = ptr->array_[half + i];
-                ptr->array_[half + i] = nullptr;
-                if (n_ptr->array_[j]->next_ != nullptr)
+                shift_node = true;
+                index = index - m_half_;
+                n_ptr->size_ = m_ - m_half_;
+                for (int i = m_half_; i < m_; i++)
                 {
-                    n_ptr->array_[j]->next_->parent_ = n_ptr; // 维护父指针
+                    j = i - m_half_;
+                    n_ptr->array_[j] = ptr->array_[i];
+                    ptr->array_[i] = nullptr;
+                    if (n_ptr->array_[j]->next_ != nullptr)
+                    {
+                        n_ptr->array_[j]->next_->parent_ = n_ptr;  // 维护父指针
+                    }
+                }
+            }
+            else
+            {
+                n_ptr->size_ = m_ - m_half_ + 1;
+                for (int i = m_half_ - 1; i < m_; i++)
+                {
+                    j = i - m_half_ + 1;
+                    n_ptr->array_[j] = ptr->array_[i];
+                    ptr->array_[i] = nullptr;
+                    if (n_ptr->array_[j]->next_ != nullptr)
+                    {
+                        n_ptr->array_[j]->next_->parent_ = n_ptr;  // 维护父指针
+                    }
                 }
             }
         }

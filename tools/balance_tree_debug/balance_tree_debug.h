@@ -295,6 +295,8 @@ private:
     /*
         @note  分裂节点, 返回分裂后Node节点指针, bool 表示是否将插入到返回的Node节点上
         @param index表示将需要向Node中插入的位置，返回后会被程序修改为实际应该插入的位置
+        @attention 这里修改index的值，那么与该值对应的f_res.ptr_的指向随着节点的分裂可能已经
+                   发生了改变。
     */
     Pair<Node*, bool> split(Node* ptr, int32_t& index)
     {
@@ -305,6 +307,7 @@ private:
         // m_为奇数时, 根据index的值来选择迁移元素的数目，保证最终插入后两边数量一致
         if (m_odd)
         {
+            // 以m_half_为边界进行划分
             if (index >= m_half_)
             {
                 shift_node = true;

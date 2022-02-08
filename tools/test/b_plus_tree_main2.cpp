@@ -210,6 +210,7 @@ int main()
         }
 
         my_tree.print_tree();
+        my_tree.print_tree1();
         my_tree.InOrder();
         my_tree.PrevInOrder();
 
