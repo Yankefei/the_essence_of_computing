@@ -90,3 +90,10 @@ target_link_libraries(bp_tree_main2  tools)
 
 add_executable(b_and_p_tree_copy_check_main b_and_p_tree_copy_check_main.cpp)
 target_link_libraries(b_and_p_tree_copy_check_main  tools)
+
+
+add_executable(b_tree_v2_main_debug b_tree_v2_main_debug.cpp)
+target_link_libraries(b_tree_v2_main_debug  tools)
+
+add_executable(b_tree_v2_main_debug2 b_tree_v2_main_debug2.cpp)
+target_link_libraries(b_tree_v2_main_debug2  tools)

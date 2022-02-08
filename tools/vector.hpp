@@ -362,6 +362,8 @@ Alloc Vector<T, Alloc>::alloc_;
 // template<typename T>
 // std::allocator<T> Vector<T>::alloc_;
 
+// Todo 特例化bool类型的类模板
+
 }
 
 #endif
