@@ -474,7 +474,7 @@ private:
         if (pptr == nullptr) // 根节点
             return n_res;
 
-        // 先处理节点删除后直接为空的情况, 阶为 2, 3时有这种可能
+        // 先处理节点删除后直接为空的情况, 阶为 2时有这种可能
         if (ptr->size_ == 0)
         {
             if (hight == 0)

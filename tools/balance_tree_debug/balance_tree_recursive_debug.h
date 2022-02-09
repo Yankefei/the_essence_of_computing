@@ -249,7 +249,8 @@ private:
                     = ptr->array_[f_res.i_].next_->array_[0].data_;
             }
 
-            if (!n_res.second || ptr->size_ >= m_half_)
+            // n_res.second == false 成立时， ptr->size_ >= m_half_
+            if (/*!n_res.second || */ptr->size_ >= m_half_)
             {
                 return n_res;
             }
@@ -272,9 +273,10 @@ private:
             return n_res;
         }
 
-        // 先处理节点删除后直接为空的情况, 阶为 2, 3时有这种可能
+        // 先处理节点删除后直接为空的情况, 阶为 2 时有这种可能
         if (ptr->size_ == 0)
         {
+            assert(m_ == 2);
             // 处理逻辑是，先处理这一层的内容，上面的层数由退出递归时处理
             free_node(ptr);
             // 挪动
@@ -339,7 +341,7 @@ private:
     */ 
     void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir)
     {
-        assert(pptr->size_ >= right_index);
+        assert(pptr->size_ > right_index);
         shift_node(pptr->array_[left_index].next_, pptr->array_[right_index].next_, lost_ele_dir);
         free_node(pptr->array_[right_index].next_);
         for (int i = right_index + 1; i < pptr->size_; i++)

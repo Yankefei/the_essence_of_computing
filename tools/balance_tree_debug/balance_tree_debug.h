@@ -517,7 +517,7 @@ private:
     */ 
     void handle_merge_node(Node* pptr, int32_t left_index, int32_t right_index, Dir lost_ele_dir)
     {
-        assert(pptr->size_ >= right_index);
+        assert(pptr->size_ > right_index);
         shift_node(pptr->array_[left_index].next_, pptr->array_[right_index].next_, lost_ele_dir);
         free_node(pptr->array_[right_index].next_);
         for (int i = right_index + 1; i < pptr->size_; i++)
