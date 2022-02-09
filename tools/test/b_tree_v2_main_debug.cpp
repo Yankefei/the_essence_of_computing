@@ -1,15 +1,15 @@
 #include <iostream>
 #include "stream.h"
 
-#include "balance_tree_v2_debug/balance_tree_recursive_debug.h"
-//#include "balance_tree_v2_debug/balance_tree_debug.h"
+//#include "balance_tree_v2_debug/balance_tree_recursive_debug.h"
+#include "balance_tree_v2_debug/balance_tree_debug.h"
 
 #include "rand.h"
 #include "vector.hpp"
 
 using namespace tools;
-//using namespace tools::b_tree_v2;
-using namespace tools::b_tree_recursive_v2;
+using namespace tools::b_tree_v2;
+//using namespace tools::b_tree_recursive_v2;
 
 
 int main()
@@ -133,7 +133,7 @@ int main()
         for (int i = 0; i <= 20; i++)
         {
             assert(my_tree.insert(i) == true);
-            // my_tree.print_tree();
+            my_tree.print_tree();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
