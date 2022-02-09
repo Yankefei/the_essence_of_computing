@@ -30,29 +30,29 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.insert(i) == true);
-            my_tree.print_tree();
+            //my_tree.print_tree();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
 
-        // my_tree.print_tree();
+        my_tree.print_tree();
 
-        // for (int i = 0; i <= 10; i++)
-        // {
-        //     assert(my_tree.remove(i) == true);
-        //     my_tree.print_tree1();
-        //     assert(my_tree.is_b_tree() == true);
-        // }
+        for (int i = 0; i <= 10; i++)
+        {
+            assert(my_tree.remove(i) == true);
+            //my_tree.print_tree();
+            assert(my_tree.is_b_tree() == true);
+        }
 
         // int kx;
         // while(std::cin>>kx, kx != -1)
         // {
         //     stream <<my_tree.remove(kx) << std::endl;
-        //     my_tree.print_tree1();
+        //     my_tree.print_tree();
         //     stream << " is b_tree ? "<< my_tree.is_b_tree() << std::endl;
         // }
 
-        // assert(my_tree.size() == 0);
+        assert(my_tree.size() == 0);
     }
 
     {
@@ -133,7 +133,7 @@ int main()
         for (int i = 0; i <= 20; i++)
         {
             assert(my_tree.insert(i) == true);
-            //my_tree.print_tree();
+            // my_tree.print_tree();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
@@ -200,18 +200,20 @@ int main()
         //                   941, 493, 751, 106, 760, 930, 418, 147, 696, 560, 597, 237,
         //                   878, 211, 873, 158, 815, 187, 438, 619, 668, 87, 718, 30, 595,
         //                   109, 129, 432, 969, 265};
-        Vector<int> array{552, 135, 14, 883, 765, 29, 703, 674,
-                          253, 888, 720, 983, 296, 793, 406, 834,
-                          217, 460, 600, 841, 487, 299, 471, 996,
-                          862, 746, 178, 169, 507, 106};
+        // Vector<int> array{552, 135, 14, 883, 765, 29, 703, 674,
+        //                   253, 888, 720, 983, 296, 793, 406, 834,
+        //                   217, 460, 600, 841, 487, 299, 471, 996,
+        //                   862, 746, 178, 169, 507, 106};
+        Vector<int> array{12, 68, 77, 22, 14,
+                          80, 43, 13, 57, 99,
+                          37, 10, 2, 9, 7,
+                          54, 2, 75, 59, 36};
         bool res = false;
-        BalanceTree<int> my_tree(4);
+        BalanceTree<int> my_tree(9);
         for (auto& i : array)
         {
             if (my_tree.insert(i))
                 ele_size ++;
-
-
 
             if (!my_tree.is_b_tree())
             {
@@ -220,21 +222,26 @@ int main()
                 assert(false);
             }
         }
-        // for (auto& i : array)
-        // {
-        //     if (my_tree.remove(i))
-        //         ele_size --;
 
-        //     if (i == 720)
-        //         my_tree.print_tree();
+        my_tree.print_tree();
+        stream << "size: "<< my_tree.size() << ", out size: "<< ele_size << std::endl;
 
-        //     if (!my_tree.is_b_tree())
-        //     {
-        //         stream << "remove: "<< i << " failed. " << std::endl;
-        //         my_tree.print_tree();
-        //         assert(false);
-        //     }
-        // }
+        for (auto& i : array)
+        {
+            if (my_tree.remove(i))
+                ele_size --;
+
+            // if (i == 59 || i == 36)
+            //    my_tree.print_tree();
+            // stream << "size: "<< my_tree.size() << ", out size: "<< ele_size << std::endl;
+
+            if (!my_tree.is_b_tree())
+            {
+                stream << "remove: "<< i << " failed. " << std::endl;
+                my_tree.print_tree();
+                assert(false);
+            }
+        }
     }
 #endif
 
@@ -244,7 +251,7 @@ int main()
         int rang_index = 10;
         while(--rang_index > 1)
         {
-            // BalanceTree<int> my_tree(rang_index);
+            BalanceTree<int> my_tree(rang_index);
             int num = 10;
             while (num -- > 0)
             {
@@ -254,8 +261,6 @@ int main()
                 {
                     array.push_back(rand());
                 }
-
-                BalanceTree<int> my_tree(rang_index);
 
                 // for (auto i : array)
                 // {
@@ -279,25 +284,25 @@ int main()
                     }
                 }
 
-                // for (auto& i : array)
-                // {
-                //     assert(my_tree.search(i) == true);
-                // }
+                for (auto& i : array)
+                {
+                    assert(my_tree.search(i) == true);
+                }
 
-                // for (auto& i : array)
-                // {
-                //     if (my_tree.remove(i))
-                //         ele_size --;
+                for (auto& i : array)
+                {
+                    if (my_tree.remove(i))
+                        ele_size --;
 
-                //     if (!my_tree.is_b_tree())
-                //     {
-                //         stream << "remove: "<< i << " failed. " << std::endl;
-                //         my_tree.print_tree();
-                //         assert(false);
-                //     }
-                // }
-                // assert(my_tree.get_root() == nullptr);
-                // assert(my_tree.size() == 0);
+                    if (!my_tree.is_b_tree())
+                    {
+                        stream << "remove: "<< i << " failed. " << std::endl;
+                        my_tree.print_tree();
+                        assert(false);
+                    }
+                }
+                assert(my_tree.get_root() == nullptr);
+                assert(my_tree.size() == 0);
                 // //assert(my_tree.memory_alloc_balance() == true);
                 stream << "range_index : "<< rang_index << ", size: "<< ele_size<<std::endl;
                 ele_size = 0;

@@ -43,11 +43,152 @@ public:
     {
     }
 
+    T& get_last_data_in_node(Node* ptr)
+    {
+        assert(ptr != nullptr && ptr->size_ > 0);
+        return ptr->array_[ptr->size_ - 1].data_;
+    }
+
+    // 将next_node的最后一个元素的值赋值到ptr指针指向Node的index位置
+    void no_leaf_node_add_ele(Node* ptr, int32_t index, Node*next_node)
+    {
+        ptr->array_[index].data_ = get_last_data_in_node(next_node);
+        // 因为这个Entry很快要脱离索引范围, 所以进行清理，赋值T()主要是为了在GDB下观察
+        // 内存数据直观期间，实际可以忽略该步骤，其他地方赋值T()主要也是这个作用
+        get_last_data_in_node(next_node) = T();
+        // 保证之前的操作彻底，不要残留数据
+        assert(next_node->array_[next_node->size_].next_ == nullptr);
+        next_node->size_ --;
+    }
+
+
+    // 不考虑尾部的指针, 因为该函数仅会处理叶子节点
+    void remove_ele(Node* ptr, int32_t index)
+    {
+        for (int i = index; i < ptr->size_ - 1; i++)
+        {
+            ptr->array_[i] = ptr->array_[i + 1];
+        }
+        ptr->size_ --;
+        ptr->array_[ptr->size_].next_ = nullptr;
+        ptr->array_[ptr->size_].data_ = T();
+    }
+
+    // 考虑叶子节点和非叶子节点两种情况
+    // 租借节点，如果左右兄弟节点均可，则先向右兄弟借，再向左兄弟借
+    bool lend_ele(Node* pptr, int32_t debtor_index/*发起借贷的位置*/)
+    {
+        assert(debtor_index <= pptr->size_);
+        bool res = false;
+        Dir shift_dir = Dir::Unknown; // 借贷的方向
+        Node* left_ptr = nullptr;
+        Node* right_ptr = nullptr;
+
+        do
+        {
+            if (debtor_index == 0) // 左端点
+            {
+                if (pptr->array_[debtor_index + 1].next_->size_ == m_half_ -1)
+                {
+                    break;
+                }
+                shift_dir = Dir::Left;
+                left_ptr = pptr->array_[debtor_index].next_;
+                right_ptr = pptr->array_[debtor_index + 1].next_;
+            }
+            else if (debtor_index == pptr->size_) // 右端点
+            {
+                if (pptr->array_[debtor_index - 1].next_->size_ == m_half_ -1)
+                {
+                    break;
+                }
+                shift_dir = Dir::Right;
+                left_ptr = pptr->array_[debtor_index - 1].next_;
+                right_ptr = pptr->array_[debtor_index].next_;
+            }
+            else
+            {
+                if (pptr->array_[debtor_index + 1].next_->size_ == m_half_ -1)
+                {
+                    if (pptr->array_[debtor_index - 1].next_->size_ == m_half_ -1)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        shift_dir = Dir::Right;
+                        left_ptr = pptr->array_[debtor_index - 1].next_;
+                        right_ptr = pptr->array_[debtor_index].next_;
+                    }
+                }
+                else
+                {
+                    shift_dir = Dir::Left;
+                    left_ptr = pptr->array_[debtor_index].next_;
+                    right_ptr = pptr->array_[debtor_index + 1].next_;
+                }
+            }
+            shift_element(pptr, debtor_index, left_ptr, right_ptr, shift_dir);
+
+            res = true;
+        }while(false);
+
+        return res;
+    }
+
+    void shift_element(Node* pptr, int32_t index, Node* left_ptr, Node* right_ptr,
+                       Dir shift_dir)
+    {
+        if (shift_dir == Dir::Left)
+        {
+            left_ptr->array_[left_ptr->size_].data_ = pptr->array_[index].data_;
+            pptr->array_[index].data_ = right_ptr->array_[0].data_;
+            // 需要前置++, 不能直接覆盖原有的尾部next_指针
+            // left_ptr->array_[left_ptr->size_++].next_ = right_ptr->array_[0].next_;
+            left_ptr->array_[++left_ptr->size_].next_ = right_ptr->array_[0].next_;
+            // 将right_ptr的节点挪动, 包含尾部指针
+            for (int i = 0; i < right_ptr->size_; i++)
+            {
+                right_ptr->array_[i] = right_ptr->array_[i + 1];
+            }
+            // 清理残留数据
+            right_ptr->array_[right_ptr->size_].next_ = nullptr;
+            right_ptr->array_[--right_ptr->size_].data_ = T(); // 前置--
+        }
+        else
+        {
+            // 将right_ptr的节点挪动位置，空出0位置，包含尾部指针
+            // 后置++
+            for (int i = right_ptr->size_++; i >= 0; i--)
+            {
+                right_ptr->array_[i + 1] = right_ptr->array_[i];
+            }
+            right_ptr->array_[0].data_ = pptr->array_[index - 1].data_;
+            right_ptr->array_[0].next_ = left_ptr->array_[left_ptr->size_].next_;
+            pptr->array_[index - 1].data_ = left_ptr->array_[left_ptr->size_ - 1].data_;
+            // 清理残留数据
+            left_ptr->array_[left_ptr->size_].next_ = nullptr;
+            left_ptr->array_[--left_ptr->size_].data_ = T();   // 前置--
+        }
+    }
+
+    // 获取非叶子节点元素的前一个叶子节点元素Entry地址
+    Entry* get_last_ele_from_leaf(Node* ptr, int32_t hight)
+    {
+        while(hight-- > 0)
+        {
+            ptr = ptr->array_[ptr->size_].next_;
+        }
+        return &(ptr->array_[ptr->size_ -1]);
+    }
+
     Result find(Node* ptr, const T& val, int hight)
     {
         while(hight > 0)
         {
             Result res = find_next(ptr, val);
+            if (res.tag_)
+                return res;
             hight --;
             ptr = res.ptr_->next_;
         }
