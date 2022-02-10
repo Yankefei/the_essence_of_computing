@@ -421,7 +421,6 @@ public:
                 }
                 else
                 {
-                    // Node* old_ptr = ptr;
                     Node* pa = ptr->parent_;
                     int32_t hight = 1;
                     while(pa != nullptr && pa->array_[pa->size_].next_ == ptr)
@@ -516,9 +515,101 @@ public:
         return res;
     }
 
+    // 判断是否为一棵符合规范的B树
+    /*
+        1. 有序
+        2. 节点元素数 m/2(上确界)-1 <= x <= m-1, 根除外（1 <= x <= m-1）
+        3. 所有叶子节点等高
+        4. m个元素的非叶子节点下游存在m+1个节点
+        5. 非叶子节点中保存的元素值均比所有左下方元素值大，比所有右下方元素值小
+    */
+    bool is_b_tree(Node* ptr, int hight)
+    {
+        if (ptr == nullptr)
+        {
+            assert(hight == -1);
+            return true;  //空节点默认是B数
+        }
+        if (hight_ == 0 && ptr && ptr->size_ == 0)
+            return true;   // 删除全部数据后，空节点也算是
+
+        assert(hight >= 0);
+        assert(ptr->size_ < m_);
+        assert(ptr->size_ > 0);
+
+        bool res = false;
+        if (hight_ > 0)
+        {
+            if (hight != hight_)
+            {
+                if (ptr->size_ < m_half_ - 1)  // m_half_取得是上确界
+                    return res;
+            }
+            else
+            {
+                if (ptr->size_ < 1)
+                    return res;
+            }
+        }
+
+        do
+        {
+            int i = 0;
+            int j = 0;
+            for (; i <= ptr->size_; i++) // 检查第size_+1个指针的指向
+            {
+                //assert(ptr->array_[i] != nullptr);
+                if (hight > 0)
+                {
+                    assert(ptr->array_[i].next_ != nullptr);
+
+                    int n_size = ptr->array_[i].next_->size_;
+                    if (i == ptr->size_)
+                    {
+                        if (!alg::le(ptr->array_[i - 1].data_, ptr->array_[i].next_->array_[n_size - 1].data_))
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // 当前的值比前一位值的下级节点的最大值还要大，保证有序
+                        if (!alg::le(ptr->array_[i].next_->array_[n_size - 1].data_, ptr->array_[i].data_))
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (i > 0 && i != ptr->size_)
+                {
+                    if (!alg::gt(ptr->array_[i].data_, ptr->array_[j].data_))
+                        break;
+                }
+                j = i; // j落后i一位
+
+                if (!is_b_tree(ptr->array_[i].next_, hight - 1))
+                    break;
+            }
+
+            if (i != ptr->size_ + 1)
+                break;
+
+            res = true;
+        }while(false);
+
+        if (!res)
+        {
+            // draw_tree<Node>(ptr, hight, m_);
+        }
+
+        return res;
+    }
+
 public:
     int         m_;          // B树的阶
     int         m_half_;     // 阶的一半，计算大量使用到
+
+    int         hight_{-1};  // 树高, 单节点的B树默认树高为0, 空树默认树高为-1
 };
 
 }
