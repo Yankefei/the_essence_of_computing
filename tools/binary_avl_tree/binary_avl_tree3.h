@@ -7,6 +7,7 @@
 #include "algorithm.hpp"
 #include "stack.h"
 
+#include "pair.hpp"
 #include "binary_avl_tree_base.h"
 
 #define HAS_BALANCE
@@ -95,16 +96,46 @@ public:
         return remove(_m_impl._root, val, lower);
     }
 
-    // 非递归
-    bool insert(const T& val)   // pass
+    using InsertRes = Pair<Node*, bool>;
+    InsertRes c_insert(const T& val)   // 用于容器
     {
         return insert(&_m_impl._root, val);
     }
 
     // 非递归
-    bool remove(const T& val)     // pass
+    bool insert(const T& val)   // pass
+    {
+        auto res = insert(&_m_impl._root, val);
+        return res.second;
+    }
+
+    using RemoveRes = Pair<Node*, bool>;
+    RemoveRes c_remove(const T& val)  // 用于容器
     {
         return remove(&_m_impl._root, val);
+    }
+
+    // 非递归
+    bool remove(const T& val)     // pass
+    {
+        auto res = remove(&_m_impl._root, val);
+        return res.second;
+    }
+
+    Node* find(const T& val)
+    {
+        Node* ptr = _m_impl._root;
+        while(ptr != nullptr && alg::neq(ptr->data_, val))
+        {
+            ptr = alg::le(val, ptr->data_) ? ptr->left_tree_ : ptr->right_tree_;
+        }
+
+        return ptr;
+    }
+
+    Node* begin()
+    {
+        return first(_m_impl._root);
     }
 
     void InOrder() const
@@ -151,6 +182,12 @@ public:
         return e_size;
     }
 
+    void clear()
+    {
+        destory(_m_impl._root);
+        _m_impl._root = nullptr;
+    }
+
     Node* get_root() const
     {
         return _m_impl._root;
@@ -175,6 +212,68 @@ public:
     {
         return check_same(_m_impl._root, rhs._m_impl._root) &&
                check_same2(_m_impl._root, rhs._m_impl._root);
+    }
+
+public:
+    static Node* first(Node* ptr)
+    {
+        if (ptr)
+        {
+            while (ptr->left_tree_)
+                ptr = ptr->left_tree_;
+        }
+
+        return ptr;
+    }
+
+    static Node* next(Node* ptr)
+    {
+        if (ptr)
+        {
+            if (ptr->right_tree_)
+                return first(ptr->right_tree_);
+            else
+            {
+                Node* pa = ptr->parent_;
+                while(pa != nullptr && pa->right_tree_ == ptr)
+                {
+                    ptr = pa;
+                    pa = pa->parent_;
+                }
+                return pa;
+            }
+        }
+        return ptr;
+    }
+
+    static Node* last(Node* ptr)
+    {
+        if (ptr)
+        {
+            while(ptr->right_tree_)
+                ptr = ptr->right_tree_;
+        }
+        return ptr;
+    }
+
+    static Node* prev(Node* ptr)
+    {
+        if (ptr)
+        {
+            if (ptr->left_tree_)
+                return last(ptr->left_tree_);
+            else
+            {
+                Node* pa = ptr->parent_;
+                while(pa != nullptr && pa->left_tree_ == ptr)
+                {
+                    ptr = pa;
+                    pa = pa->parent_;
+                }
+                return pa;
+            }
+        }
+        return ptr;
     }
 
 private:
@@ -381,10 +480,10 @@ private:
         }
     }
 
-    // 非递归
-    bool insert(Node** pptr, const T& val)
+    // 非递归, val已经存在于Tree中，返回插入失败
+    InsertRes insert(Node** pptr, const T& val)
     {
-        if (pptr == nullptr) return false;
+        if (pptr == nullptr) return InsertRes{nullptr, false};
 
         Node *pa = nullptr;
         Node* ptr = *pptr;
@@ -400,13 +499,17 @@ private:
             }
         }
 
-        if (ptr != nullptr) return false;
+        if (ptr != nullptr)
+        {
+            return InsertRes{ptr, false};
+        }
 
         ptr = buy_node(val);
         ptr->parent_ = pa;
         if (pa == nullptr)
         {
-            *pptr = ptr; return true;
+            *pptr = ptr;
+            return InsertRes{ptr, true};
         }
         else
         {
@@ -439,7 +542,7 @@ private:
             // 已经达到平衡条件，可以退出
             if (pa->balance_ == Bal::Balance)
             {
-                return true;
+                return InsertRes{ptr, true};
             }
         }
 
@@ -465,7 +568,7 @@ private:
                     if (dir == Bal::Right)
                     {
                         pa_->balance_ = Bal::Balance;
-                        return true;
+                        return InsertRes{ptr, true};;
                     }
                     else
                         ready_ptr = total_left_balance(pa_);
@@ -476,7 +579,7 @@ private:
                     if (dir == Bal::Left)
                     {
                         pa_->balance_ = Bal::Balance;
-                        return true;
+                        return InsertRes{ptr, true};;
                     }
                     else
                         ready_ptr = total_right_balance(pa_);
@@ -501,20 +604,20 @@ private:
                     ready_ptr->parent_->right_tree_ = ready_ptr;
                 ready_ptr = nullptr;
                 // 或者可以修改 pa的指针为ready_ptr, 因此此时pa, pa_都可能被修改了状态
-                break;       // 停止转播
+                break;       // 停止传播
             }
         }
 
         if (ready_ptr)  // 更新根节点
             *pptr = ready_ptr;
 
-        return true;
+        return InsertRes{ptr, true};
     }
 
     // 非递归
-    bool remove(Node** pptr, const T&val)
+    RemoveRes remove(Node** pptr, const T&val)
     {
-        if (pptr == nullptr) return false;
+        if (pptr == nullptr) return RemoveRes{nullptr, false};
 
         T t_val = val;
         Node* ptr = *pptr;
@@ -526,7 +629,8 @@ private:
                 ptr = ptr->right_tree_;
         }
 
-        if (ptr == nullptr) return false;
+        Node* res_node = nullptr;
+        if (ptr == nullptr) return RemoveRes{res_node, false};
 
         if (ptr->left_tree_ && ptr->right_tree_)
         {
@@ -534,8 +638,15 @@ private:
             while(q->right_tree_)
                 q = q->right_tree_;
             ptr->data_ = q->data_;
+            res_node = ptr; // ptr就是后面的next节点
+
             ptr = q;    // 后面删除ptr即可
             t_val = ptr->data_;
+            
+        }
+        else
+        {
+            res_node = next(ptr);  // 获取next节点
         }
 
         Node* pa = ptr->parent_;
@@ -552,7 +663,7 @@ private:
         if (tmp_pa == nullptr)
         {
             *pptr = child;
-            return true;
+            return RemoveRes{res_node, true};
         }
         else
         {
@@ -575,7 +686,7 @@ private:
                 if (set_status_after_remove(ready_ptr, t_val, pptr))
                 {
                     if (ready_ptr)  *pptr = ready_ptr;  // 最后必须给pptr赋值一次
-                    return true;
+                    return RemoveRes{res_node, true};
                 }
 
                 pa = ready_ptr; // 修改pa的指针
@@ -617,7 +728,7 @@ private:
 
         if (ready_ptr)  *pptr = ready_ptr;  // 最后必须给pptr赋值一次
 
-        return true;
+        return RemoveRes{res_node, true};
     }
 
     bool set_status_after_remove(Node* ready_ptr, const T& val, Node** pptr)
@@ -951,67 +1062,6 @@ private:
 
         return BalRes(alg::max(left_res.first, right_res.first) + 1,
                             is_sort && res && left_res.second && right_res.second);
-    }
-
-    static Node* first(Node* ptr)
-    {
-        if (ptr)
-        {
-            while (ptr->left_tree_)
-                ptr = ptr->left_tree_;
-        }
-
-        return ptr;
-    }
-
-    static Node* next(Node* ptr)
-    {
-        if (ptr)
-        {
-            if (ptr->right_tree_)
-                return first(ptr->right_tree_);
-            else
-            {
-                Node* pa = ptr->parent_;
-                while(pa != nullptr && pa->right_tree_ == ptr)
-                {
-                    ptr = pa;
-                    pa = pa->parent_;
-                }
-                return pa;
-            }
-        }
-        return ptr;
-    }
-
-    static Node* last(Node* ptr)
-    {
-        if (ptr)
-        {
-            while(ptr->right_tree_)
-                ptr = ptr->right_tree_;
-        }
-        return ptr;
-    }
-
-    static Node* prev(Node* ptr)
-    {
-        if (ptr)
-        {
-            if (ptr->left_tree_)
-                return last(ptr->left_tree_);
-            else
-            {
-                Node* pa = ptr->parent_;
-                while(pa != nullptr && pa->left_tree_ == ptr)
-                {
-                    ptr = pa;
-                    pa = pa->parent_;
-                }
-                return pa;
-            }
-        }
-        return ptr;
     }
 };
 

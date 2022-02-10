@@ -8,6 +8,7 @@
 #include "queue.h"
 #include "algorithm.hpp"
 
+#include "pair.hpp"
 #include "binary_rb_tree_base.h"
 
 #define HAS_COLOR
@@ -125,20 +126,36 @@ public:
         return *this;
     }
 
+    using InsertRes = Pair<Node*, bool>;
+    InsertRes c_insert(const T& val) // 用于容器
+    {
+        return insert(_m_impl._root, val);
+    }
+
     // 自顶向下插入 非递归
     bool insert(const T& val)
     {
-        return insert(_m_impl._root, val);
+        auto res = insert(_m_impl._root, val);
+        return res.second;
+    }
+
+    using RemoveRes = Pair<Node* /*如果删除成功，则返回next的节点*/, bool>;
+    RemoveRes c_remove(const T& val) // 用于容器
+    {
+        auto res = remove(_m_impl._root, val);
+        if (_m_impl._root->right_tree_)
+            _m_impl._root->right_tree_->color_ = Color::Black;
+        return res;
     }
 
     // 自顶向下删除 非递归
     bool remove(const T& val)
     {
-        bool res = remove(_m_impl._root, val);
+        auto res = remove(_m_impl._root, val);
 
         if (_m_impl._root->right_tree_)
             _m_impl._root->right_tree_->color_ = Color::Black;
-        return res;
+        return res.second;
     }
 
     Node* find(const T& val)
@@ -150,6 +167,18 @@ public:
         }
 
         return ptr;
+    }
+
+    void clear()
+    {
+        // 保证 _m_impl._root仍有效
+        destory(_m_impl._root->right_tree_);
+        _m_impl._root->right_tree_ = nullptr;
+    }
+
+    Node* begin()
+    {
+        return first(_m_impl._root->right_tree_);
     }
 
     bool is_rb_tree()
@@ -304,14 +333,15 @@ private:
         return true;
     }
 
-    bool insert(Node* root, const T& val)
+    // 如果val已经出现在了tree中, 和Map行为一致, 但仍认为插入失败
+    InsertRes insert(Node* root, const T& val)
     {
         Node* ptr = root->right_tree_;
         Node* pa = root;   // 父节点
         if (ptr == nullptr)
         {
             pa->right_tree_ = buy_node(val);
-            return true;
+            return InsertRes{pa->right_tree_, true};
         }
         // Node* gptr = root; // 祖父节点
         // Node* _gptr = root; // 曾祖父节点
@@ -353,7 +383,7 @@ private:
             }
             else
             {
-                return false;
+                return InsertRes{ptr, false};
             }
         }
         
@@ -375,7 +405,7 @@ private:
         if (pa->color_ == Color::Red)
             balance_check(ptr, val);
 
-        return true;
+        return InsertRes{ptr, true};
     }
 
     // check p_ptr和 p_pa 是否同时为red节点
@@ -444,7 +474,7 @@ private:
         }
     }
 
-    bool remove(Node* ptr, const T& val_param)
+    RemoveRes remove(Node* ptr, const T& val_param)
     {
         Node* pptr = ptr;      // 作为遍历的父节点
         ptr = ptr->right_tree_;
@@ -454,6 +484,8 @@ private:
         Dir dir = Dir::Right;
         Dir dir_change = Dir::Unknown; // 控制替换节点后的方向变化
         bool res = false;
+        Node* res_node = nullptr;  // 待返回的next节点指针
+
         Node* old_ptr = nullptr; // 代替ptr记录状态
         while(ptr != nullptr)
         {
@@ -496,6 +528,7 @@ private:
                 if ((ptr->left_tree_ != nullptr && ptr->right_tree_ != nullptr) ||
                     ptr->right_tree_ != nullptr)
                 {
+                    res_node = old_ptr; // ptr就是next节点，只会赋值一次
                     // 这里处理之后，会发生遍历线路的拐弯，需要特殊处理
                     res = search_for_delete_max2(ptr, val, true, true); // 强制转向
                     dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
@@ -583,16 +616,26 @@ private:
                 {
                     if (ptr != _m_impl._root->right_tree_)
                         assert(ptr->color_ == Color::Red);
+
+                    Node* next_ptr = res_node;
+                    if (res_node == nullptr)
+                        next_ptr = next(ptr);
+                    /*
+                        自顶向下的删除算法中，如果在非叶子节点提前遇到了val, 那么只需要经过一次
+                        和次大值或次小值进行替换，就可以达到一个没有左右子树的情况，而不需要考虑
+                        过程中会和多个非叶子节点进行值的交换，这是该算法的一个特点。
+                    */
+
                     free_node(ptr);
                     ptr = nullptr;
                     dir == Dir::Left ? pptr->left_tree_ = ptr : pptr->right_tree_ = ptr;
-                    return true;
+                    return RemoveRes{next_ptr, true};
                 }
             }
         }
 
         // 没有找到，返回false
-        return false;
+        return RemoveRes{res_node, false};
     }
 
     void destory(Node* ptr)

@@ -28,14 +28,108 @@ class Map
     typedef Tree<Pair<Key, Val>, Alloc, _Node>  TreeImpl;
     typedef Pair<Key, Val>          value_type;
     typedef std::size_t             size_type;
-    
-    // TODO, 使用迭代器替换
-    typedef typename TreeImpl::Node*                   Iter;
-    typedef typename TreeImpl::Node const*             CIter;
+
+    typedef typename TreeImpl::Node          Node;
+    typedef typename TreeImpl::RemoveRes  RemoveRes;
+    typedef typename TreeImpl::InsertRes  InsertRes;
+
+    struct Iter
+    {
+        Iter() = default;
+        Iter(Node* node) : node_(node) {}
+
+        Iter& operator=(const Iter& rhs)
+        {
+            node_ = rhs.node_;
+            return *this;
+        }
+
+        value_type* operator->()
+        {
+            return &**this;
+        }
+
+        value_type& operator*()
+        {
+            return node_->data_;
+        }
+
+        Iter& operator++()
+        {
+            node_ = TreeImpl::next(node_);
+            return *this;
+        }
+
+        Iter& operator--()
+        {
+            node_ = TreeImpl::prev(node_);
+            return *this;
+        }
+
+        bool operator==(const Iter& rhs)
+        {
+            return node_ == rhs.node_;
+        }
+
+        bool operator!=(const Iter& rhs)
+        {
+            return !(*this == rhs);
+        }
+
+    private:
+        Node* node_{nullptr};
+    };
+
+    struct CIter
+    {
+        CIter() = default;
+        CIter(Node* node) : node_(node) {}
+
+        const value_type* operator->()   const
+        {
+            return &**this;
+        }
+
+        const value_type& operator*()  const
+        {
+            return node_->data_;
+        }
+
+        CIter& operator++()
+        {
+            node_ = TreeImpl::next(node_);
+            return *this;
+        }
+
+        CIter& operator--()
+        {
+            node_ = TreeImpl::prev(node_);
+            return *this;
+        }
+
+        bool operator==(const CIter& rhs) const
+        {
+            return node_ == rhs.node_;
+        }
+
+        bool operator!=(const CIter& rhs) const
+        {
+            return !(*this == rhs);
+        }
+
+    private:
+        Node* node_{nullptr};
+    };
 
 public:
     Map() : impl_tree_() {};
     ~Map() {}
+
+    Map(std::initializer_list<value_type> list)
+    {
+        for(auto p = list.begin(); p != list.end(); p ++)
+            insert(*p);
+    }
 
     Map(const Map& rhs) : impl_tree_(rhs.impl_tree_), ele_size_(rhs.ele_size_)
     {}
@@ -52,53 +146,93 @@ public:
 
     Map(Map&& rhs) noexcept
     {
-        impl_tree_ = std::move(rhs.impl_tree_);
+        impl_tree_ = std::forward<Map>(rhs.impl_tree_);
         ele_size_ = rhs.ele_size_;
+        rhs.ele_size_ = 0;
     }
 
     Map& operator=(Map&& rhs) noexcept
     {
         if (this != &rhs)
         {
-            impl_tree_ = std::move(rhs.impl_tree_);
+            impl_tree_ = std::forward<Map>(rhs.impl_tree_);
             ele_size_ = rhs.ele_size_;
+            rhs.ele_size_ = 0;
         }
         return *this;
     }
 
-    bool insert(const value_type& val)
+    InsertRes insert(const value_type& val)
     {
-        bool res = impl_tree_.insert(val);
-        if (res) ele_size_ ++;
+        InsertRes res = impl_tree_.c_insert(val);
+        if (res.second) ele_size_ ++;
         return res;
     }
 
     size_type erase(const Key& key)
     {
-        bool res = impl_tree_.remove(MakePair<Key, Val>(key, Val()));
-        size_type s = res ? 1 : 0;
-        return s;
+        RemoveRes res = impl_tree_.c_remove(MakePair<Key, Val>(key, Val()));
+        size_type n = res.second ? 1 : 0;
+        ele_size_ -= n;
+        return n;
     }
 
-    Iter erase(CIter It)
+    Iter erase(Iter It)
     {
-        // todo
-        Iter next = impl_tree_.next(It);
+        RemoveRes res = impl_tree_.c_remove(*It);
+        if (res.second)
+            ele_size_--;
+        return Iter(res.first);
     }
 
     Val& operator[](const Key& key)
     {
-
+        // 如果key不存在，则插入
+        InsertRes res = impl_tree_.c_insert(MakePair<Key, Val>(key, Val()));
+        if (res.second)
+            ele_size_ ++;
+        return res.first->data_.second;
     }
 
     Iter find(const Key& key)
     {
-
+        return Iter(impl_tree_.find(MakePair<Key, Val>(key, Val())));
     }
 
     CIter find(const Key& key) const
     {
+        return CIter(impl_tree_.find(MakePair<Key, Val>(key, Val())));
+    }
 
+    Iter begin()
+    {
+        return Iter(impl_tree_.begin());
+    }
+
+    CIter cbegin() const
+    {
+        return CIter(impl_tree_.begin());
+    }
+
+    Iter end()
+    {
+        return Iter();
+    }
+
+    CIter cend() const
+    {
+        return CIter();
+    }
+
+    size_t size() const
+    {
+        return ele_size_;
+    }
+
+    void clear()
+    {
+        impl_tree_.clear();
+        ele_size_ = 0;
     }
 
 private:

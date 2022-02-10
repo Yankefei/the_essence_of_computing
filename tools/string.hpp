@@ -287,10 +287,13 @@ public:
 
     BString(const BString& rhs)
     {
-        auto pair = alloc_n_copy(rhs.cbegin(), rhs.cend());
-        _m_impl._m_start = pair.first;
-        _m_impl._m_finish = _m_impl._m_cap = pair.second;
-        _Base::_m_add_str_end();
+        if (!rhs.empty())
+        {
+            auto pair = alloc_n_copy(rhs.cbegin(), rhs.cend());
+            _m_impl._m_start = pair.first;
+            _m_impl._m_finish = _m_impl._m_cap = pair.second;
+            _Base::_m_add_str_end();
+        }
     }
 
     BString(BString&& rhs)  noexcept
