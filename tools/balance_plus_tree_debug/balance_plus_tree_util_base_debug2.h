@@ -355,12 +355,12 @@ public:
         size_t e_size = 0;
         IterResult begin = first(root, hight);
         if (begin.node_ptr == nullptr) return e_size;
-        T f_min = begin.entry_ptr->data_;
+        Entry* f_min = begin.entry_ptr;
         for (; begin.node_ptr != nullptr; begin = next(begin))
         {
-            if (alg::le(begin.entry_ptr->data_, f_min))
+            if (alg::le(begin.entry_ptr->data_, f_min->data_))
                 assert(false);
-            f_min = begin.entry_ptr->data_;
+            f_min = begin.entry_ptr;
             // stream << begin.entry_ptr->data_ << " ";
             e_size ++;
         }
@@ -373,12 +373,12 @@ public:
         size_t e_size = 0;
         IterResult end = last(root, hight);
         if (end.node_ptr == nullptr) return e_size;
-        T f_max = end.entry_ptr->data_;
+        Entry* f_max = end.entry_ptr;
         for (; end.node_ptr != nullptr; end = prev(end))
         {
-            if (alg::le(f_max, end.entry_ptr->data_))
+            if (alg::le(f_max->data_, end.entry_ptr->data_))
                 assert(false);
-            f_max = end.entry_ptr->data_;
+            f_max = end.entry_ptr;
             // stream << end.entry_ptr->data_ << " ";
             e_size ++;
         }

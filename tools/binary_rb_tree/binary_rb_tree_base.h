@@ -781,6 +781,7 @@ public:
                 return pa;
             }
         }
+        return ptr;
     }
 
     static Node* last(Node* ptr)
@@ -810,6 +811,7 @@ public:
                 return pa;
             }
         }
+        return ptr;
     }
 };
 

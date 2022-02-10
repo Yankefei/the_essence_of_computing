@@ -117,14 +117,14 @@ public:
     {
         size_t e_size = 0;
         Node* ptr = first(_m_impl._root);
-        T f_min = ptr->data_;
+        Node* f_min = ptr;
         for (; ptr != nullptr; ptr = next(ptr))
         {
-            if (alg::le(ptr->data_, f_min))
+            if (alg::le(ptr->data_, f_min->data_))
             {
                 assert(false);
             }
-            f_min = ptr->data_;
+            f_min = ptr;
             // stream << ptr->data_ << " ";
             e_size ++;
         }
@@ -136,14 +136,14 @@ public:
     {
         size_t e_size = 0;
         Node* ptr = last(_m_impl._root);
-        T f_max = ptr->data_;
+        Node* f_max = ptr;
         for (; ptr != nullptr; ptr = prev(ptr))
         {
-            if (alg::le(f_max, ptr->data_))
+            if (alg::le(f_max->data_, ptr->data_))
             {
                 assert(false);
             }
-            f_max = ptr->data_;
+            f_max = ptr;
             // stream << ptr->data_ << " ";
             e_size ++;
         }
@@ -981,6 +981,7 @@ private:
                 return pa;
             }
         }
+        return ptr;
     }
 
     static Node* last(Node* ptr)
@@ -1010,6 +1011,7 @@ private:
                 return pa;
             }
         }
+        return ptr;
     }
 };
 
