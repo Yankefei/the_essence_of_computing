@@ -89,6 +89,7 @@ public:
     // 成员变量
     using BalanceUtil::m_;
     using BalanceUtil::m_half_;
+    using BalanceUtil::hight_;
 
 public:
     BalanceTree(size_t m/*B树的阶*/)
@@ -548,7 +549,6 @@ private:
     }
 
 private:
-
     std::size_t ele_size_{0}; // 总元素数
 };
 
