@@ -133,7 +133,7 @@ int main()
         for (int i = 0; i <= 20; i++)
         {
             assert(my_tree.insert(i) == true);
-            my_tree.print_tree();
+            // my_tree.print_tree();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
