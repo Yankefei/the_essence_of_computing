@@ -20,7 +20,7 @@ struct Pair
 };
 
 template<typename T1, typename T2>
-Pair<T1, T2>&&
+Pair<T1, T2>
     MakePair(const T1& t1, const T2& t2)
 {
     Pair<T1, T2> pair(t1, t2);
@@ -28,7 +28,7 @@ Pair<T1, T2>&&
 }
 
 template<typename T1, typename T2>
-Pair<T1, T2>&&
+Pair<T1, T2>
     MakePair(T1&& t1, T2&& t2)
 {
     Pair<T1, T2> pair(std::forward(t1), std::forward(t2));

@@ -4,6 +4,9 @@
 #include "string.hpp"
 #include <map>
 
+#include "rand.h"
+#include "vector.hpp"
+
 using namespace tools;
 
 int main()
@@ -55,6 +58,39 @@ int main()
         stream << std::endl;
     }
 
+    {
+        AMap<int, String> test_map;
+
+        Vector<int> array;
+        Rand<int> rand(1, 1000);
+        for(int i = 0; i < 100; i++)
+        {
+            array.push_back(rand());
+        }
+
+        for (auto &i : array)
+        {
+            test_map.insert(Pair<int, String>(i, to_String(i)));
+        }
+
+        for (auto it = test_map.begin(); it != test_map.end(); it++)
+        {
+            stream << it->first << "-"<< it->second << "  "; 
+        }
+        size_t map_size = test_map.size();
+        
+        test_map.erase((*test_map.begin()).first);
+
+        map_size--;
+        for (auto it = test_map.begin(); it != test_map.end();)
+        {
+            it = test_map.erase(it);
+            map_size--;
+            assert(map_size == test_map.size());
+        }
+        stream << std::endl;
+    }
+
 ////////////////////////////////////
 
     {
@@ -72,6 +108,39 @@ int main()
                 ++it;
         for(auto& p : c)
             stream << p.second << ' ';
+        stream << std::endl;
+    }
+
+    {
+        RMap<int, String> test_map;
+
+        Vector<int> array;
+        Rand<int> rand(1, 1000);
+        for(int i = 0; i < 100; i++)
+        {
+            array.push_back(rand());
+        }
+
+        for (auto &i : array)
+        {
+            test_map.insert(Pair<int, String>(i, to_String(i)));
+        }
+
+        for (auto it = test_map.begin(); it != test_map.end(); it++)
+        {
+            stream << it->first << "-"<< it->second << "  "; 
+        }
+        size_t map_size = test_map.size();
+        
+        test_map.erase((*test_map.begin()).first);
+
+        map_size--;
+        for (auto it = test_map.begin(); it != test_map.end();)
+        {
+            it = test_map.erase(it);
+            map_size--;
+            assert(map_size == test_map.size());
+        }
         stream << std::endl;
     }
 

@@ -60,10 +60,24 @@ class Map
             return *this;
         }
 
+        Iter operator++(int)
+        {
+            Iter temp = *this;
+            ++*this;
+            return temp;
+        }
+
         Iter& operator--()
         {
             node_ = TreeImpl::prev(node_);
             return *this;
+        }
+
+        Iter operator--(int)
+        {
+            Iter temp = *this;
+            --*this;
+            return temp;
         }
 
         bool operator==(const Iter& rhs)
@@ -101,10 +115,24 @@ class Map
             return *this;
         }
 
+        CIter operator++(int)
+        {
+            CIter temp = *this;
+            ++*this;
+            return temp;
+        }
+
         CIter& operator--()
         {
             node_ = TreeImpl::prev(node_);
             return *this;
+        }
+
+        CIter operator--(int)
+        {
+            CIter temp = *this;
+            --*this;
+            return temp;
         }
 
         bool operator==(const CIter& rhs) const
@@ -171,7 +199,8 @@ public:
 
     size_type erase(const Key& key)
     {
-        RemoveRes res = impl_tree_.c_remove(MakePair<Key, Val>(key, Val()));
+        value_type t = MakePair<Key, Val>(key, Val());
+        RemoveRes res = impl_tree_.c_remove(t);
         size_type n = res.second ? 1 : 0;
         ele_size_ -= n;
         return n;
