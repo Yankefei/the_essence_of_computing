@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cassert>
+#include "../binary_tree_print_util.h"
 
 namespace tools
 {
@@ -406,6 +407,55 @@ public:
             stream << ptr->data_ << " ";
             if (ptr->right_tree_) _InOrder(ptr->right_tree_);
         }
+    }
+
+    using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;
+    RbInfo _is_rb_tree(Node* ptr)
+    {
+        if (ptr == nullptr) return RbInfo(true, 0);
+
+        RbInfo res(false, 0);
+        Color c = ptr->color_;
+
+        do
+        {
+            if (c == Color::Red)
+            {
+                if ((ptr->right_tree_ && ptr->right_tree_->color_ == c) ||
+                    (ptr->left_tree_ && ptr->left_tree_->color_ == c))
+                {
+                    break;
+                }
+            }
+
+            RbInfo l_info = _is_rb_tree(ptr->left_tree_);
+            if (!l_info.first) break;
+            RbInfo r_info = _is_rb_tree(ptr->right_tree_);
+            if (!r_info.first) break;
+
+            if (l_info.second != r_info.second) break;
+
+            bool is_sort = true;
+            if (ptr->left_tree_)
+                is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
+            if (ptr->right_tree_)
+                is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
+
+            res.first = is_sort;
+            res.second = l_info.second + (c == Color::Black ? 1 : 0);
+        } while (false);
+
+        // if (ptr->data_ == T(140))
+        // {
+        //     draw_tree<Node>(ptr);
+        // }
+        // if (!res.first)
+        // {
+            // draw_tree<Node>(ptr);
+            // assert(false);
+        // }
+
+        return res;
     }
 };
 
@@ -812,6 +862,55 @@ public:
             }
         }
         return ptr;
+    }
+
+    using RbInfo = std::pair<bool/*is rb_tree ?*/, uint32_t/*size of black_node*/>;
+    RbInfo _is_rb_tree(Node* ptr)
+    {
+        if (ptr == nullptr) return RbInfo(true, 0);
+
+        RbInfo res(false, 0);
+        Color c = ptr->color_;
+
+        do
+        {
+            if (c == Color::Red)
+            {
+                if ((ptr->right_tree_ && ptr->right_tree_->color_ == c) ||
+                    (ptr->left_tree_ && ptr->left_tree_->color_ == c))
+                {
+                    break;
+                }
+            }
+
+            RbInfo l_info = _is_rb_tree(ptr->left_tree_);
+            if (!l_info.first) break;
+            RbInfo r_info = _is_rb_tree(ptr->right_tree_);
+            if (!r_info.first) break;
+
+            if (l_info.second != r_info.second) break;
+
+            bool is_sort = true;
+            if (ptr->left_tree_)
+                is_sort &= alg::le(ptr->left_tree_->data_, ptr->data_);
+            if (ptr->right_tree_)
+                is_sort &= alg::le(ptr->data_, ptr->right_tree_->data_);
+
+            res.first = is_sort;
+            res.second = l_info.second + (c == Color::Black ? 1 : 0);
+        } while (false);
+
+        // if (ptr->data_ == T(140))
+        // {
+        //     draw_tree<Node>(ptr);
+        // }
+        if (!res.first)
+        {
+            draw_tree<Node>(ptr);
+            assert(false);
+        }
+
+        return res;
     }
 };
 
