@@ -1,15 +1,15 @@
 #include <iostream>
 #include "stream.h"
 
-#include "balance_tree_v2_debug/balance_tree_recursive_debug2.h"
-//#include "balance_tree_v2_debug/balance_tree_debug2.h"
+//#include "balance_tree_v2_debug/balance_tree_recursive_debug2.h"
+#include "balance_tree_v2_debug/balance_tree_debug2.h"
 
 #include "rand.h"
 #include "vector.hpp"
 
 using namespace tools;
-//using namespace tools::b_tree_v2_2;
-using namespace tools::b_tree_recursive_v2_2;
+using namespace tools::b_tree_v2_2;
+//using namespace tools::b_tree_recursive_v2_2;
 
 
 int main()
@@ -30,7 +30,7 @@ int main()
         for (int i = 0; i <= 10; i++)
         {
             assert(my_tree.insert(i) == true);
-            //my_tree.print_tree();
+            my_tree.print_tree();
             assert(my_tree.is_b_tree() == true);
             // stream << "insert i: " << i << " success" << std::endl;
         }
@@ -206,12 +206,14 @@ int main()
         //                   253, 888, 720, 983, 296, 793, 406, 834,
         //                   217, 460, 600, 841, 487, 299, 471, 996,
         //                   862, 746, 178, 169, 507, 106};
-        Vector<int> array{12, 68, 77, 22, 14,
-                          80, 43, 13, 57, 99,
-                          37, 10, 2, 9, 7,
-                          54, 2, 75, 59, 36};
+        // Vector<int> array{12, 68, 77, 22, 14,
+        //                   80, 43, 13, 57, 99,
+        //                   37, 10, 2, 9, 7,
+        //                   54, 2, 75, 59, 36};
+        
+        Vector<int> array{75, 37, 9, 89, 8, 12, 34, 39, 36, 16, 28, 75, 55, 8, 54, 85, 69, 28, 60, 19};
         bool res = false;
-        BalanceTree<int> my_tree(9);
+        BalanceTree<int> my_tree(5);
         for (auto& i : array)
         {
             if (my_tree.insert(i))
@@ -236,8 +238,8 @@ int main()
             if (my_tree.remove(i))
                 ele_size --;
 
-            // if (i == 59 || i == 36)
-            //    my_tree.print_tree();
+            // if (i == 75)
+            //     my_tree.print_tree();
             // stream << "size: "<< my_tree.size() << ", out size: "<< ele_size << std::endl;
 
             assert(my_tree.InOrder() == ele_size);
