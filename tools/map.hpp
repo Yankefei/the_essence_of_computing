@@ -174,7 +174,7 @@ public:
 
     Map(Map&& rhs) noexcept
     {
-        impl_tree_ = std::forward<Map>(rhs.impl_tree_);
+        impl_tree_ = std::forward<TreeImpl>(rhs.impl_tree_);
         ele_size_ = rhs.ele_size_;
         rhs.ele_size_ = 0;
     }
@@ -183,7 +183,7 @@ public:
     {
         if (this != &rhs)
         {
-            impl_tree_ = std::forward<Map>(rhs.impl_tree_);
+            impl_tree_ = std::forward<TreeImpl>(rhs.impl_tree_);
             ele_size_ = rhs.ele_size_;
             rhs.ele_size_ = 0;
         }
@@ -256,6 +256,11 @@ public:
     size_t size() const
     {
         return ele_size_;
+    }
+
+    bool empty() const
+    {
+        return size() == 0;
     }
 
     void clear()

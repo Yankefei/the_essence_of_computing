@@ -432,16 +432,16 @@ public:
         size_t ele_num = 0;
         Node* iter = begin_ptr;
         Entry* entry_ptr = nullptr;
-        T min = iter->array_[0]->data_;
+        Entry* min = iter->array_[0];
         for (; iter != nullptr; iter = iter->next_node_)
         {
             for(int i = 0; i < iter->size_; i++)
             {
                 entry_ptr = iter->array_[i];
                 ele_num ++;
-                if (alg::le(entry_ptr->data_, min))
+                if (alg::le(entry_ptr->data_, min->data_))
                     assert(false);
-                min = entry_ptr->data_;
+                min = entry_ptr;
             }
         }
 
