@@ -58,6 +58,9 @@ public:
 
 #endif
 
+/*
+    Todo, 迭代器部分代码需要重新梳理，并配合容器使用
+*/
 struct input_iterator_tag {};
 struct output_iterator_tag {};
 struct forward_iterator_tag	: public input_iterator_tag {};
@@ -74,11 +77,20 @@ struct iterator
 	typedef Pointer   pointer;
 	typedef Reference reference;
 };
+
+// 单向迭代器
+template<typename _Ty,typename _Dis>
+struct _Forwardit: 
+	public iterator<forward_iterator_tag,_Ty,_Dis>
+{};
+
+// 双向迭代器
 template<typename _Ty,typename _Dis>
 struct _Bidit: 
 	public iterator<bidirectional_iterator_tag,_Ty,_Dis>
 {};
 
+// 随机访问迭代器
 template<typename _Ty, typename _Dis>
 struct _Ranit : 
 	public iterator<random_access_iterator_tag,	_Ty, _Dis>

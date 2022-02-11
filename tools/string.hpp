@@ -817,4 +817,25 @@ to_String(long double __val)
 
 }
 
+#include "hash_func.h"
+
+#include "bits/hash_bytes.h" // 使用std的字符串哈希算法
+
+namespace tools
+{
+
+/*该hash函数可直接用于 tools::hash_map容器*/
+template<>
+struct Hash<String>
+{
+    typedef String argument_type;
+    typedef std::size_t result_type;
+    result_type operator()(const argument_type & s) const
+    {
+        return std::_Hash_impl::hash(s.data(), s.length());
+    }
+};
+
+}
+
 #endif

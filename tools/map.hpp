@@ -33,7 +33,7 @@ class Map
     typedef typename TreeImpl::RemoveRes  RemoveRes;
     typedef typename TreeImpl::InsertRes  InsertRes;
 
-    struct Iter
+    struct Iter : public  _Forwardit<value_type, ptrdiff_t>
     {
         Iter() = default;
         Iter(Node* node) : node_(node) {}
@@ -94,7 +94,7 @@ class Map
         Node* node_{nullptr};
     };
 
-    struct CIter
+    struct CIter : public  _Forwardit<value_type, ptrdiff_t>
     {
         CIter() = default;
         CIter(Node* node) : node_(node) {}

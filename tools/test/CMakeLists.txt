@@ -97,3 +97,7 @@ target_link_libraries(b_tree_v2_main_debug  tools)
 
 add_executable(b_tree_v2_main_debug2 b_tree_v2_main_debug2.cpp)
 target_link_libraries(b_tree_v2_main_debug2  tools)
+
+
+add_executable(hash_map_main hash_map_main.cpp)
+target_link_libraries(hash_map_main  tools)

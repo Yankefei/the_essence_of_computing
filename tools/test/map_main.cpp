@@ -110,6 +110,22 @@ int main()
         {
             stream << it->first << "-"<< it->second << "  "; 
         }
+        stream << std::endl;
+        for (auto e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+        stream << std::endl;
+        for (auto &e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+        stream << std::endl;
+        for (const auto &e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+
         size_t map_size = test_map.size();
         
         test_map.erase((*test_map.begin()).first);
@@ -204,6 +220,22 @@ int main()
         {
             stream << it->first << "-"<< it->second << "  "; 
         }
+        stream << std::endl;
+        for (auto e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+        stream << std::endl;
+        for (auto &e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+        stream << std::endl;
+        for (const auto &e : test_map)
+        {
+            stream << e.first << "-"<< e.second << "  "; 
+        }
+
         size_t map_size = test_map.size();
         
         test_map.erase((*test_map.begin()).first);
