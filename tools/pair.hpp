@@ -12,7 +12,7 @@ struct Pair
 {
     Pair() = default;
     Pair(const T1& _t1, const T2& _t2) : first(_t1), second(_t2) {}
-    Pair(T1&& _t1, T2&& _t2) : first(std::move(_t1)), second(std::move(_t2)) {}
+    Pair(T1&& _t1, T2&& _t2) : first(std::forward<T1>(_t1)), second(std::forward<T2>(_t2)) {}
     Pair(const Pair& val) : first(val.first), second(val.second) {}
 
     T1 first;

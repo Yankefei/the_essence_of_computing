@@ -8,8 +8,12 @@ namespace tools
 
 // 直接继承std的hash定义类作为扩展
 template<typename T>
-struct Hash : std::hash<T>
+struct Hash
 {
+    std::size_t operator()(const T& val)
+    {
+        return std::hash<T>()(val);
+    }
 };
 
 

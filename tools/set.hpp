@@ -15,17 +15,148 @@ namespace tools
 
 template< typename Key,
           typename Alloc,
-          template<typename T1> class Node,
+          template<typename T1> class _Node,
           template <typename T2,
                     typename _Alloc,
-                    template <typename T3> class _Node>  class Tree>
+                    template <typename T3> class _Node1>  class Tree>
 class Set
 {
-    typedef Tree<Key, Alloc, Node>  TreeImpl;
+    typedef Tree<Key, Alloc, _Node>  TreeImpl;
+    typedef Key                      value_type;
+    typedef std::size_t              size_type;
+
+    typedef typename TreeImpl::Node          Node;
+    typedef typename TreeImpl::RemoveRes  RemoveRes;
+    typedef typename TreeImpl::InsertRes  InsertRes;
+
+    struct Iter : public  _Forwardit<value_type, ptrdiff_t>
+    {
+        Iter() = default;
+        Iter(Node* node) : node_(node) {}
+
+        Iter& operator=(const Iter& rhs)
+        {
+            node_ = rhs.node_;
+            return *this;
+        }
+
+        value_type* operator->()
+        {
+            return &**this;
+        }
+
+        value_type& operator*()
+        {
+            return node_->data_;
+        }
+
+        Iter& operator++()
+        {
+            node_ = TreeImpl::next(node_);
+            return *this;
+        }
+
+        Iter operator++(int)
+        {
+            Iter temp = *this;
+            ++*this;
+            return temp;
+        }
+
+        Iter& operator--()
+        {
+            node_ = TreeImpl::prev(node_);
+            return *this;
+        }
+
+        Iter operator--(int)
+        {
+            Iter temp = *this;
+            --*this;
+            return temp;
+        }
+
+        bool operator==(const Iter& rhs)
+        {
+            return node_ == rhs.node_;
+        }
+
+        bool operator!=(const Iter& rhs)
+        {
+            return !(*this == rhs);
+        }
+
+    private:
+        Node* node_{nullptr};
+    };
+
+    struct CIter : public  _Forwardit<value_type, ptrdiff_t>
+    {
+        CIter() = default;
+        CIter(Node* node) : node_(node) {}
+
+        const value_type* operator->()   const
+        {
+            return &**this;
+        }
+
+        const value_type& operator*()  const
+        {
+            return node_->data_;
+        }
+
+        CIter& operator++()
+        {
+            node_ = TreeImpl::next(node_);
+            return *this;
+        }
+
+        CIter operator++(int)
+        {
+            CIter temp = *this;
+            ++*this;
+            return temp;
+        }
+
+        CIter& operator--()
+        {
+            node_ = TreeImpl::prev(node_);
+            return *this;
+        }
+
+        CIter operator--(int)
+        {
+            CIter temp = *this;
+            --*this;
+            return temp;
+        }
+
+        bool operator==(const CIter& rhs) const
+        {
+            return node_ == rhs.node_;
+        }
+
+        bool operator!=(const CIter& rhs) const
+        {
+            return !(*this == rhs);
+        }
+
+    private:
+        Node* node_{nullptr};
+    };
+
 public:
+    Set() : impl_tree_() {}
+    ~Set() {}
+
+    Set(std::initializer_list<value_type> list)
+    {
+        for(auto p = list.begin(); p != list.end(); p ++)
+            insert(*p);
+    }
 
 private:
-    TreeImpl  _impl_tree;
+    TreeImpl  impl_tree_;
 };
 
 // rb_tree set
