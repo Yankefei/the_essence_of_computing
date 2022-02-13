@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "hash_func.h"
+#include "binary_sort_tree3.h"
 
 #include "pair.hpp"
 
@@ -29,7 +30,8 @@ struct _Entry
     _Entry(T&& t, V&& v) : data_(std::forward<T>(t), std::forward<V>(v)) {}
     _Entry(const T& t, const V& v) : data_(t, v) {}
 
-    std::size_t hash_val_{0};   // 保存该data_.first的hash值用于扩展哈希时避免计算
+    std::size_t hash_val_{0};                // 保存该data_.first的hash值用于扩展哈希时避免计算
+    void*       iter_ptr_{nullptr};          // 保存迭代器索引结构的指针, 便于快速查找
     KindOfEntry status_{KindOfEntry::Empty};
     value_type  data_;
 };
@@ -138,6 +140,8 @@ typename HashMap_Base<T, V, HEntry, Alloc>::ByteBase_Impl
        被重复插入。如果在频繁插入，删除的极端过程中，表内存被删除的节点数量过多，也会影响整体性能，
        需要进行额外的处理。
     4. 当有效元素数据小于表大小的1/8时，紧缩表
+    5. 使用一棵排序二叉树（非平衡版）保存数据节点在数组中的位置信息，配合迭代器遍历高效容器。且不
+       影响查询效率。
 
     所以综上，该容器重新Hash的操作的前提是：
     1. 当表中有效和被删除的节点数量之和达到50%。进行重新哈希操作，如果其中被删除的节点数量超过有效
@@ -165,6 +169,72 @@ class HashMap : protected HashMap_Base<T, V, HEntry, Alloc>
     typedef typename HashMapBase::Entry          Entry;
     typedef typename Entry::value_type           value_type;
 
+    typedef typename BsTree<size_t>::Node        IndexNode;
+
+    struct Iter
+    {
+        friend class HashMap<T, V>;
+        Iter() = default;
+        Iter(HashMap<T, V>* p, IndexNode* ptr)
+            : parent_(p), node_ptr_(ptr)
+        {}
+
+        Iter(const Iter& it)
+            : parent_(it.parent_), node_ptr_(it.node_ptr_)
+        {}
+
+        Iter& operator=(const Iter& rhs)
+        {
+            node_ptr_ = rhs.node_ptr_;
+            parent_ = rhs.parent_;
+            return *this;
+        }
+
+        /*const*/ value_type* operator->()
+        {
+            return &**this;
+        }
+
+        /*const*/ value_type& operator*()
+        {
+            assert(parent_ != nullptr);
+            // if (parent_ == nullptr)
+            //     return value_type();
+            return parent_->array_[node_ptr_->data_]->data_;
+        }
+
+        Iter& operator++()
+        {
+            if (parent_ == nullptr)
+                return *this;
+            node_ptr_ = parent_->next_index(node_ptr_);
+            return *this;
+        }
+
+        Iter operator++(int)
+        {
+            Iter temp = *this;
+            ++*this;
+            return temp;
+        }
+
+        bool operator==(const Iter& rhs)
+        {
+            return node_ptr_ == rhs.node_ptr_ && parent_ == rhs.parent_;
+        }
+
+        bool operator!=(const Iter& rhs)
+        {
+            return !(*this == rhs);
+        }
+
+    private:
+        HashMap<T, V>*  parent_{nullptr};
+        IndexNode*      node_ptr_{nullptr}; // 使用地址索引节点的指针作为迭代器的成员
+    };
+
+    friend class Iter;
+
 public:
     using HashMapBase::buy_array;
     using HashMapBase::free_array;
@@ -175,46 +245,111 @@ public:
     HashMap() {}
     ~HashMap() { destory(); }
 
+    HashMap(const HashMap& rhs)
+    {
+
+    }
+
+    HashMap& operator=(const HashMap& rhs)
+    {
+        return *this;
+    }
+
+    HashMap(HashMap&& rhs)
+    {
+
+    }
+
+    HashMap& operator=(HashMap&& rhs)
+    {
+        return *this;
+    }
+
     bool insert(const T& key, const V& val)
     {
+        size_t hash_val = HashFunc<T>()(key);
+        auto index_pair = find(key, hash_val);
+        if (index_pair.second != nullptr)
+            return false;
+
         Entry* entry = buy_entry(key, val);
-        return insert(entry);
+        entry->hash_val_ = hash_val;
+        entry->status_ = KindOfEntry::Used;
+        return insert(entry, index_pair.first);
     }
 
     bool emplace(T&& key, V&& val)
     {
+        size_t hash_val = HashFunc<T>()(key);
+        auto index_pair = find(key, hash_val);
+        if (index_pair.second != nullptr)
+            return false;
+
         Entry* entry = buy_entry(std::forward<T>(key), std::forward<V>(val));
-        return insert(entry);
+        entry->hash_val_ = hash_val;
+        entry->status_ = KindOfEntry::Used;
+        return insert(entry, index_pair.first);
     }
 
-    bool find(const T& key)
+    Iter find(const T& key)
     {
         size_t hash_val = HashFunc<T>()(key);
-        size_t index = find(key, hash_val);
-        if (array_[index] != nullptr && array_[index]->status_ == KindOfEntry::Used)
-            return true;
-        
-        return false;
-    }
-
-    bool remove(const T& key)
-    {
-        size_t hash_val = HashFunc<T>()(key);
-        size_t index = find(key, hash_val);
-        if (array_[index] != nullptr && array_[index]->status_ == KindOfEntry::Used)
+        auto index_pair = find(key, hash_val);
+        if (index_pair.second != nullptr)
         {
-            array_[index]->status_ = KindOfEntry::Deleted;
-            delete_ele_size_ ++;
-            ele_size_ --;
-            if (k_num_ > 5 && ele_size_ << 3 < array_len_) // 小于表的1/8, 缩表一半
-            {
-                size_t new_len = retrench_array_len();
-                handle_rehash(new_len);
-            }
-            return true;
+            assert(index_pair.second->status_ == KindOfEntry::Used);
+            return Iter(this, static_cast<IndexNode*>(index_pair.second->iter_ptr_));
         }
 
-        return false;
+        return Iter(this, nullptr);
+    }
+
+    size_t erase(const T& key)
+    {
+        size_t hash_val = HashFunc<T>()(key);
+        auto index_pair = find(key, hash_val);
+        if (index_pair.second != nullptr)
+        {
+            remove(index_pair.second);
+            return 1;
+        }
+
+        return 0;
+    }
+
+    Iter erase(Iter it)
+    {
+        do
+        {
+            if (it == end())
+                break;
+
+            Entry* entry = array_[it.node_ptr_->data_];
+            if (entry == nullptr)
+                break;
+
+            Iter re = ++it;
+            auto new_index = remove(entry); // 重置哈希表会将迭代器失效
+            if (new_index == nullptr)
+                return re;
+
+            return Iter(this, new_index);
+        }while(false);
+        return Iter(this, nullptr);
+    }
+
+    V& operator[](const T& key)
+    {
+        size_t hash_val = HashFunc<T>()(key);
+        auto index_pair = find(key, hash_val);
+        if (index_pair.second != nullptr)
+            return index_pair.second->data_.first;
+
+        Entry* entry = buy_entry(key, V());
+        entry->hash_val_ = hash_val;
+        entry->status_ = KindOfEntry::Used;
+        assert(insert(entry, index_pair.first) == true);
+        return entry->data_.first;
     }
 
     size_t size()
@@ -227,18 +362,65 @@ public:
         return size() == 0;
     }
 
+    /*
+        迭代器在插入，删除元素后都可能会失效
+    */
+    Iter begin()
+    {
+        IndexNode* ptr = index_tree_.first();
+
+        while(ptr != nullptr)
+        {
+            assert(array_[ptr->data_] != nullptr); // 没有删除，一定是有效的
+            if (array_[ptr->data_]->status_ == KindOfEntry::Deleted)
+                ptr = BsTree<size_t>::next(ptr);
+            else
+                break;
+        }
+        return Iter(this, ptr);
+    }
+
+    Iter end()
+    {
+        return Iter(this, nullptr);
+    }
+
+    void clear()
+    {
+        destory();
+    }
+
 private:
+    IndexNode* next_index(IndexNode* ptr)
+    {
+        ptr = BsTree<size_t>::next(ptr);
+
+        while(ptr != nullptr)
+        {
+            assert(array_[ptr->data_] != nullptr); // 没有删除，一定是有效的
+            if (array_[ptr->data_]->status_ != KindOfEntry::Deleted)
+                break;
+
+            ptr = BsTree<size_t>::next(ptr);
+        }
+        return ptr;
+    }
+
     // 入参为hash的返回值, 返回数据实际的序号, 或者应该插入的序号
     // 探测的方式为 f = +- i^2
-    size_t find(const T& key, size_t hash_val)
+    Pair<size_t, Entry*> find(const T& key, size_t hash_val)
     {
+        if (array_ == nullptr)
+            return Pair<size_t, Entry*>(0, nullptr);
+
         size_t index = hash_val % array_len_;
         size_t index2 = index; // 反向遍历的位置记录
 
-        bool odd = false;   // 用于+- 探测的转换
-        size_t k = 0; // 平方探测的次数
+        bool odd = false;      // 用于+- 探测的转换
+        size_t k = 0;          // 平方探测的次数
         Entry* entry_ptr = array_[index];
-        if (entry_ptr == nullptr) return index;
+        if (entry_ptr == nullptr)
+            return Pair<size_t, Entry*>(index, nullptr);
 
         // 这里的循环能够跳出源于已经证明的结论
         while((entry_ptr->status_ == KindOfEntry::Used && alg::neq(entry_ptr->data_.first, key))
@@ -247,33 +429,44 @@ private:
             if (!odd) // 正向
             {
                 k++;
-                index = (index + 2*k -1) % array_len_; // 根据递推公式得到的探测距离， 1,4,9,16...
-                odd = true;
+                index = (index + (k << 2) -1) % array_len_; // 根据递推公式得到的探测距离， 1,4,9,16...
                 entry_ptr = array_[index];
             }
             else // 反向
             {
-                index2 = index2 - 2*k + 1;         // 根据递推公式得到的探测距离， -1,-4,-9,-16...
-                if (index2 < 0) index2 += array_len_;
-                odd = false;
+                size_t tag_val = k << 2 - 1;
+                while (index2 < tag_val)           // 需要while循环, 避免+=后index2还是过小
+                    index2 += array_len_;
+                index2 = index2 - tag_val;         // 根据递推公式得到的探测距离， -1,-4,-9,-16...
                 entry_ptr = array_[index2];
             }
 
             if (entry_ptr == nullptr) break;
             odd = !odd;
         }
-        return odd ? index2 : index;
+        return Pair<size_t, Entry*>(odd ? index2 : index, entry_ptr);
     }
 
-    bool insert(Entry* entry)
+    bool insert(Entry* entry, size_t pos)
     {
-        // 进行哈希重置
         if (ele_size_ == 0)
         {
             size_t new_len = expand_array_len();
-            handle_rehash(new_len);
+            array_ = reinterpret_cast<Entry**>(buy_array(new_len));
+            array_len_ = new_len;
+            pos = entry->hash_val_ % array_len_;
         }
-        else if (ele_size_ + delete_ele_size_ + 1 >= (array_len_ * 50 / 100))
+        else
+        {
+            assert(array_[pos] == nullptr);
+        }
+        auto ins_pair = index_tree_.c_insert(pos);
+        assert(ins_pair.first == true);          // 由平方探测结果可知，一定可以插入成功
+        entry->iter_ptr_ = ins_pair.second;      // 保存插入索引节点的指针
+        array_[pos] = entry;
+        ele_size_ ++;
+
+        if (ele_size_ + delete_ele_size_ >= (array_len_ * 50 / 100))
         {
             // 当被删除节点没有超过有效节点数量一半时，才扩展表大小
             if (ele_size_ - delete_ele_size_ >= delete_ele_size_)
@@ -286,28 +479,60 @@ private:
                 handle_rehash(array_len_);
             }
         }
-
-        entry->hash_val_ = HashFunc<T>()(entry->data_.first);
-        entry->status_ = KindOfEntry::Used;
-        size_t pos = find(entry->data_.first, entry->hash_val_);
-        array_[pos] = entry;
-        ele_size_ ++;
         return true;
     }
 
-    void handle_rehash(size_t new_len)
+    // 如果内部重新哈希，则返回新数组的数据首位置索引指针，否则返回nullptr
+    IndexNode* remove(Entry* entry)
+    {
+        assert(entry->status_ == KindOfEntry::Used);
+        entry->status_ = KindOfEntry::Deleted;
+        delete_ele_size_ ++;
+        ele_size_ --;
+        IndexNode* first_index_node = nullptr;
+        if (k_num_ > 5 && ele_size_ << 3 < array_len_) // 小于表的1/8, 缩表一半
+        {
+            size_t new_len = retrench_array_len();
+            first_index_node = handle_rehash(new_len);
+        }
+
+        if (ele_size_ == 0)
+            index_tree_.clear();
+
+        return first_index_node;
+    }
+
+    // 返回新序列中的最小索引节点指针
+    IndexNode* handle_rehash(size_t new_len)
     {
         assert(new_len > ele_size_);
         Entry** new_array = reinterpret_cast<Entry**>(buy_array(new_len));
         Entry* ptr = nullptr;
-        for (size_t i = 0; i < array_len_; i++)
+
+        std::swap(new_array, array_);
+        std::swap(new_len, array_len_);
+        index_tree_.clear();
+
+        IndexNode* first_index_ptr = nullptr;
+        size_t min_index = new_len;
+        for (size_t i = 0; i < new_len; i++)
         {
-            ptr = array_[i];
+            ptr = new_array[i];
             if (ptr != nullptr)
             {
                 if (ptr->status_ == KindOfEntry::Used)
                 {
-                    new_array[ptr->hash_val_ % new_len] = ptr;
+                    auto index_pair = find(ptr->data_.first, ptr->hash_val_);
+                    assert(index_pair.second == nullptr);
+                    auto ins_pair = index_tree_.c_insert(index_pair.first); // 重新插入序号
+                    assert(ins_pair.first == true);
+                    if (index_pair.first < min_index)
+                    {
+                        first_index_ptr = ins_pair.second;
+                        min_index = index_pair.first;
+                    }
+                    ptr->iter_ptr_ = ins_pair.second;      // 更新索引节点的指针
+                    array_[index_pair.first] = ptr;
                 }
                 else // Deleted
                 {
@@ -317,9 +542,10 @@ private:
             }
         }
         delete_ele_size_ = 0;
-        if (array_ != nullptr) free_array(array_);
-        array_ = new_array;
-        array_len_ = new_len;
+        if (new_array != nullptr)
+            free_array(new_array);
+
+        return first_index_ptr;
     }
 
     // 扩增表大小
@@ -333,7 +559,7 @@ private:
         }
         else
         {
-            // size_t next_min_num = array_len_ * 45 * 4 / 100; // 用于测试
+            // size_t next_min_num = array_len_ * 45 * 4 / 100;    // 用于测试
             // assert(ele_size_ > (array_len_ * 45 / 100));        // 扩展条件
             size_t next_min_num = ele_size_ * 4;
             do
@@ -341,27 +567,7 @@ private:
                 new_array_len = 4 * ++k_num_ + 3;
             }while(new_array_len < next_min_num || !is_prime_num(new_array_len));
         }
-        /*
-        如果表元素数量达到45%的容量就扩展表大小为至少是现有元素数量数目的2倍，那么下面是前15次表
-        大小的数量变化情况:
-
-        expand i: 1, k: 5, array_len_: 23
-        expand i: 2, k: 10, array_len_: 43
-        expand i: 3, k: 19, array_len_: 79
-        expand i: 4, k: 37, array_len_: 151
-        expand i: 5, k: 67, array_len_: 271
-        expand i: 6, k: 121, array_len_: 487
-        expand i: 7, k: 220, array_len_: 883
-        expand i: 8, k: 401, array_len_: 1607
-        expand i: 9, k: 725, array_len_: 2903
-        expand i: 10, k: 1306, array_len_: 5227
-        expand i: 11, k: 2354, array_len_: 9419
-        expand i: 12, k: 4240, array_len_: 16963
-        expand i: 13, k: 7634, array_len_: 30539
-        expand i: 14, k: 13744, array_len_: 54979
-        expand i: 15, k: 24740, array_len_: 98963
-        */
-        // stream << "k: " << k_num_ << ", array_len_: " << array_len_ << std::endl;
+        // stream << "k: " << k_num_ << ", new_array_len: " << new_array_len << std::endl;
         return new_array_len;
     }
 
@@ -408,6 +614,7 @@ private:
             delete_ele_size_ = 0;
             array_len_ = 0;
             k_num_ = 5;
+            index_tree_.clear();
         }
     }
 
@@ -418,6 +625,12 @@ private:
 
     std::size_t  k_num_{5};              // 表大小计算所使用的倍数k, 初始化为5
     std::size_t  array_len_{0};          // 数组长度 满足 4k + 3 的素数
+
+    /*
+        使用一棵排序二叉树来存储所有的index序号。仅插入，不删除, 在rehash时重置. 使用排序树是为了
+        在遍历时做到按照数组的序号递增地遍历，局部性友好
+    */
+    BsTree<size_t>   index_tree_;
 };
 
 

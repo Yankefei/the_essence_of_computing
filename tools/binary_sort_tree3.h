@@ -6,6 +6,7 @@
 
 #include "binary_sort_tree_base.h"
 #include "algorithm.hpp"
+#include "pair.hpp"
 
 namespace tools
 {
@@ -27,6 +28,8 @@ template<typename T, template <typename T1> class SNode = _SNode3, typename Allo
 class BsTree : protected BsTree_Base<T, SNode, Alloc>
 {
     typedef BsTree_Base<T, SNode, Alloc> BsTreeBase;
+
+public:
     typedef typename BsTreeBase::Node Node;
     typedef Node*  Root;
 
@@ -41,9 +44,17 @@ public:
 
     // 有一种处理重复数据的方案，就是在数据域增加一个频率的字段
     // 不过在关键字仅仅为数据的一部分这种情况，还必须使用其他的处理方案
-    bool insert(const T& val)
+
+    // 插入成功，返回Node节点指针，插入失败有重复数据，也返回对应的指针
+    Pair<bool, Node*> c_insert(const T& val)   //用于容器 
     {
         return insert(&_m_impl._root, val);
+    }
+
+    bool insert(const T& val)
+    {
+        auto pair = insert(&_m_impl._root, val);
+        return pair.first;
     }
 
     // 递归版本
@@ -63,7 +74,7 @@ public:
         stream << std::endl;
     }
 
-    void NiceInOrder() const
+    void NiceInOrder()
     {
         auto ptr = first();
         for (; ptr != nullptr; ptr = next(ptr))
@@ -73,7 +84,7 @@ public:
         stream << std::endl;
     }
 
-    void ResNiceInOrder() const
+    void ResNiceInOrder()
     {
         auto ptr = last();
         for (; ptr != nullptr; ptr = prev(ptr))
@@ -86,6 +97,59 @@ public:
     Node* find(const T& val) const
     {
         return find(_m_impl._root, val);
+    }
+
+    void clear()
+    {
+        destory(_m_impl._root);
+        _m_impl._root = nullptr;
+    }
+
+public:
+    Node* first()
+    {
+        return _first(_m_impl._root);
+    }
+
+    static Node* next(Node* ptr)
+    {
+        if (ptr == nullptr) return ptr;
+
+        if (ptr->right_tree_)
+        {
+            return _first(ptr->right_tree_);
+        }
+        else
+        {
+            // 真的不知道这样的代码是怎么写出来的。。服
+            Node* pa = ptr->parent_;
+            while(pa != nullptr && pa->left_tree_ != ptr)
+            {
+                ptr = pa;
+                pa = pa->parent_;
+            }
+            return pa;
+
+            // if (ptr->parent_ == nullptr) return nullptr;
+
+            // if (alg::le(ptr->parent_->data_, ptr->data_))
+            // {
+            //     if (ptr->parent_->parent_ == nullptr) return nullptr;
+                
+            //     if (alg::le(ptr->parent_->parent_->data_, ptr->data_))
+            //     {
+            //         return nullptr;
+            //     }
+            //     else
+            //     {
+            //         return ptr->parent_->parent_;
+            //     }
+            // }
+            // else
+            // {
+            //     return ptr->parent_;
+            // }
+        }
     }
 
 private:
@@ -110,9 +174,9 @@ private:
         return res;
     }
 
-    bool insert(Node** pptr, const T& val)
+    Pair<bool, Node*> insert(Node** pptr, const T& val)
     {
-        if (pptr == nullptr) return false;
+        if (pptr == nullptr) return {false, nullptr};
         Node* pa = nullptr;
         Node* p = *pptr;
         while(p != nullptr && alg::neq(p->data_, val))
@@ -120,7 +184,10 @@ private:
             pa = p;
             p = alg::le(val, p->data_) ? p->left_tree_ : p->right_tree_;
         }
-        if (p != nullptr && alg::eq(p->data_, val)) return false;
+        if (p != nullptr && alg::eq(p->data_, val))
+        {
+            return {false, p};
+        }
 
         // 在不需要区分左右的时候，先不区分，这样后面代码会好写很多，简洁很多
         // 尤其在下面remove的时候，最为明显
@@ -140,7 +207,7 @@ private:
             }
         }
 
-        return true;
+        return {true, p};
     }
 
     // 删除的过程需要维护 parent_ 指针
@@ -241,12 +308,6 @@ private:
         return ptr;
     }
 
-    Node* first() const
-    {
-        return _first(_m_impl._root);
-
-    }
-
     static Node* _first(Node* ptr)
     {
         if (ptr)
@@ -260,48 +321,7 @@ private:
         return ptr;
     }
 
-    static Node* next(Node* ptr)
-    {
-        if (ptr == nullptr) return ptr;
-
-        if (ptr->right_tree_)
-        {
-            return _first(ptr->right_tree_);
-        }
-        else
-        {
-            // 真的不知道这样的代码是怎么写出来的。。服
-            Node* pa = ptr->parent_;
-            while(pa != nullptr && pa->left_tree_ != ptr)
-            {
-                ptr = pa;
-                pa = pa->parent_;
-            }
-            return pa;
-
-            // if (ptr->parent_ == nullptr) return nullptr;
-
-            // if (alg::le(ptr->parent_->data_, ptr->data_))
-            // {
-            //     if (ptr->parent_->parent_ == nullptr) return nullptr;
-                
-            //     if (alg::le(ptr->parent_->parent_->data_, ptr->data_))
-            //     {
-            //         return nullptr;
-            //     }
-            //     else
-            //     {
-            //         return ptr->parent_->parent_;
-            //     }
-            // }
-            // else
-            // {
-            //     return ptr->parent_;
-            // }
-        }
-    }
-
-    Node* last() const
+    Node* last()
     {
         return _last(_m_impl._root);
     }
