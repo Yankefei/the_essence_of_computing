@@ -7,7 +7,9 @@
 #include <cstring>
 
 #include "hash_func.h"
+// 需要带有parent_指针的排序二叉树版本
 #include "binary_sort_tree3.h"
+#include "iterator_base.h"
 
 #include "pair.hpp"
 
@@ -171,7 +173,7 @@ class HashMap : protected HashMap_Base<T, V, HEntry, Alloc>
 
     typedef typename BsTree<size_t>::Node        IndexNode;
 
-    struct Iter
+    struct Iter : public _Forwardit<value_type, ptrdiff_t>
     {
         friend class HashMap<T, V>;
         Iter() = default;
@@ -343,13 +345,13 @@ public:
         size_t hash_val = HashFunc<T>()(key);
         auto index_pair = find(key, hash_val);
         if (index_pair.second != nullptr)
-            return index_pair.second->data_.first;
+            return index_pair.second->data_.second;
 
         Entry* entry = buy_entry(key, V());
         entry->hash_val_ = hash_val;
         entry->status_ = KindOfEntry::Used;
         assert(insert(entry, index_pair.first) == true);
-        return entry->data_.first;
+        return entry->data_.second;
     }
 
     size_t size()
