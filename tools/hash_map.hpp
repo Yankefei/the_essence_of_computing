@@ -249,21 +249,31 @@ public:
 
     HashMap(const HashMap& rhs)
     {
-
+        copy_hash_map(rhs);
     }
 
     HashMap& operator=(const HashMap& rhs)
     {
+        if (this != &rhs)
+        {
+            destory();
+            copy_hash_map(rhs);
+        }
         return *this;
     }
 
-    HashMap(HashMap&& rhs)
+    HashMap(HashMap&& rhs) noexcept
     {
-
+        move_hash_map(std::forward<HashMap>(rhs));
     }
 
-    HashMap& operator=(HashMap&& rhs)
+    HashMap& operator=(HashMap&& rhs)  noexcept
     {
+        if (this != &rhs)
+        {
+            destory();
+            move_hash_map(std::forward<HashMap>(rhs));
+        }
         return *this;
     }
 
@@ -393,6 +403,43 @@ public:
     }
 
 private:
+    void copy_hash_map(const HashMap& rhs)
+    {
+        ele_size_ = rhs.ele_size_;
+        delete_ele_size_ = rhs.delete_ele_size_;
+        k_num_ = rhs.k_num_;
+        array_len_ = rhs.array_len_;
+        array_ = reinterpret_cast<Entry**>(buy_array(array_len_));
+        // 用索引来指引拷贝数组中的具体数据
+        index_tree_ = rhs.index_tree_;
+        copy_data(rhs.array_);
+    }
+
+    void move_hash_map(HashMap&& rhs)  noexcept
+    {
+        std::swap(ele_size_, rhs.ele_size_);
+        std::swap(delete_ele_size_, rhs.delete_ele_size_);
+        std::swap(array_, rhs.array_);
+        std::swap(array_len_, rhs.array_len_);
+        std::swap(k_num_, rhs.k_num_);
+        index_tree_ = std::forward<BsTree<size_t>>(rhs.index_tree_);
+    }
+
+    // 使用其他哈希表的索引二叉树指导拷贝内容
+    void copy_data(Entry** rhs_array)
+    {
+        for (IndexNode* iter_ptr = index_tree_.first();
+            iter_ptr != nullptr; iter_ptr = index_tree_.next(iter_ptr))
+        {
+            Entry* rhs_entry = rhs_array[iter_ptr->data_];
+            Entry* node = buy_entry(rhs_entry->data_.first, rhs_entry->data_.second);
+            node->hash_val_ = rhs_entry->hash_val_;
+            node->status_ = rhs_entry->status_;
+            node->iter_ptr_ = iter_ptr;   // 关键是关联到新的索引指针
+            array_[iter_ptr->data_] = node;
+        }
+    }
+
     IndexNode* next_index(IndexNode* ptr)
     {
         ptr = BsTree<size_t>::next(ptr);
@@ -431,15 +478,20 @@ private:
             if (!odd) // 正向
             {
                 k++;
-                index = (index + (k << 2) -1) % array_len_; // 根据递推公式得到的探测距离， 1,4,9,16...
+                // 根据递推公式得到的探测距离， 1,4,9,16...
+                // F(i) = F(i-1) + 2 * k - 1
+                index = (index + (k << 1) -1) % array_len_;
                 entry_ptr = array_[index];
             }
             else // 反向
             {
-                size_t tag_val = k << 2 - 1;
+                // 根据递推公式得到的探测距离， -1,-4,-9,-16...
+                // F(i) = F(i-1) - 2 * k + 1
+                size_t tag_val = (k << 1) - 1;
                 while (index2 < tag_val)           // 需要while循环, 避免+=后index2还是过小
                     index2 += array_len_;
-                index2 = index2 - tag_val;         // 根据递推公式得到的探测距离， -1,-4,-9,-16...
+
+                index2 = index2 - tag_val;         
                 entry_ptr = array_[index2];
             }
 
@@ -557,16 +609,16 @@ private:
         size_t new_array_len = 0;
         if (array_len_ == 0)
         {
-            new_array_len = 4 * k_num_ + 3;
+            new_array_len = k_num_ << 2 + 3;
         }
         else
         {
-            // size_t next_min_num = array_len_ * 45 * 4 / 100;    // 用于测试
-            // assert(ele_size_ > (array_len_ * 45 / 100));        // 扩展条件
-            size_t next_min_num = ele_size_ * 4;
+            // size_t next_min_num = array_len_ * 50 * 4 / 100;    // 用于测试
+            // assert(ele_size_ > (array_len_ * 50 / 100));        // 扩展条件
+            size_t next_min_num = ele_size_ << 2;
             do
             {
-                new_array_len = 4 * ++k_num_ + 3;
+                new_array_len = ((++k_num_) << 2) + 3; //  + 运算符 优先于 << 运算符
             }while(new_array_len < next_min_num || !is_prime_num(new_array_len));
         }
         // stream << "k: " << k_num_ << ", new_array_len: " << new_array_len << std::endl;
@@ -578,10 +630,10 @@ private:
     size_t retrench_array_len()
     {
         size_t new_array_len = 0;
-        size_t next_max_num = ele_size_ * 4;
+        size_t next_max_num = ele_size_ << 2;
         do
         {
-            new_array_len = 4 * --k_num_ + 3;
+            new_array_len = ((--k_num_) << 2) + 3;
             if (k_num_ == 5) break;
         }while(new_array_len > next_max_num || !is_prime_num(new_array_len));
         return new_array_len;

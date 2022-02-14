@@ -141,6 +141,83 @@ int main()
         assert(test_map.empty() == true);
     }
 
+    {
+        stream << "test AMap copy..." << std::endl;
+        AMap<int, String> test_map;
+        size_t ele_size = 0;
+        int num = 100;
+        while (num -- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < 1000; i++)
+            {
+                array.push_back(rand());
+            }
+
+            for (auto& i : array)
+            {
+                if (test_map.insert(Pair<int, String>(i, to_String(i))).second)
+                    ele_size ++;
+            }
+
+            for (auto& i : array)
+            {
+                assert(test_map.find(i) != test_map.end());
+            }
+
+            {
+                AMap<int, String> my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                AMap<int, String> my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+            }
+
+            {
+                AMap<int, String> my_map_move;
+                my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                AMap<int, String> my_map_copy;
+                my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+            }
+
+            for (auto& i : array)
+            {
+                assert(test_map.find(i) != test_map.end());
+            }
+
+            // stream << "size: " << test_map.size() << std::endl;
+            stream << "size: " << test_map.size() <<"  ";
+
+            if (num % 2 == 0)
+            {
+                for (auto iter = test_map.begin(); iter != test_map.end() ;)
+                {
+                    iter = test_map.erase(iter);
+                    ele_size --;
+                }
+            }
+            else
+            {
+                for (auto& i : array)
+                {
+                    if (test_map.erase(i) == 1)
+                        ele_size --;
+                }
+            }
+            assert(test_map.size() == 0);
+            assert(ele_size == 0);
+        }
+        stream << std::endl;
+    }
+
 ////////////////////////////////////
 
     {
@@ -249,6 +326,83 @@ int main()
         }
         stream << std::endl;
         assert(test_map.empty() == true);
+    }
+
+    {
+        stream << "test RMap copy..." << std::endl;
+        RMap<int, String> test_map;
+        size_t ele_size = 0;
+        int num = 100;
+        while (num -- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < 1000; i++)
+            {
+                array.push_back(rand());
+            }
+
+            for (auto& i : array)
+            {
+                if (test_map.insert(Pair<int, String>(i, to_String(i))).second)
+                    ele_size ++;
+            }
+
+            for (auto& i : array)
+            {
+                assert(test_map.find(i) != test_map.end());
+            }
+
+            {
+                RMap<int, String> my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                RMap<int, String> my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+            }
+
+            {
+                RMap<int, String> my_map_move;
+                my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                RMap<int, String> my_map_copy;
+                my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+            }
+
+            for (auto& i : array)
+            {
+                assert(test_map.find(i) != test_map.end());
+            }
+
+            // stream << "size: " << test_map.size() << std::endl;
+            stream << "size: " << test_map.size() <<"  ";
+
+            if (num % 2 == 0)
+            {
+                for (auto iter = test_map.begin(); iter != test_map.end() ;)
+                {
+                    iter = test_map.erase(iter);
+                    ele_size --;
+                }
+            }
+            else
+            {
+                for (auto& i : array)
+                {
+                    if (test_map.erase(i) == 1)
+                        ele_size --;
+                }
+            }
+            assert(test_map.size() == 0);
+            assert(ele_size == 0);
+        }
+        stream << std::endl;
     }
 
     return 0;

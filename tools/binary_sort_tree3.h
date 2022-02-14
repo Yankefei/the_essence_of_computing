@@ -42,6 +42,37 @@ public:
     BsTree() {}
     ~BsTree() { destory(_m_impl._root); }
 
+    BsTree(const BsTree& rhs)
+    {
+        _m_impl._root = copy(rhs._m_impl._root);
+    }
+
+    BsTree& operator=(const BsTree& rhs)
+    {
+        if (this != &rhs)
+        {
+            destory(_m_impl._root);
+            _m_impl._root = copy(rhs._m_impl._root);
+        }
+        return *this;
+    }
+
+    BsTree(BsTree&& rhs)   noexcept
+    {
+        _m_impl._root = rhs._m_impl._root;
+        rhs._m_impl._root = nullptr;
+    }
+
+    BsTree& operator=(BsTree&& rhs)   noexcept
+    {
+        if (this != &rhs)
+        {
+            _m_impl._root = rhs._m_impl._root;
+            rhs._m_impl._root = nullptr;
+        }
+        return *this;
+    }
+
     // 有一种处理重复数据的方案，就是在数据域增加一个频率的字段
     // 不过在关键字仅仅为数据的一部分这种情况，还必须使用其他的处理方案
 
@@ -74,24 +105,38 @@ public:
         stream << std::endl;
     }
 
-    void NiceInOrder()
+    size_t NiceInOrder()
     {
+        size_t ele_num = 0;
         auto ptr = first();
+        Node* min = ptr;
         for (; ptr != nullptr; ptr = next(ptr))
         {
-            stream << ptr->data_ << " ";
+            if (alg::le(ptr->data_, min->data_))
+                assert(false);
+            //stream << ptr->data_ << " ";
+            min = ptr;
+            ele_num ++;
         }
-        stream << std::endl;
+        //stream << std::endl;
+        return ele_num;
     }
 
-    void ResNiceInOrder()
+    size_t ResNiceInOrder()
     {
+        size_t ele_num = 0;
         auto ptr = last();
+        Node* max = ptr;
         for (; ptr != nullptr; ptr = prev(ptr))
         {
-            stream << ptr->data_ << " ";
+            if (alg::le(max->data_, ptr->data_))
+                assert(false);
+            // stream << ptr->data_ << " ";
+            max = ptr;
+            ele_num ++;
         }
-        stream << std::endl;
+        // stream << std::endl;
+        return ele_num;
     }
 
     Node* find(const T& val) const
@@ -103,6 +148,17 @@ public:
     {
         destory(_m_impl._root);
         _m_impl._root = nullptr;
+    }
+
+    Node* get_root()
+    {
+        return _m_impl._root;
+    }
+
+    bool is_same(const BsTree& rhs)
+    {
+        return check_same(_m_impl._root, rhs._m_impl._root) &&
+               check_same2(_m_impl._root, rhs._m_impl._root);
     }
 
 public:
@@ -153,6 +209,78 @@ public:
     }
 
 private:
+    // 复制一棵树, 返回新的ptr指针, 同时维护parent_指针
+    Node* copy(Node* ptr)
+    {
+        if (nullptr == ptr) return ptr;
+
+        // 先获取ptr树的left节点
+        Node* left = ptr;
+        while(left->left_tree_)
+            left = left->left_tree_;
+
+        Node* new_ptr = nullptr;
+        Node* new_ptr_next = nullptr; // new_ptr 的左子树
+        for(; left != ptr->parent_; left = left->parent_)
+        {
+            new_ptr_next = new_ptr;
+            new_ptr = buy_node(left->data_);
+            new_ptr->right_tree_ = copy(left->right_tree_);
+            if (new_ptr->right_tree_ != nullptr)
+                new_ptr->right_tree_->parent_ = new_ptr;
+            
+            if (new_ptr_next != nullptr)
+                new_ptr_next->parent_ = new_ptr;
+            new_ptr->left_tree_ = new_ptr_next;
+        }
+
+        return new_ptr;
+    }
+
+    // 递归检查
+    bool check_same(Node* ptr, Node* ptr2)
+    {
+        if (ptr == nullptr && ptr2 == nullptr) return true;
+
+        if (ptr == nullptr || ptr2 == nullptr) return false;
+
+        if (alg::eq(ptr->data_, ptr2->data_) &&
+            check_same(ptr->left_tree_, ptr2->left_tree_) &&
+            check_same(ptr->right_tree_, ptr2->right_tree_))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    // 正反遍历检查
+    bool check_same2(Node* root1, Node* root2)
+    {
+        {
+            Node* ptr = _first(root1);
+            Node* ptr2 = _first(root2);
+            for (; ptr != nullptr; ptr = next(ptr), ptr2 = next(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+
+        {
+            Node* ptr = _last(root1);
+            Node* ptr2 = _last(root2);
+            for (; ptr != nullptr; ptr = prev(ptr), ptr2 = prev(ptr2))
+            {
+                if (alg::neq(ptr->data_, ptr2->data_))
+                    return false;
+            }
+            if (ptr2 != nullptr) return false;
+        }
+        return true;
+    }
+
     bool insert(Node*& ptr, const T& val, Node* pptr)
     {
         bool res = false;

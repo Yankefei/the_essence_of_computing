@@ -20,6 +20,10 @@ int main()
     {
         HashMap<int, int> test_map;
         stream << "HashMap size : " << sizeof(HashMap<int, int>) << std::endl;
+    
+        size_t k = 2;
+        size_t test_val = ((++k) << 2) + 3;
+        stream << "test_val: " << test_val << std::endl;
     }
 
     {
@@ -123,14 +127,35 @@ int main()
             assert(test_map.find(i) != test_map.end());
         }
 
-        for (auto& i : array)
+        test_map[11111] = "22222";
+        ele_size ++;
+        assert(test_map.find(11111) != test_map.end());
+
+        test_map[444] = "4444444";
+        stream << "ele_size: "<< test_map.size() <<std::endl;
+
+        for (auto e : test_map)
         {
-            if (test_map.erase(i) == 1)
-                ele_size --;
+            stream << e.first << "-" << e.second << ", ";
         }
 
-        assert(ele_size == 0);
+        // for (auto& i : array)
+        // {
+        //     if (test_map.erase(i) == 1)
+        //         ele_size --;
+        // }
+        // assert(ele_size == 1); 
+        // assert(test_map.empty() == false); 
+        // test_map.erase(11111);
+        // assert(test_map.empty() == true); 
 
+        for (auto iter = test_map.begin(); iter != test_map.end() ;)
+        {
+            iter = test_map.erase(iter);
+            ele_size --;
+        }
+        assert(ele_size == 0);
+        stream << std::endl;
     }
 
     {
@@ -157,6 +182,41 @@ int main()
             {
                 if (test_map.insert(i, i))
                     ele_size ++;
+            }
+
+            for (auto& i : array)
+            {
+                assert(test_map.find(i) != test_map.end());
+            }
+
+            {
+                HashMap<int, int> my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                HashMap<int, int> my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+            }
+
+            {
+                HashMap<int, int> my_map_move;
+                my_map_move = std::move(test_map);
+                assert(test_map.empty() == true);
+
+                HashMap<int, int> my_map_copy;
+                my_map_copy = my_map_move;
+
+                test_map = std::move(my_map_copy);
+                assert(my_map_copy.empty() == true);
+                
+                // move 之后原map彻底为空
+                my_map_copy.insert(10, 10);
+                for (auto e : my_map_copy)
+                {
+                    stream << e.first << "-" <<  e.second << std::endl;
+                }
+                my_map_copy.erase(10);
             }
 
             for (auto& i : array)
@@ -242,6 +302,39 @@ int main()
             assert(ele_size == 0);
         }
         stream << std::endl;
+    }
+
+    {
+        HashMap<int, int> test_map;
+        {
+            HashMap<int, int> my_map_move = std::move(test_map);
+            assert(test_map.empty() == true);
+
+            HashMap<int, int> my_map_copy = my_map_move;
+
+            test_map = std::move(my_map_copy);
+            assert(my_map_copy.empty() == true);
+        }
+
+        {
+            HashMap<int, int> my_map_move;
+            my_map_move = std::move(test_map);
+            assert(test_map.empty() == true);
+
+            HashMap<int, int> my_map_copy;
+            my_map_copy = my_map_move;
+
+            test_map = std::move(my_map_copy);
+            assert(my_map_copy.empty() == true);
+            
+            // move 之后原map彻底为空
+            my_map_copy.insert(10, 10);
+            for (auto e : my_map_copy)
+            {
+                stream << e.first << "-" <<  e.second << std::endl;
+            }
+            my_map_copy.erase(10);
+        }
     }
 
     return 0;
