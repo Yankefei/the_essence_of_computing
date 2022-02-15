@@ -838,4 +838,16 @@ struct Hash<String>
 
 }
 
+namespace std  // 添加到std的命名空间中, 重载 std::swap
+{
+template<typename T>
+inline void swap(tools::String&& lhs, tools::String&& rhs)
+{
+    tools::String temp = std::forward<tools::String>(lhs);
+    lhs = std::forward<tools::String>(rhs);
+    rhs = std::move(temp);
+}
+
+}
+
 #endif

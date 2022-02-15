@@ -104,7 +104,7 @@ public:
     void emplace_back(Args&&... args)  noexcept
     {
         check_n_alloc();
-        alloc_.construct(first_free_++, std::move(T(std::forward<Args>(args)...)));
+        alloc_.construct(first_free_++, std::forward<Args>(args)...);
     }
 
     void pop_back()
@@ -368,6 +368,18 @@ Alloc Vector<T, Alloc>::alloc_;
 // std::allocator<T> Vector<T>::alloc_;
 
 // Todo 特例化bool类型的类模板
+
+}
+
+namespace std  // 添加到std的命名空间中, 重载 std::swap
+{
+template<typename T>
+inline void swap(tools::Vector<T>&& lhs, tools::Vector<T>&& rhs)
+{
+    tools::Vector<T> temp = std::forward<tools::Vector<T>>(lhs);
+    lhs = std::forward<tools::Vector<T>>(rhs);
+    rhs = std::move(temp);
+}
 
 }
 
