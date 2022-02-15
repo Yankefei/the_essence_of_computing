@@ -74,6 +74,11 @@ public:
         return element_[n];
     }
 
+    const_reference operator[](size_type n) const
+    {
+        return element_[n];
+    }
+
     _It begin() const
     {
         return _It(element_);

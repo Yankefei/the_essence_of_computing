@@ -214,10 +214,37 @@ T min(const T& lhs, const T& rhs)
     return le(lhs, rhs) ? lhs : rhs;
 }
 
+// 可调用对象版
 template<typename T>
-void sort(const T* src, size_t src_size, T* dst)
+struct less
 {
+    bool operator()(const T& t1, const T& t2) const
+    {
+        return le(t1, t2);
+    }
+};
+
+template<typename T>
+struct greater
+{
+    bool operator()(const T& t1, const T& t2) const
+    {
+        return gt(t1, t2);
+    }
+};
+
+/*堆排序*/
+template<typename T>
+void heap_sort(const T* src, size_t src_size, T* dst)
+{
+
 }
+
+/*归并排序*/
+
+/*快速排序*/
+
+/*stl 标准排序*/
 
 }
 }

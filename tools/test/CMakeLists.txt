@@ -101,3 +101,13 @@ target_link_libraries(b_tree_v2_main_debug2  tools)
 
 add_executable(hash_map_main hash_map_main.cpp)
 target_link_libraries(hash_map_main  tools)
+
+add_executable(p_queue_main p_queue_main.cpp)
+target_link_libraries(p_queue_main  tools)
+
+add_executable(index_p_queue_main index_p_queue_main.cpp)
+target_link_libraries(index_p_queue_main  tools)
+
+
+add_executable(algorithm_main  algorithm_main.cpp)
+target_link_libraries(algorithm_main  tools)
