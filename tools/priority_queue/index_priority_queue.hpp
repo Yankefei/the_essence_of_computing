@@ -71,7 +71,7 @@ public:
 
     ~IndexPQueue() {}
 
-    // 只能唯一引用原始数据
+    // 只能唯一引用原始数据 // todo
     IndexPQueue(const IndexPQueue&) = delete;
     IndexPQueue& operator=(const IndexPQueue&) = delete;
 
@@ -253,22 +253,6 @@ public:
     }
 
 private:
-    // 获取以index为顶的堆的最后一个节点的位置
-    size_t end_index_in_heap(size_t index)
-    {
-        if (index > ele_size_) return UINT64_MAX;
-
-        size_t tag_index = index;
-        size_t last_tag = 0;
-        while(tag_index <= ele_size_)
-        {
-            last_tag = tag_index;
-            tag_index = (tag_index << 1) + 1;
-        }
-
-        return last_tag;
-    }
-
     // 自底向上堆化 k表示在pq_array数组的位置
     void fix_up(size_type k)
     {

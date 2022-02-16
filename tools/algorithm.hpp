@@ -233,12 +233,7 @@ struct greater
     }
 };
 
-/*堆排序*/
-template<typename T>
-void heap_sort(const T* src, size_t src_size, T* dst)
-{
 
-}
 
 /*归并排序*/
 
