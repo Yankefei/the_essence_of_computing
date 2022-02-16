@@ -6,6 +6,7 @@
 
 #include "string.hpp"
 
+#include "rand.h"
 #include "vector.hpp"
 
 using namespace tools;
@@ -244,8 +245,209 @@ void test2()
 }
 
 
+// 示例用法
+struct IntCallHandle
+{
+    const int& operator()(const Vector<int>* array, size_t index)
+    {
+        return (*array)[index];
+    }
+};
+
+
+void test_sample()
+{
+    int ele_size = 20;
+
+    Vector<int> array = {
+        222, 16, 884, 104, 740, 789, 498, 523, 525, 950,
+        582, 198, 35, 571, 940, 965, 116, 922, 864, 407
+    };
+
+    IndexPQueue<IntCallHandle, Vector<int>*>  my_queue(&array);
+    for (int i = 0; i < ele_size; i++)
+    {
+        my_queue.push(i);
+    }
+
+    assert(my_queue.size() == ele_size);
+
+    my_queue.order_index_array();
+    assert(my_queue.check_index_queue() == true);
+
+    for (int i = 0; i < ele_size; i++)
+    {
+        assert(my_queue.erase(i) == true);
+
+        my_queue.order_index_array();
+        assert(my_queue.check_index_queue() == true);
+
+        assert(my_queue.erase(i) == false);
+        assert(my_queue.data_contains(i) == false);
+    }
+    assert(my_queue.empty() == true);
+}
+
+void test3()
+{
+    {
+        int num = 100;
+        int ele_size = 1000;
+        while(num-- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < ele_size; i++)
+            {
+                array.push_back(rand());
+            }
+
+            // for (auto i : array)
+            // {
+            //     stream << i << ", ";
+            // }
+            // stream << std::endl;
+
+            IndexPQueue<IntCallHandle, Vector<int>*>  my_queue(&array);
+            for (int i = 0; i < ele_size; i++)
+            {
+                my_queue.push(i);
+            }
+
+            assert(my_queue.size() == ele_size);
+
+            // my_queue.order_index_array();
+            assert(my_queue.check_index_queue() == true);
+
+            auto key = num % 3;
+            if (key == 0)
+            {
+                for (int i = 0; i < ele_size; i++)
+                {
+                    assert(my_queue.erase(i) == true);
+
+                    // my_queue.order_index_array();
+                    assert(my_queue.check_index_queue() == true);
+
+                    assert(my_queue.erase(i) == false);
+                    assert(my_queue.data_contains(i) == false);
+                }
+            }
+            else if (key == 1)
+            {
+                for (int i = ele_size - 1; i >= 0; i--)
+                {
+                    assert(my_queue.erase(i) == true);
+
+                    // my_queue.order_index_array();
+                    assert(my_queue.check_index_queue() == true);
+
+                    assert(my_queue.erase(i) == false);
+                    assert(my_queue.data_contains(i) == false);
+                }
+            }
+            else
+            {
+                size_t top_index = my_queue.erase_top();
+                assert(my_queue.check_index_queue() == true);
+                int last_top_index = 0;
+                while(!my_queue.empty())
+                {
+                    last_top_index = top_index;
+                    top_index = my_queue.erase_top();
+                    if (alg::le(array[last_top_index], array[top_index]))
+                    {
+                        assert(false);
+                    }
+                    assert(my_queue.check_index_queue() == true);
+                }
+            }
+            assert(my_queue.empty() == true);
+            stream << "num: " << num << std::endl;
+        }
+        stream << "pass less test" << std::endl;
+    }
+}
+
+
+void test4()
+{
+    {
+        int num = 100;
+        int ele_size = 1000;
+        while(num-- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < ele_size; i++)
+            {
+                array.push_back(rand());
+            }
+
+            IndexPQueue<IntCallHandle, Vector<int>*, size_t, GreaterTypeCompare>  my_queue(&array);
+            for (int i = 0; i < ele_size; i++)
+            {
+                my_queue.push(i);
+            }
+
+            assert(my_queue.size() == ele_size);
+
+            // my_queue.order_index_array();
+            assert(my_queue.check_index_queue() == true);
+
+            int key = num % 3;
+            if (key == 0)
+            {
+                for (int i = 0; i < ele_size; i++)
+                {
+                    assert(my_queue.erase(i) == true);
+
+                    // my_queue.order_index_array();
+                    assert(my_queue.check_index_queue() == true);
+
+                    assert(my_queue.erase(i) == false);
+                    assert(my_queue.data_contains(i) == false);
+                }
+            }
+            else if (key == 1)
+            {
+                for (int i = ele_size - 1; i >= 0; i--)
+                {
+                    assert(my_queue.erase(i) == true);
+
+                    // my_queue.order_index_array();
+                    assert(my_queue.check_index_queue() == true);
+
+                    assert(my_queue.erase(i) == false);
+                    assert(my_queue.data_contains(i) == false);
+                }
+            }
+            else
+            {
+                size_t top_index = my_queue.erase_top();
+                assert(my_queue.check_index_queue() == true);
+                int last_top_index = 0;
+                while(!my_queue.empty())
+                {
+                    last_top_index = top_index;
+                    top_index = my_queue.erase_top();
+                    if (alg::le(array[top_index], array[last_top_index]))
+                    {
+                        assert(false);
+                    }
+                    assert(my_queue.check_index_queue() == true);
+                }
+            }
+            assert(my_queue.empty() == true);
+            stream << "num: " << num << std::endl;
+        }
+        stream << "pass less test" << std::endl;
+    }
+}
+
 int main()
 {
+#if 1
     // 最大堆测试
     stream << "begin test1 : " << std::endl;
     test1();
@@ -253,6 +455,16 @@ int main()
     // 最小堆测试
     stream << "begin test2 : " << std::endl;
     test2();
+
+#endif
+
+    test_sample();
+
+    // 最大堆随机数测试
+    test3();
+
+    // 最小堆随机数测试
+    test4();
 
     return 0;
 }

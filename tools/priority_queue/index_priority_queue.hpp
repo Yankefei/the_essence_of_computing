@@ -131,7 +131,7 @@ public:
 
         pq_array_.push_back(index);
         ele_size_ ++;
-        fix_up(pq_array_, qp_array_, pq_array_.size() - 1);
+        fix_up(ele_size_);
         return true;
     }
 
@@ -141,13 +141,13 @@ public:
         if (empty()) return -1;
 
         size_type re = pq_array_[1];  // 返回了实际数据的索引
-        std::swap(qp_array_[re], qp_array_[pq_array_.back()]);
-        std::swap(pq_array_[1], pq_array_.back());
+        exchange(1, ele_size_);
+
         qp_array_[pq_array_.back()] = -1;
         pq_array_.pop_back();
 
         ele_size_ --;
-        fix_down(pq_array_, qp_array_, 1);
+        fix_down(1, ele_size_);
 
         return re;
     }
@@ -159,8 +159,8 @@ public:
             return false;
 
         // 先向上堆化，再向下堆化
-        fix_up(pq_array_, qp_array_, qp_array_[index]);
-        fix_down(pq_array_, qp_array_, qp_array_[index]);
+        fix_up(qp_array_[index]);
+        fix_down(qp_array_[index], ele_size_);
         return true;
     }
 
@@ -169,16 +169,21 @@ public:
         if (index > max_data_index_ || qp_array_[index] == -1)
             return false;
 
-        // 先交换 qp_array_数组中的信息，再交换pq_array_数组中的信息
-        // qp_array_的值会被修改，需要先保存
         size_t old_pq_index = qp_array_[index];
-        std::swap(qp_array_[index], qp_array_[pq_array_.back()]);
-        std::swap(pq_array_[old_pq_index], pq_array_.back());
+        /*
+            note: 这里需要复用 change()函数中的一部分逻辑：
+            删除一个节点 = 和最后一个节点交换 + 同步调整除最后一个节点外的堆状态(change)
+        */
+
+        exchange(old_pq_index, ele_size_);
+
+        fix_up(old_pq_index);
+        fix_down(old_pq_index, ele_size_ - 1);
+
         qp_array_[pq_array_.back()] = -1;
         pq_array_.pop_back();
 
         ele_size_ --;
-        fix_down(pq_array_, qp_array_, old_pq_index);
         return true;
     }
 
@@ -248,20 +253,33 @@ public:
     }
 
 private:
+    // 获取以index为顶的堆的最后一个节点的位置
+    size_t end_index_in_heap(size_t index)
+    {
+        if (index > ele_size_) return UINT64_MAX;
+
+        size_t tag_index = index;
+        size_t last_tag = 0;
+        while(tag_index <= ele_size_)
+        {
+            last_tag = tag_index;
+            tag_index = (tag_index << 1) + 1;
+        }
+
+        return last_tag;
+    }
+
     // 自底向上堆化 k表示在pq_array数组的位置
-    void fix_up(Container& array, Container& r_array, size_type k)
+    void fix_up(size_type k)
     {
         size_type p_k = 0;
         while (k > 1)
         {
             p_k = k / 2;
             // 用真实数据的内容指导索引数组的排序方案
-            if (compare_(array[p_k], array[k])) // 由array还原为实际的数据索引
+            if (compare_(pq_array_[p_k], pq_array_[k])) // 由array还原为实际的数据索引
             {
-                assert(r_array[array[k]] != -1);
-                assert(r_array[array[p_k] != -1]);
-                std::swap(r_array[array[k]], r_array[array[p_k]]);
-                std::swap(array[p_k], array[k]);
+                exchange(p_k, k);
                 k = p_k;
             }
             else
@@ -270,27 +288,35 @@ private:
     }
 
     // 自顶向下堆化
-    void fix_down(Container& array, Container& r_array, size_type k)
+    void fix_down(size_type k, size_type last_index)
     {
         size_type tag_child = k << 1;
-        while(tag_child <= ele_size_)
+        while(tag_child <= last_index)
         {
-            if (tag_child < ele_size_ &&
-                compare_(array[tag_child], array[tag_child + 1]))
+            if (tag_child < last_index &&
+                compare_(pq_array_[tag_child], pq_array_[tag_child + 1]))
                 tag_child += 1;
 
-            if (compare_(array[k], array[tag_child]))
+            if (compare_(pq_array_[k], pq_array_[tag_child]))
             {
-                assert(r_array[array[k]] != -1);
-                assert(r_array[array[tag_child] != -1]);
-                std::swap(r_array[array[k]], r_array[array[tag_child]]);
-                std::swap(array[k], array[tag_child]);
+                exchange(k, tag_child);
                 k = tag_child;
                 tag_child = k << 1;
             }
             else
                 break;
         }
+    }
+
+    // index1 和 index2 分别表示 pq_array_数组中的下标
+    // 将工具函数封装起来，可以有效增加代码的逻辑性和清晰度！
+    void exchange(size_type index1, size_type index2)
+    {
+        assert(qp_array_[pq_array_[index1]] != -1);
+        assert(qp_array_[pq_array_[index2] != -1]);
+
+        std::swap(qp_array_[pq_array_[index1]], qp_array_[pq_array_[index2]]);
+        std::swap(pq_array_[index1], pq_array_[index2]);
     }
 
 private:
