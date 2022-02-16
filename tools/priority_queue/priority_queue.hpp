@@ -59,6 +59,8 @@ public:
 
     void pop()
     {
+        if (empty()) return;
+ 
         std::swap(array_[1], array_.back()); // 先和最后面的最小值交换
         array_.pop_back();
         fix_down(1);
@@ -121,7 +123,7 @@ private:
     // 自顶向下堆化
     void fix_down(size_type k)
     {
-        size_type tag_child = k * 2;
+        size_type tag_child = k << 1;
         size_type ele_size = size();
         while (tag_child <= ele_size)
         {
@@ -133,7 +135,7 @@ private:
             {
                 std::swap(array_[k], array_[tag_child]);
                 k = tag_child;
-                tag_child = k * 2;
+                tag_child = k << 1;
             }
             else
                 break;
