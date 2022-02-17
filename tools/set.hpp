@@ -155,8 +155,109 @@ public:
             insert(*p);
     }
 
+    Set(const Set& rhs) : impl_tree_(rhs.impl_tree_), ele_size_(rhs.ele_size_)
+    {}
+
+    Set& operator=(const Set& rhs)
+    {
+        if(this != &rhs)
+        {
+            impl_tree_ = rhs.impl_tree_;
+            ele_size_ = rhs.ele_size_;
+        }
+        return *this;
+    }
+
+    Set(Set&& rhs) noexcept
+    {
+        impl_tree_ = std::forward<TreeImpl>(rhs.impl_tree_);
+        ele_size_ = rhs.ele_size_;
+        rhs.ele_size_ = 0;
+    }
+
+    Set& operator=(Set&& rhs) noexcept
+    {
+        if (this != &rhs)
+        {
+            impl_tree_ = std::forward<TreeImpl>(rhs.impl_tree_);
+            ele_size_ = rhs.ele_size_;
+            rhs.ele_size_ = 0;
+        }
+        return *this;
+    }
+
+    InsertRes insert(const value_type& val)
+    {
+        InsertRes res = impl_tree_.c_insert(val);
+        if (res.second) ele_size_ ++;
+        return res;
+    }
+
+    size_type erase(const Key& key)
+    {
+        RemoveRes res = impl_tree_.c_remove(key);
+        size_type n = res.second ? 1 : 0;
+        ele_size_ -= n;
+        return n;
+    }
+
+    Iter erase(Iter It)
+    {
+        RemoveRes res = impl_tree_.c_remove(*It);
+        if (res.second)
+            ele_size_--;
+        return Iter(res.first);
+    }
+
+    Iter find(const Key& key)
+    {
+        return Iter(impl_tree_.find(key));
+    }
+
+    CIter find(const Key& key) const
+    {
+        return CIter(impl_tree_.find(key));
+    }
+
+    Iter begin()
+    {
+        return Iter(impl_tree_.begin());
+    }
+
+    CIter cbegin() const
+    {
+        return CIter(impl_tree_.begin());
+    }
+
+    Iter end()
+    {
+        return Iter();
+    }
+
+    CIter cend() const
+    {
+        return CIter();
+    }
+
+    size_t size() const
+    {
+        return ele_size_;
+    }
+
+    bool empty() const
+    {
+        return size() == 0;
+    }
+
+    void clear()
+    {
+        impl_tree_.clear();
+        ele_size_ = 0;
+    }
+
 private:
     TreeImpl  impl_tree_;
+    size_type ele_size_{0};
 };
 
 // rb_tree set
