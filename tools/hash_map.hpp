@@ -8,7 +8,7 @@
 
 #include "hash_func.h"
 // 需要带有parent_指针的排序二叉树版本
-#include "binary_sort_tree3.h"
+#include "binary_sort_tree/binary_sort_tree3.h"
 #include "iterator_base.h"
 
 #include "pair.hpp"
