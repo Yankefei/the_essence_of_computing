@@ -70,6 +70,14 @@ void heap_sort(T* const src, size_t src_size)
     }
 }
 
+/*归并排序*/
+
+/*快速排序*/
+
+/*stl 标准排序*/
+
+/*二分查找*/
+
 }
 }
 

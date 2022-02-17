@@ -92,27 +92,36 @@ public:
             reinterpret_cast<byte_pointer>(s_p), total_size);
     }
 
-    Entry* buy_entry(T&& v, V&& val)
+    // 一个就可以涵盖其他所有的参数形式
+    template<typename... Args>
+    Entry* buy_entry(Args&&... args)
     {
         entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
-        entry_rebind_traits::construct(_m_entry_impl_,
-                                       std::forward<T>(v), std::forward<V>(val));
+        entry_rebind_traits::construct(_m_entry_impl_, p, std::forward<Args>(args)...);
         return static_cast<Entry*>(p);
     }
 
-    Entry* buy_entry(const T& v, const V& val)
-    {
-        entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
-        entry_rebind_traits::construct(_m_entry_impl_, p, v, val);
-        return static_cast<Entry*>(p);
-    }
+    // Entry* buy_entry(T&& v, V&& val)
+    // {
+    //     entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
+    //     entry_rebind_traits::construct(_m_entry_impl_,
+    //                                    std::forward<T>(v), std::forward<V>(val));
+    //     return static_cast<Entry*>(p);
+    // }
 
-    Entry* buy_entry(const Pair<T, V>& val)
-    {
-        entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
-        entry_rebind_traits::construct(_m_entry_impl_, p, val);
-        return static_cast<Entry*>(p);
-    }
+    // Entry* buy_entry(const T& v, const V& val)
+    // {
+    //     entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
+    //     entry_rebind_traits::construct(_m_entry_impl_, p, v, val);
+    //     return static_cast<Entry*>(p);
+    // }
+
+    // Entry* buy_entry(const Pair<T, V>& val)
+    // {
+    //     entry_pointer p = entry_rebind_traits::allocate(_m_entry_impl_, 1);
+    //     entry_rebind_traits::construct(_m_entry_impl_, p, val);
+    //     return static_cast<Entry*>(p);
+    // }
 
     void free_entry(Entry* ptr)
     {
