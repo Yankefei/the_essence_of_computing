@@ -357,6 +357,7 @@ public:
 
 public:
     // 排序 从小到大 插入排序
+    // todo: 基于双向链表实现一个稳定版本的快速排序算法
     void sort()
     {
         Entry* new_ptr = header_->next_;
@@ -466,19 +467,21 @@ private:
         }
     }
 
-    // 将node按照递增顺序插入到[begin, end]之间的区域
+    // 将node按照递减顺序插入到[begin, end]之间的区域
     void insert(Entry* node, Entry* begin, Entry* end)
     {
-        Entry* real_end = end->next_;
-        for (; begin != real_end; begin = begin->next_)
+        Entry* real_begin = begin->prev_;
+        for (; end != real_begin; end = end->prev_)
         {
-            if (alg::le(node->data_, begin->data_))
+            // 插入第一个不小于的位置
+            // 需要这样处理，排序的结果才是稳定的
+            if (!alg::le(node->data_, end->data_))
             {
-                _push_front(node, begin);
+                _push_back(node, end); // 插入在end之后
                 return;
             }
         }
-        _push_front(node, begin); // 最后将插入到end之后, real_end之前
+        _push_back(node, real_begin); // 最后将插入到begin之前 real_begin 之后
     }
 
     // 插入在tag_pos前
