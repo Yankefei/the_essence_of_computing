@@ -4,6 +4,8 @@
 #include "string.hpp"
 #include "list.hpp"
 #include <list>
+#include "vector.hpp"
+#include "rand.h"
 
 using namespace tools;
 
@@ -185,6 +187,42 @@ int main()
         for (auto it = my_test2.begin(); it != my_test2.end(); it ++)
             stream << *it << " ";
         stream <<my_test2.size() <<std::endl;
+    }
+
+    {
+        List<int> my_test;
+        int num = 100;
+        while(num -- > 0)
+        {
+            Vector<int> array;
+            Rand<int> rand(1, 10000);
+            for(int i = 0; i < 1000; i++)
+            {
+                array.push_back(rand());
+            }
+            
+            for (auto& e : array)
+            {
+                my_test.push_back(e);
+            }
+            my_test.sort();
+
+            auto it = my_test.begin();
+            auto last_it = it;
+            for (; it != my_test.end(); it ++)
+            {
+                if (alg::le(*it, *last_it))
+                    assert(false);
+                last_it = it;
+            }
+
+            for (auto it2 = my_test.begin(); it2 != my_test.end();)
+            {
+                it2 = my_test.erase(it2);
+            }
+            assert(my_test.size() == 0);
+        }
+        stream << "finish sort check..." << std::endl;
     }
 
     return 0;

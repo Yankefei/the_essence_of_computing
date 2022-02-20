@@ -12,8 +12,10 @@ set(CMAKE_CXX_COMPILER "g++")
 
 #指定编译选项
 set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g")
+set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-g")
 
 #指定编译目录
 set(PROJECT_BINARY_DIR ./build)
