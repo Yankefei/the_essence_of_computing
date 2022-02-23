@@ -23,5 +23,5 @@ set(PROJECT_BINARY_DIR ./build)
 #添加子目录
 add_subdirectory(tools)
 add_subdirectory(practice)
-add_subdirectory(just_run)
+add_subdirectory(programming_skill)
 #add_subdirectory(test)
