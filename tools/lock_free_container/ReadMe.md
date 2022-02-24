@@ -6,7 +6,7 @@ memory barriers, 内存屏障简介：
 
 memory barriers 包含两类
 1. 编译器 barrier.  (又称优化barrier)，用于避免编译期优化带来的内存乱序访问的问题
-    linux内核实现的barrier() 如下 (x86-64架构)
+    linux内核实现的barrier() 如下 (x86-64架构(amd64))
     #define barrier() __asm__ __volatile("" ::: "memory") 
     该指令告知编译器，保存在CPU寄存器中，在屏障之前有效的所有内存地址，在屏障之后都将消失。
     
@@ -41,7 +41,7 @@ memory barriers 包含两类
     也是足够用的。
 
     注：cpu memory barrier中某些类型的memory barrier需要成对使用，否则会出错。如一个写操作barrier
-    需要和读操作(或者读数据依赖)barrier一起使用(当然，通用barrier也是可以的)，反之亦然。
+    需要和读操作(或者读数据依赖)barrier一起使用(当然，通用barrier也是可以的)，通常期望写barrier之前的Stores与读barrier或数据依赖屏障之后的Load相匹配，反之亦然：
 
 
     最后，正确使用内存和优化屏障需要高度的技巧。因此应该注意到，一些内核维护人员不怎么喜欢内存屏障，
