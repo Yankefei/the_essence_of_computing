@@ -129,6 +129,8 @@ unsigned int __kfifo_in(struct __kfifo *fifo,
 	unsigned int l;
 
 	l = kfifo_unused(fifo);
+
+	// 截断数据
 	if (len > l)
 		len = l;
 
@@ -392,8 +394,18 @@ EXPORT_SYMBOL(__kfifo_out);
 // }
 // EXPORT_SYMBOL(__kfifo_dma_out_prepare);
 
+// 设置最大recsize能表示的长度？
+/*
+About the record handling:
+The record functions supports three kinds of record types:
+- Records with a fixed size of bytes
+- Records with a variable length between 0 and 255 bytes
+- Records with a variable length between 0 and 65535 bytes
+*/
 unsigned int __kfifo_max_r(unsigned int len, size_t recsize)
 {
+	// recsize == 1, max == 255
+	// recsize == 2, max == 65535
 	unsigned int max = (1 << (recsize << 3)) - 1;
 
 	if (len > max)
@@ -431,6 +443,7 @@ static unsigned int __kfifo_peek_n(struct __kfifo *fifo, size_t recsize)
 /*
  * __kfifo_poke_n internal helper function for storeing the length of
  * the record into the fifo
+ * 保存块数据的长度信息，支持长度1，长度2
  */
 static void __kfifo_poke_n(struct __kfifo *fifo, unsigned int n, size_t recsize)
 {
@@ -452,6 +465,7 @@ EXPORT_SYMBOL(__kfifo_len_r);
 unsigned int __kfifo_in_r(struct __kfifo *fifo, const void *buf,
 		unsigned int len, size_t recsize)
 {
+	// 块数据必须一次全部保存进去
 	if (len + recsize > kfifo_unused(fifo))
 		return 0;
 
@@ -468,6 +482,7 @@ static unsigned int kfifo_out_copy_r(struct __kfifo *fifo,
 {
 	*n = __kfifo_peek_n(fifo, recsize);
 
+	// 以实际数据长度为准
 	if (len > *n)
 		len = *n;
 
@@ -490,7 +505,7 @@ EXPORT_SYMBOL(__kfifo_out_peek_r);
 unsigned int __kfifo_out_r(struct __kfifo *fifo, void *buf,
 		unsigned int len, size_t recsize)
 {
-	unsigned int n;
+	unsigned int n; // 具体长度信息
 
 	if (fifo->in == fifo->out)
 		return 0;
@@ -501,6 +516,9 @@ unsigned int __kfifo_out_r(struct __kfifo *fifo, void *buf,
 }
 EXPORT_SYMBOL(__kfifo_out_r);
 
+/**
+ * 如果是带有数据块的模式，那么一次消耗一整个数据块
+*/
 void __kfifo_skip_r(struct __kfifo *fifo, size_t recsize)
 {
 	unsigned int n;
@@ -573,14 +591,14 @@ EXPORT_SYMBOL(__kfifo_skip_r);
 // }
 // EXPORT_SYMBOL(__kfifo_dma_in_prepare_r);
 
-void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
-	unsigned int len, size_t recsize)
-{
-	len = __kfifo_max_r(len, recsize);
-	__kfifo_poke_n(fifo, len, recsize);
-	fifo->in += len + recsize;
-}
-EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
+// void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
+// 	unsigned int len, size_t recsize)
+// {
+// 	len = __kfifo_max_r(len, recsize);
+// 	__kfifo_poke_n(fifo, len, recsize);
+// 	fifo->in += len + recsize;
+// }
+// EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
 
 // unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
 // 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
@@ -596,11 +614,11 @@ EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
 // }
 // EXPORT_SYMBOL(__kfifo_dma_out_prepare_r);
 
-void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize)
-{
-	unsigned int len;
+// void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize)
+// {
+// 	unsigned int len;
 
-	len = __kfifo_peek_n(fifo, recsize);
-	fifo->out += len + recsize;
-}
-EXPORT_SYMBOL(__kfifo_dma_out_finish_r);
+// 	len = __kfifo_peek_n(fifo, recsize);
+// 	fifo->out += len + recsize;
+// }
+// EXPORT_SYMBOL(__kfifo_dma_out_finish_r);

@@ -64,7 +64,8 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #define __must_check            __attribute__((warn_unused_result))
 
-// 参考：https://blog.csdn.net/Bruno_Mars/article/details/100061793
+// 参考：1. https://lwn.net/Articles/347619/
+//       2. https://blog.csdn.net/Bruno_Mars/article/details/100061793
 
 struct __kfifo {
 	unsigned int	in;
@@ -329,6 +330,7 @@ __kfifo_uint_must_check_helper( \
  * @fifo: address of the fifo to be used
  *
  * This function returns the size of the next fifo record in number of bytes.
+ * 如果没有提前设置record的长度，则返回剩余buffer的整个长度
  */
 #define kfifo_peek_len(fifo) \
 __kfifo_uint_must_check_helper( \
@@ -400,7 +402,7 @@ __kfifo_int_must_check_helper( \
 /**
  * kfifo_put - put data into the fifo
  * @fifo: address of the fifo to be used
- * @val: the data to be added
+ * @val: the data to be added 仅插入一个元素
  *
  * This macro copies the given value into the fifo.
  * It returns 0 if the fifo was full. Otherwise it returns the number
@@ -424,8 +426,8 @@ __kfifo_int_must_check_helper( \
 		__ret = !kfifo_is_full(__tmp); \
 		if (__ret) { \
 			(__is_kfifo_ptr(__tmp) ? \
-			((typeof(__tmp->type))__kfifo->data) : \
-			(__tmp->buf) \
+				((typeof(__tmp->type))__kfifo->data) : \
+				(__tmp->buf) \
 			)[__kfifo->in & __tmp->kfifo.mask] = \
 				(typeof(*__tmp->type))__val; \
 			WMB(); \
@@ -612,6 +614,7 @@ __kfifo_uint_must_check_helper( \
 #define kfifo_out_locked(fifo, buf, n, lock) \
 		kfifo_out_spinlocked(fifo, buf, n, lock)
 
+#if 0
 /** 废弃
  * kfifo_from_user - puts some data from user space into the fifo
  * @fifo: address of the fifo to be used
@@ -695,7 +698,7 @@ __kfifo_uint_must_check_helper( \
 	__kfifo_dma_in_prepare(__kfifo, __sgl, __nents, __len); \
 })
 
-/**
+/** dma 直接存储访问
  * kfifo_dma_in_finish - finish a DMA IN operation
  * @fifo: address of the fifo to be used
  * @len: number of bytes to received
@@ -769,7 +772,9 @@ __kfifo_uint_must_check_helper( \
 		__kfifo->out += __len / sizeof(*__tmp->type); \
 })
 
-/**
+#endif
+
+/** 仅从尾部获取一段数据
  * kfifo_out_peek - gets some data from the fifo
  * @fifo: address of the fifo to be used
  * @buf: pointer to the storage buffer
@@ -840,13 +845,13 @@ extern unsigned int __kfifo_out_r(struct __kfifo *fifo,
 // extern unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
 // 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize);
 
-extern void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
-	unsigned int len, size_t recsize);
+// extern void __kfifo_dma_in_finish_r(struct __kfifo *fifo,
+// 	unsigned int len, size_t recsize);
 
 // extern unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
 // 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize);
 
-extern void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize);
+// extern void __kfifo_dma_out_finish_r(struct __kfifo *fifo, size_t recsize);
 
 extern unsigned int __kfifo_len_r(struct __kfifo *fifo, size_t recsize);
 
