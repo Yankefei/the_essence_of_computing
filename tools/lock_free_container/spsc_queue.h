@@ -259,7 +259,7 @@ static SPSCQueue<T>* create_spsc_queue(uint32_t length)
 }
 
 template<typename T>
-static void free_spsc_queue(const SPSCQueue<T>* queue)
+static void free_spsc_queue(SPSCQueue<T>* queue)
 {
     queue->destory();
 }

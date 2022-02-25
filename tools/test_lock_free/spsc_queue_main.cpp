@@ -79,7 +79,7 @@ void spsc_test()
     run = false;
     t1.join();
     t2.join();
-	queue->destory();
+	free_spsc_queue(queue);
 }
 
 int main()
