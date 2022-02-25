@@ -18,7 +18,9 @@ namespace tools
 
 #define CACHE_LINE_ALIGN    ALIGN(CACHE_LINE_SIZE)
 
-#define CONCATENATE(arg1, arg2)   arg1##arg2
+// 用这种方式，可以让 __LINE__在预编译时先被替换
+#define CONCATENATE(arg1, arg2)    CONCATENATE1(arg1, arg2)
+#define CONCATENATE1(arg1, arg2)   arg1##arg2
 
 // 使用行标__LINE__命名pad的变量名
 #define EMPTY_CACHE_LINE    CONCATENATE(char pad, __LINE__) \
@@ -55,6 +57,7 @@ namespace tools
 // 设置掩码
 #define PAGE_MASK    (~(PAGE_SIZE - 1))
 
+// 这两个地址对齐的宏主要用于内存池的分配策略上
 // 将一个内存地址向上对齐到一个内存页的边界, 返回对齐后的地址
 #define PAGE_ALIGN(x)  ((decltype(x)(uint64_t)((char*)(x) + PAGE_SIZE - 1) & PAGE_MASK))
 
@@ -71,6 +74,7 @@ namespace tools
 
 
 // (void)(&_a == &_b) 为了让编译器产生类型不一致的警告
+// 保证比较过程中a, b的值均只会被load一次，避免并发问题
 #define MIN(a, b) \
 	({ \
 		decltype (a) _a = (a); \

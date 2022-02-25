@@ -112,6 +112,7 @@ struct __kfifo {
  * define compatibility "struct kfifo" for dynamic allocated fifos
  */
 // struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);  g++ 无法编译， 修改结构体名称
+// 默认队列内容为字符串
 struct _kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
 
 

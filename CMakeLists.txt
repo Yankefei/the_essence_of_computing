@@ -14,7 +14,7 @@ set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-o2 -Wall -std=c++11")
 set(CMAKE_CXX_FLAGS "-g")
 
 #指定编译目录
