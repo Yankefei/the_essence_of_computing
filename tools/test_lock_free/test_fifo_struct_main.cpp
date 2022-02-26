@@ -2,6 +2,9 @@
 
 #include "../lock_free_container/kfifo.h"
 
+#include "vector.hpp"
+#include "spin_lock.h"
+
 #include <assert.h>
 #include <pthread.h>
 #include <thread>
@@ -81,6 +84,41 @@ void spsc_test()
 	kfifo_free(&my_fifo3);
 }
 
+std::atomic_flag lock_stream = ATOMIC_FLAG_INIT;
+
+void append_number(int x)
+{
+	while (lock_stream.test_and_set(std::memory_order_acquire)) {}
+	stream << "thread #" << x << '\n';
+	lock_stream.clear();
+}
+
+void atomic_flag_test()
+{
+	Vector<std::thread> threads;
+	for (int i=1; i<=10; ++i)
+		threads.push_back(std::thread(append_number,i));
+	for (auto& th : threads)
+		th.join();
+}
+
+void append_number2(int x, SpinLock* lock_ptr)
+{
+	lock_ptr->lock();
+	stream << "thread #" << x << '\n';
+	lock_ptr->unlock();
+}
+
+void spin_lock_test()
+{
+	Vector<std::thread> threads;
+	SpinLock  lock;
+	for (int i=1; i<=10; ++i)
+		threads.push_back(std::thread(append_number2,i, &lock));
+	for (auto& th : threads)
+		th.join();
+}
+
 int main()
 {
 	{
@@ -123,7 +161,13 @@ int main()
 		kfifo_free(my_fifo4 + 1);
 	}
 
-	spsc_test();
+	//spsc_test();
+
+	atomic_flag_test();
+
+	stream << "spin lock test" << std::endl;
+
+	spin_lock_test();
 
     return 0;
 }

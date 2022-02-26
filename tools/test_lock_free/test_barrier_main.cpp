@@ -13,7 +13,7 @@ int cpu_thread2 = 1;
 volatile int x, y, r1, r2;
 
 
-#if 0
+#if 1
 void start()
 {
     r1 = 0;
@@ -21,36 +21,51 @@ void start()
     x = 0;
     y = 0;
 }
- 
+
 void end()
-{
-    assert(y == 1 && x == 1);
-    assert(r1 == 1 && r2 == 1);
-}
+{}
 
 void run1()
 {
-    x = 1;
-    y = 1;
-    
-    while (r2 == 0)
-        continue;
-    assert(r1 == 1);
 }
 
 void run2()
 {
-    r1 = 1;
-    r2 = 1;
-    while(y == 0)
-        continue;
 
-    assert(x == 1);
+}
+
+#endif
+ 
+
+#if 0
+// 下面这个例子，因为两个线程同时访问一个变量，内存屏障也没有办法保证最终结果的正确性
+// 算是内存屏障的一种局限
+void end()
+{
+    assert(x == 2 && y == 2);
+}
+
+void run1()
+{
+    __asm__ __volatile__("mfence" ::: "memory");
+    x = x + 1;
+    __asm__ __volatile__("mfence" ::: "memory");
+    y = y + 1;
+    __asm__ __volatile__("mfence" ::: "memory");
+}
+
+void run2()
+{
+    __asm__ __volatile__("mfence" ::: "memory");
+    x = x + 1;
+    __asm__ __volatile__("mfence" ::: "memory");
+    y = y + 1;
+    __asm__ __volatile__("mfence" ::: "memory");
 }
 
 #endif
 
-#if 1
+#if 0
 
 void start()
 {

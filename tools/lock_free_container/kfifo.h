@@ -51,8 +51,8 @@
  */
 
 
-#include <mutex>
 #include "general.h"
+#include "spin_lock.h"
 #include <stdint.h>
 
 #define ESUCCESS   0
@@ -549,13 +549,12 @@ __kfifo_uint_must_check_helper( \
  * This macro copies the given values buffer into the fifo and returns the
  * number of copied elements.
  */
-#define	kfifo_in_spinlocked(fifo, buf, n, lock) \
+#define	kfifo_in_spinlocked(fifo, buf, n, spin_lock_ptr) \
 ({ \
-	unsigned long __flags; \
 	unsigned int __ret; \
-	spin_lock_irqsave(lock, __flags); \
+	spin_lock_ptr->lock(); \
 	__ret = kfifo_in(fifo, buf, n); \
-	spin_unlock_irqrestore(lock, __flags); \
+	spin_lock_ptr->unlock(); \
 	__ret; \
 })
 
@@ -599,14 +598,13 @@ __kfifo_uint_must_check_helper( \
  * This macro get the data from the fifo and return the numbers of elements
  * copied.
  */
-#define	kfifo_out_spinlocked(fifo, buf, n, lock) \
+#define	kfifo_out_spinlocked(fifo, buf, n, spin_lock_ptr) \
 __kfifo_uint_must_check_helper( \
 ({ \
-	unsigned long __flags; \
 	unsigned int __ret; \
-	spin_lock_irqsave(lock, __flags); \
+	spin_lock_ptr->lock(); \
 	__ret = kfifo_out(fifo, buf, n); \
-	spin_unlock_irqrestore(lock, __flags); \
+	spin_lock_ptr->unlock(); \
 	__ret; \
 }) \
 )

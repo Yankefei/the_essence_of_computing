@@ -39,6 +39,7 @@ namespace tools
 #define BARRIER()    asm volatile ("" : : : "memory")
 
 
+// Note: 下面的GNU C扩展ASM语句均包含上面的编译器屏障功能
 // CPU内存屏障, 防止CPU乱序执行指令, 用于SMP体系中
 #define MB()         asm volatile ("mfence" ::: "memory")
 
