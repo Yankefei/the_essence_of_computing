@@ -2,6 +2,7 @@
 #define _TOOLS_GENERAL_H_
 
 #include <stdint.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 namespace tools
@@ -109,6 +110,10 @@ static inline uint32_t round_to_power_of_2(uint32_t v)
     ++_v;
     return _v;
 }
+
+
+// 线程ID
+#define GET_THREAD_ID    syscall(SYS_gettid)
 
 }
 

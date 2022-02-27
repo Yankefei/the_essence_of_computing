@@ -5,6 +5,7 @@
 #include "vector.hpp"
 #include "spin_lock.h"
 
+#include <atomic>
 #include <assert.h>
 #include <pthread.h>
 #include <thread>

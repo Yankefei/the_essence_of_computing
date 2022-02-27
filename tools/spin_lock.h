@@ -26,15 +26,13 @@ public:
     // lock 和 unlock的调用必须保证代码级别的先后顺序
     void lock()
     {
-        while(lock_.test_and_set(std::memory_order_acquire)) //尝试获取自旋锁，保证后续读操作后置
-        {
-            PAUSE();
-        }
+        while(lock_.test_and_set(std::memory_order_acquire)) //尝试获取自旋锁，线程内后续读操作后置
+        {}
     }
 
     void unlock()
     {
-        lock_.clear();
+        lock_.clear(std::memory_order_release); // 清理标志，线程内之后的写操作前置
     }
 
 private:
