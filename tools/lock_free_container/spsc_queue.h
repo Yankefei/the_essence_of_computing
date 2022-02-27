@@ -153,7 +153,7 @@ public:
 
     bool empty()
     {
-        return in_ == out_;
+        return ACCESS_ONCE(in_) == ACCESS_ONCE(out_);
     }
 
     bool is_full()
@@ -163,7 +163,7 @@ public:
 
     uint32_t size()
     {
-        return in_ - out_;
+        return ACCESS_ONCE(in_) - ACCESS_ONCE(out_);
     }
 
     uint32_t avail()

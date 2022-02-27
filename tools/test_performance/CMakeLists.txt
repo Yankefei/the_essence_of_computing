@@ -11,3 +11,7 @@ target_link_libraries(hash_map_performance  tools)
 
 add_executable(map_performance  map_performance.cpp)
 target_link_libraries(map_performance  tools)
+
+
+add_executable(spsc_performance_test  spsc_performance_test.cpp)
+target_link_libraries(spsc_performance_test  tools)
