@@ -16,3 +16,7 @@ target_link_libraries(test_fifo_struct_main  fifo_tools)
 
 add_executable(test_atomic_main  test_atomic_main.cpp)
 target_link_libraries(test_atomic_main  tools)
+
+
+add_executable(lock_free_stack_main  lock_free_stack_main.cpp)
+target_link_libraries(lock_free_stack_main  tools)

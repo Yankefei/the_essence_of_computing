@@ -59,6 +59,9 @@ void test_for_tools_spsc()
 
 #ifndef DEBUG
                 queue->get(buffer, 10);
+                // for (int i = 0; i < 10; i++)
+                //     if (buffer[i] != i + 1)
+                //         stream << "error: " << i << std::endl;
 #else
                 assert(queue->get(buffer, 10) == 10);
 #endif
@@ -174,7 +177,7 @@ void test_for_boost_spsc()
 int main()
 {
     // 环境参数：
-    // Release版，Centos7, gcc 7.5 CPU
+    // Release版，Centos7, gcc 7.5
     // Intel(R) Core(TM) i5-6200U CPU 2核（共4核，分配给虚拟机2个核）
     // 结论：
     // tools::spsc队列 的性能和 boost库的spsc队列 性能基本持平。

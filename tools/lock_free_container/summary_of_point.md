@@ -35,7 +35,7 @@ memory barriers 包含两类
     在实际的应用程序开发中，开发者可能完全不知道memory barrier就可以开发正确的多线程程序，这主要是
     因为各种同步机制中已经隐含了memory barrier.(但和实际的memory barrier有细微差别)
 
-    所有的cpu memory barrier都隐含了编译期barrier.
+    所有的cpu memory barrier都隐含了编译器barrier.
     linux内核的代码会根据配置在单cpu使用编译器barrier, 而在SMP上才使用memory barrier. 另外在SMP
     上如果使用共享内存，也必须使用memory barrier而不是编译期barrier. 当然，使用了锁来访问共享内存
     也是足够用的。
@@ -62,7 +62,7 @@ memory barriers 包含两类
      3. https://www.cnblogs.com/my_life/articles/5220172.html
      4. https://www.cnblogs.com/straybirds/p/8856726.html
      5. 《深入Linux内核架构》
-     6. 《深入Linux内核》
+     6. 《深入理解Linux内核》
 
      -- yankefei
 ```
@@ -91,12 +91,12 @@ c++11的原子"比较/交换"操作, 伪代码如下：
 后缀是*_strong的版本执行的结果一定如此，但后缀是*_weak的版本与后缀是*_strong 不同，即使 *expected
 确实比较等于 a_obj 中包含的值，这个弱版本也可以通过返回 false 来虚假失败。 对于某些循环算法，这可能
 是可接受的行为，并且可能会在某些平台上显着提高性能。 在这些虚假失败中，该函数返回 false 而不会修改
-预期（可作为判断是否为假失败的方式， 如下面的例子）。对于非循环算法，通常首选 *_strong。
+预期（如下面的例子）。对于非循环算法，通常首选 *_strong。
 
     {
-        bool expected=false;
         extern atomic<bool> b; // 设置些什么
-        while(!b.compare_exchange_weak(expected,true) && !expected);
+        bool expected = b.load();
+        while(!b.compare_exchange_weak(expected,true)); // 最终结果一定会将b设置为true
     }
 
 
@@ -110,7 +110,7 @@ void atomic_thread_fence (memory_order sync);
 参考：
     1. http://www.cplusplus.com/reference/atomic
     2. cppreference-zh-20210212.chm
-    3. 《C++ Concurrency in Action》Anthony Williams, 翻译:陈晓伟
+    3. 《C++ Concurrency in Action》Anthony Williams
 
     -- yankefei
 ```
@@ -171,7 +171,9 @@ f: RMW操作（read-modify-write），即一些需要同时读写的操作，比
 
 
 参考：1. 《深入理解c++11, c++11新特性解析与应用》
-     2. 《C++ Concurrency in Action》Anthony Williams, 翻译:陈晓伟
+     2. 《C++ Concurrency in Action》Anthony Williams
+     (阅读建议：Anthony Williams的著作[参考2]内容比较晦涩难懂，因为他假设你对并发编程已经有了一些了解，
+     建议先阅读国内作者的著作[参考1]，对内容有了一定了解后，再去阅读[参考2]的第5. 7章, 会容易很多)
 
      -- yankefei
 ```
