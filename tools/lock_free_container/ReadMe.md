@@ -7,14 +7,18 @@
    用来分析和注释里面的代码逻辑。因为这个旧版本的kfifo内部很多处内存屏障的使用不够精简，可以优化和去掉。
    通过对比，可以对kfifo的版本演变有更深入的了解，加深；理解对内存屏障用法的使用。
 
-3. spsc_queue.h：为无锁的单生产者，单消费者的c++队列容器，实现参考kfifo.
+3. spsc_queue.h：为无锁的单生产者，单消费者的定长c++队列容器，实现参考内核代码kfifo.
 
-4. mpmc_queue.h：为无锁的多生产者，多消费者的c++队列容器，无锁算法参考：
-   https://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
+4. mpmc_queue.h：为无锁的多生产者，多消费者的定长c++队列容器，无锁算法参考：https://github.com/rigtorp/MPMCQueue
+   数据结构设计参考内核代码kfifo，对原有算法进行了优化。
 
-5. auto_inc_lock_free_container文件夹：为自增长的链表型无锁容器，算法来自《C++ Concurrency in Action》
+5. queue_base.h：定义了分配队列内存的公共函数，用于无锁队列的实现。
 
-6. documentation文件夹：介绍内存屏障的一些文档
+6. auto_inc_lock_free_container文件夹：为自增长的链表型无锁容器，算法来自《C++ Concurrency in Action》
+
+7. documentation文件夹：介绍内存屏障的一些文档
+
+8. [summary_of_point.md](./summary_of_point.md) 整理了无锁算法底层锁依赖的一些关键知识点。
 
 ```
 

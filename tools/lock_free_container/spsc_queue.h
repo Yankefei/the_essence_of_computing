@@ -12,6 +12,7 @@
 namespace tools
 {
 
+// spsc queue
 template<typename T, typename Alloc = std::allocator<T>>
 class SPSCQueue : protected QueueBase<T, Alloc>
 {

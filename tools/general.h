@@ -111,6 +111,16 @@ static inline uint32_t round_to_power_of_2(uint32_t v)
     return _v;
 }
 
+// 将value向上取整到最近的2的N次幂，返回幂数N
+static inline uint32_t get_bits(uint32_t value)
+{
+    uint32_t bits = 0;
+    while (((uint32_t)1 << bits) <= value)
+    {
+        ++ bits;
+    }
+    return bits;
+}
 
 // 线程ID
 #define GET_THREAD_ID    syscall(SYS_gettid)

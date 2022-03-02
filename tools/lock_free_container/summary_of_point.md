@@ -44,9 +44,6 @@ memory barriers 包含两类
     需要和读操作(或者读数据依赖)barrier一起使用(当然，通用barrier也是可以的)，通常期望写barrier之前
     的Stores与读barrier或数据依赖屏障之后的Load相匹配，反之亦然：
 
-    Intel上的wmb()宏实际上更简单，因为它展开为barrier(). 这是因为Intel处理器从不对写内存访问重新
-    排序，因此，没有必要在代码中插入一条串行话汇编指令。不过，这个宏禁止编译期重新组合指令。
-
     最后，正确使用内存和优化屏障需要高度的技巧。因此应该注意到，一些内核维护人员不怎么喜欢内存屏障，
     使得该特性的代码很难进入到内核的主流版本中。因此，首先试着看一下是否能够在没有屏障的情况下完成
     工作，永远是值得的。这是可能的，因为在很多体系结构中上锁指令也相当于内存屏障。
@@ -57,12 +54,24 @@ memory barriers 包含两类
     了解，并做适配，代码可迁移性很差。相比之下，c++11提供的原子变量的内存模型版本的fence封装性更好，
     建议使用。
 
+注：
+    X86-64下仅支持一种指令重排：Store-Load ，即读操作可能会重排到写操作前面，同时不同线程的写操作并
+    没有保证全局可见，例子见《Intel® 64 and IA-32 Architectures Software Developer’s Manual》手册
+    8.6.1、8.2.3.7节。要注意的是这个问题只能用mfence解决，不能靠组合sfence和lfence解决。
+    （用sfence+lfence组合仅可以解决重排问题，但不能解决全局可见性问题，简单理解不如视为sfence和
+    lfence本身也能乱序重拍）
+
+    代码中仍然使用lfence()与sfence()这两个内存屏障应该也是一种长远的考虑。按照Interface写代码是最
+    保险的，万一Intel以后出一个采用弱一致模型的CPU，遗留代码出问题就不好了。目前在X86下面视为编译器
+    屏障即可。
+
 参考：1. http://lxr.linux.no/linux+v2.6.24/Documentation/memory-barriers.txt
      2. http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.06.07c.pdf
      3. https://www.cnblogs.com/my_life/articles/5220172.html
      4. https://www.cnblogs.com/straybirds/p/8856726.html
      5. 《深入Linux内核架构》
      6. 《深入理解Linux内核》
+     7. https://zhuanlan.zhihu.com/p/43526907
 
      -- yankefei
 ```
@@ -106,11 +115,28 @@ c++11的原子操作函数也提供了对应版本的内存屏障函数，
 
 void atomic_thread_fence (memory_order sync);
 
+参数介绍：
+std::atomic_thread_fence(memory_order_relaxed)，没有任何效果。
+std::atomic_thread_fence(memory_order_acquire) 和 std::atomic_thread_fence(memory_order_consume) 属于acquire fence。
+std::atomic_thread_fence(memory_order_release)属于release fence。
+std::atomic_thread_fence(memory_order_acq_rel)既是acquire fence 也是release fence，为了方便这里称为full fence。
+std::atomic_thread_fence(memory_order_seq_cst)额外保证有单独全序的full fence。
+
+Release fence可以防止fence前的内存操作重排到fence后的任意store之后，即阻止loadstore重排和storestore重排。
+acquire fence可以防止fence后的内存操作重排到fence前的任意load之前，即阻止loadload重排和loadstore重排。
+
+和原子操作的内存序比较：
+基于atomic_thread_fence（外加一个任意序的原子变量操作）的同步和基于原子操作的同步很类似，比如最常用的，
+都可以形成release acquire语义，但是从上面的描述可以看出，fence的效果要比基于原子变量的效果更强，在
+weak memory order平台的开销也更大。
+以release为例，对于基于原子变量的release opration，仅仅是阻止前面的内存操作重排到该release opration之后，
+而release fence则是阻止重排到fence之后的任意store operation之后。
 
 参考：
     1. http://www.cplusplus.com/reference/atomic
     2. cppreference-zh-20210212.chm
     3. 《C++ Concurrency in Action》Anthony Williams
+    4. https://blog.csdn.net/wxj1992/article/details/103917093
 
     -- yankefei
 ```
@@ -129,15 +155,26 @@ memory_order_relaxed 中的某一个即可。
     到一个原子变量的特定值，线程随后的读操作就不会去检索变量较早的那个值。
 
 2. memory_order_acquire
-    本线程中，所有后续的读操作必须在本条原子操作完成后执行。（读置后）
+    当有包含有此内存顺序的加载操作时，当前线程中，所有读或者写不能被重排到此加载之前。其他线程使
+    用 memory_order_release 内存序的变量存储操作，为当前线程所见。
+
+    本线程中，所有后续的读操作/写操作必须在本条原子操作完成后执行。（读/写置后）
 
 3. memory_order_release
-    本线程中，所有之前的写操作完成后才能执行本条原子操作。（写置前）
+    当有包含有此内存顺序的存储操作时，当前线程中的读写操作不能重排到此存储之后。当前线程的所有写入
+    可见与对同一原子变量的 memory_order_acquire 和 memory_order_consume操作。
+
+    本线程中，所有之前的读操作/写操作完成后才能执行本条原子操作。（读/写置前）
 
 4. memory_order_acq_rel
+    带有此内存顺序的读-改-写操作即是memory_order_acquire内存序又是memory_order_release。
+
     同时包含memory_order_acquire和memory_order_release。
 
 5. memory_order_consume
+    当有包含有此内存顺序的加载操作时，当前线程中，所有依赖于对该加载值的读写操作不能重排到该加载之前。
+    其他线程使用 memory_order_release 内存序的变量存储操作，为当前线程所见。
+
     本线程中，所有后续的有关**本原子类型**的操作，必须在本条原子操作完成之后执行。(本类型操作置后)
     最常见的使用方式就是一个指针使用该内存模型load一个原子类型的指针变量，那么后面对该指针的解引用
     操作必然会发生在该load操作之后。如果确认需要，std::kill_dependency()可以打断这种依赖关系。
@@ -174,6 +211,7 @@ f: RMW操作（read-modify-write），即一些需要同时读写的操作，比
      2. 《C++ Concurrency in Action》Anthony Williams
      (阅读建议：Anthony Williams的著作[参考2]内容比较晦涩难懂，因为他假设你对并发编程已经有了一些了解，
      建议先阅读国内作者的著作[参考1]，对内容有了一定了解后，再去阅读[参考2]的第5. 7章, 会容易很多)
+     3. 2. cppreference-zh-20210212.chm
 
      -- yankefei
 ```

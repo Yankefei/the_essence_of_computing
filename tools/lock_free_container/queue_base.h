@@ -34,7 +34,33 @@ class QueueBase
     static TBase_Impl _m_t_impl_;                 // 无状态，设置为静态变量
 
 public:
+    // 创建数组, 不构造T类型数据，由外部处理
+    T* buy_array_no_construct(uint32_t size)
+    {
+        if (size == 0) return nullptr;
+        size_t total_size = size * sizeof(T) + 4;
+        byte_pointer b_p = byte_rebind_traits::allocate(_m_byte_impl_, total_size);
+        memset(b_p, 0, total_size);
+        uint32_t* s_p = reinterpret_cast<uint32_t*>(b_p);
+        *s_p = size; // 数组头部放置数组的长度信息
+
+        return reinterpret_cast<T*>(s_p + 1);
+    }
+
+    // 释放数组，不销毁T类型数据，由外部处理
+    void free_array_no_destruct(T* array)
+    {
+        assert(array != nullptr);
+        uint32_t* s_p = reinterpret_cast<uint32_t*>(array) - 1;
+        uint32_t array_len = *s_p;
+
+        size_t total_size = array_len * sizeof(T) + 4;
+        byte_rebind_traits::deallocate(_m_byte_impl_,
+            reinterpret_cast<byte_pointer>(s_p), total_size);
+    }
+
     // 入参为需要申请的数组长度
+    // 创建普通数组
     T* buy_array(uint32_t size)
     {
         if (size == 0) return nullptr;
@@ -54,6 +80,7 @@ public:
         return reinterpret_cast<T*>(s_p + 1);
     }
 
+    // 释放普通数组
     void free_array(T* array)
     {
         assert(array != nullptr);
