@@ -102,7 +102,7 @@ public:
         for (;;)
         {
             auto &entry = buf_[index(in)];
-            if ((turn(in) << 1) == entry.turn_.load(std::memory_order_acquire))
+            if (LIKELY((turn(in) << 1) == entry.turn_.load(std::memory_order_acquire)))
             {
                 if (in_.compare_exchange_strong(in, in + 1)) // 直接累加
                 {
@@ -128,7 +128,7 @@ public:
         for (;;)
         {
             auto &entry = buf_[index(out)];
-            if ((turn(out) << 1) + 1 == entry.turn_.load(std::memory_order_acquire))
+            if (LIKELY((turn(out) << 1) + 1 == entry.turn_.load(std::memory_order_acquire)))
             {
                 if (out_.compare_exchange_strong(out, out + 1))
                 {
@@ -192,10 +192,10 @@ private:
 
 private:
     // 避免伪共享
-    std::atomic<size_t>     in_;
+    std::atomic<size_t>     in_{0};
     EMPTY_CACHE_LINE;
 
-    std::atomic<size_t>     out_;
+    std::atomic<size_t>     out_{0};
     EMPTY_CACHE_LINE;
 
     Entry*                  buf_;    // Entry数组

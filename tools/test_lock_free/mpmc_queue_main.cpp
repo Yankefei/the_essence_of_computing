@@ -86,7 +86,7 @@ void mpmc_test()
 
     pthread_barrier_wait(&barrier_start);
 
-    size_t times = 10;
+    size_t times = 60;
 	while(times -- != 0)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));

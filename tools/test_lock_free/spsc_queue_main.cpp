@@ -16,7 +16,7 @@ static pthread_barrier_t barrier_start;
 
 void spsc_test()
 {
-	SPSCQueue<char>* queue = create_spsc_queue<char>(1024);
+	SPSCQueue<char>* queue = create_spsc_queue<char>(8192);
 
 	tools::stream << "spsc: fifo_size: "<< queue->capacity() << std::endl;  
 
@@ -85,13 +85,12 @@ void spsc_test()
 
     pthread_barrier_wait(&barrier_start);
 
-    size_t times = 30;
+    size_t times = 60;
 	while(times -- != 0)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		tools::stream <<"kfifo len : "<< queue->size() << std::endl;
+		tools::stream <<"queue len : "<< queue->size() << std::endl;
 	}
-
 
     run = false;
     t1.join();
@@ -99,8 +98,100 @@ void spsc_test()
 	free_spsc_queue(queue);
 }
 
+
+size_t increase_val = 0;
+
+void spsc_test2()
+{
+	SPSCQueue<size_t>* queue = create_spsc_queue<size_t>(8192);
+
+	tools::stream << "spsc: capacity_size: "<< queue->capacity() << std::endl;
+
+#ifndef DEBUG
+    pthread_barrier_init(&barrier_start, NULL, 3);
+#else
+    assert(pthread_barrier_init(&barrier_start, NULL, 3) == 0);
+#endif
+
+    bool run = true;
+
+	std::thread t1([queue, &run]()
+    {
+		pthread_barrier_wait(&barrier_start);
+        while(ACCESS_ONCE(run))
+        {
+		    if (queue->push(increase_val) == false)
+            {
+                continue;
+            }
+            increase_val ++;
+        }
+	});
+
+	std::thread t2([queue, &run](){
+		size_t recv_val = 0;
+        size_t temp_val = 0;
+		pthread_barrier_wait(&barrier_start);
+		while(ACCESS_ONCE(run))
+		{
+			if (queue->get(&temp_val) == false)
+            {
+                continue;
+            }
+
+#ifndef DEBUG
+            if (temp_val != recv_val)
+                std::runtime_error("pop error");
+
+            recv_val ++;
+#else
+            assert(temp_val == recv_val ++);
+#endif
+		}
+	});
+
+	auto t1_ptr = t1.native_handle();
+    cpu_set_t cs;
+    CPU_ZERO(&cs);
+    CPU_SET(cpu_thread1, &cs);
+#ifndef DEBUG
+        pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs);
+#else
+        assert(pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs) == 0); // 控制线程在哪个cpu核上运行
+#endif
+
+	auto t2_ptr = t2.native_handle();
+    CPU_ZERO(&cs);
+    CPU_SET(cpu_thread2, &cs);
+#ifndef DEBUG
+        pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs);
+#else
+        assert(pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs) == 0);
+#endif
+
+    pthread_barrier_wait(&barrier_start);
+
+    size_t times = 60;
+	while(times -- != 0)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+		tools::stream <<"queue len : "<< queue->size() << ", increase_val: "<< increase_val << std::endl;
+	}
+
+    run = false;
+    t1.join();
+    t2.join();
+
+    free_spsc_queue(queue);
+}
+
 int main()
 {
+	// 测试插入，删除一段数据
     spsc_test();
+
+	// 测试插入，删除单个数据
+	spsc_test2();
+
     return 0;
 }
