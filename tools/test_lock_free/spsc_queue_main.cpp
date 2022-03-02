@@ -6,6 +6,8 @@
 
 using namespace tools;
 
+//#define DEBUG
+
 // 让两个线程分别运行在两个cpu上
 int cpu_thread1 = 0;
 int cpu_thread2 = 1;
@@ -18,7 +20,7 @@ void spsc_test()
 
 	tools::stream << "spsc: fifo_size: "<< queue->capacity() << std::endl;  
 
-    assert(pthread_barrier_init(&barrier_start, NULL, 3) == 0);
+    pthread_barrier_init(&barrier_start, NULL, 3);
     bool run = true;
 
 	std::thread t1([queue, &run](){
@@ -30,7 +32,15 @@ void spsc_test()
 		{
 			while (queue->avail() < 3 && ACCESS_ONCE(run)) {}
 				//PAUSE();
-			assert(ACCESS_ONCE(run) && queue->push(buffer, 3) == 3);
+
+#ifndef DEBUG
+			if (ACCESS_ONCE(run) && queue->push(buffer, 3) != 3)
+			{
+				std::runtime_error("push error");
+			}
+#else
+			assert(ACCESS_ONCE(run) && queue->push(buffer, 3) == 3);			
+#endif
 		}
 	});
 
@@ -44,8 +54,15 @@ void spsc_test()
 				// PAUSE();
             if (LIKELY(ACCESS_ONCE(run)))
             {
+#ifndef DEBUG
+				if (!(queue->get(buffer, 3) == 3 && buffer[0] == 1))
+				{
+					std::runtime_error("push error");
+				}
+#else
                 assert(queue->get(buffer, 3) == 3);
                 assert(buffer[0] == 1);
+#endif
             }
 			// assert(buffer[1] == 2);
 			// assert(buffer[2] == 3);
@@ -59,16 +76,16 @@ void spsc_test()
     cpu_set_t cs;
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread1, &cs);
-    assert(pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs) == 0); // 控制线程在哪个cpu核上运行
+    pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs); // 控制线程在哪个cpu核上运行
 
 	auto t2_ptr = t2.native_handle();
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread2, &cs);
-    assert(pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs) == 0);
+    pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs);
 
     pthread_barrier_wait(&barrier_start);
 
-    size_t times = 100;
+    size_t times = 30;
 	while(times -- != 0)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cmath>
 #include <atomic>
+#include "stream.h"
 
 #include "general.h"
 
@@ -23,7 +24,7 @@ struct _Entry
     CACHE_LINE_ALIGN std::atomic<size_t> turn_{0};    
     typename std::aligned_storage<sizeof(T), alignof(T)>::type data_; // 定义T类型数组，但不调用T的构造函数
 
-    _Entry() = default;    
+    _Entry() = default;
     ~_Entry()
     {
         if (turn_ & 1)
@@ -160,7 +161,7 @@ public:
         return size() <= 0;
     }
 
-    bool capacity() const
+    size_t capacity() const
     {
         return mask_ + 1;
     }

@@ -6,6 +6,8 @@
 
 using namespace tools;
 
+//#define DEBUG
+
 // 让两个线程分别运行在两个cpu上
 int cpu_thread1 = 0;
 int cpu_thread2 = 1;
@@ -18,9 +20,14 @@ void mpmc_test()
 {
 	MPMCQueue<size_t>* queue = create_mpmc_queue<size_t>(8192);
 
-	tools::stream << "mpmc: fifo_size: "<< queue->capacity() << std::endl;
+	tools::stream << "mpmc: capacity_size: "<< queue->capacity() << std::endl;
 
+#ifndef DEBUG
+    pthread_barrier_init(&barrier_start, NULL, 3);
+#else
     assert(pthread_barrier_init(&barrier_start, NULL, 3) == 0);
+#endif
+
     bool run = true;
 
 	std::thread t1([queue, &run]()
@@ -46,7 +53,15 @@ void mpmc_test()
             {
                 continue;
             }
+
+#ifndef DEBUG
+            if (temp_val != recv_val)
+                std::runtime_error("pop error");
+
+            recv_val ++;
+#else
             assert(temp_val == recv_val ++);
+#endif
 		}
 	});
 
@@ -54,12 +69,20 @@ void mpmc_test()
     cpu_set_t cs;
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread1, &cs);
-    assert(pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs) == 0); // 控制线程在哪个cpu核上运行
+#ifndef DEBUG
+        pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs);
+#else
+        assert(pthread_setaffinity_np(t1_ptr, sizeof(cs), &cs) == 0); // 控制线程在哪个cpu核上运行
+#endif
 
 	auto t2_ptr = t2.native_handle();
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread2, &cs);
-    assert(pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs) == 0);
+#ifndef DEBUG
+        pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs);
+#else
+        assert(pthread_setaffinity_np(t2_ptr, sizeof(cs), &cs) == 0);
+#endif
 
     pthread_barrier_wait(&barrier_start);
 
@@ -67,7 +90,7 @@ void mpmc_test()
 	while(times -- != 0)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		tools::stream <<"queue len : "<< queue->size()<< ", increase_val: "<< increase_val << std::endl;
+		tools::stream <<"queue len : "<< queue->size() << ", increase_val: "<< increase_val << std::endl;
 	}
 
     run = false;
@@ -79,6 +102,8 @@ void mpmc_test()
 
 int main()
 {
+    stream <<"_Entry size: " << sizeof(_Entry<size_t>) << std::endl;
+    stream <<"_Entry::data_ size: " << sizeof(_Entry<size_t>::data_) << std::endl;
     mpmc_test();
 
     return 0;
