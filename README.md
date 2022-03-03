@@ -10,4 +10,6 @@ Under the tools directory, there is :
 All the above containers have implemented all the common algorithms and passed some
 correctness tests and performance tests.
 ```
+For the Chinese introduction of tools directory, see[ReadMe.md](./tools/ReadMe.md).
+
  --  *by Yankefei <yankefei1114@163.com>*

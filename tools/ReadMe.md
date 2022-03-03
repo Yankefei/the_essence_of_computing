@@ -19,7 +19,7 @@
 - binary_tree_print_util.h <br>按照从上到下的方式打印一棵二叉树的结构, 用于调试AVL树和RB树
 - binary_thread_tree.h binary_thread_tree2.h<br> 中序线索二叉树的容器类
 - iterator_base.h <br>容器迭代器的基类（待完善）
-- hash_map.hpp hash_func.h<br> 
+- hash_map.hpp, hash_func.h<br> 
 基于*开放定址法（平方探测)* 的哈希冲突处理方案, 区别于unordered_map的*链地址法*，目的在于提高查找的效率<br>
 但由于使用了数组，在插入和删除中需要额外处理数组的扩容。实际性能测试中，查找效率优于 unordered_map<br>
 插入，删除过程的时延较大，为了更快的遍历操作，将数据的下标保存在排序二叉树中。适合**数据变动较少的查找<br>密集型场景**。
@@ -32,7 +32,7 @@
 携带平衡因子且有parent指针的版本，详细信息请看该目录的[ReadMe.md](./binary_avl_tree/ReadMe.md)文件。
 - binary_rb_tree 目录<br>
 红黑二叉树容器，实现了两个版本：不携带parent指针的版本以及携带parent指针的版本. 详细信息请看该目录的[ReadMe.md](./binary_rb_tree/ReadMe.md)<br>文件。
-- map.hpp pair.hpp<br> 
+- map.hpp, pair.hpp<br> 
 分别使用AVL树和红黑树作为底层数据结构的map容器。
 - set.hpp<br>
 分别使用AVL树和红黑树作为底层数据结构的set容器。
@@ -42,7 +42,7 @@
 实现了两种优先级队列的容器，第一种是使用传统堆算法的容器适配器，底层使用vector容器。第二种实现为一个索引堆<br>
 内部无需直接引用待排序的数据内容，只需提供数据的索引值以及数据之间的比较运算符，就可以对数据进行排序。且支<br>
 持删除堆中任意位置的索引。
-- queue.h ring_queue.h<br>
+- queue.h, ring_queue.h<br>
 实现了基于链表的普通队列以及基于数组的环形队列。
 - stack.h<br>
 实现了基于数组的栈容器。
@@ -58,9 +58,9 @@
 一个封装c++11原子模板的简单自旋锁。
 - general.h<br>
 一些常用的宏函数定义。
-- stream.h stream.cpp<br>
+- stream.h, stream.cpp<br>
 封装了输出流，可支持同时向文件和cout写入。
-- util.h util.cpp<br>
+- util.h, util.cpp<br>
 简单工具函数。
 
 ## 二. lock-free库
