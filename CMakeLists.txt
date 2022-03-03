@@ -11,8 +11,8 @@ project(DataStruct_And_Algorithm)
 set(CMAKE_CXX_COMPILER "g++")
 
 #指定编译选项
-set(CMAKE_BUILD_TYPE Debug)
-#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)   # Debug模式
+#set(CMAKE_BUILD_TYPE Release)  # Release模式
 
 set(CMAKE_CXX_FLAGS "-o2 -Wall -std=c++11")
 set(CMAKE_CXX_FLAGS "-g")

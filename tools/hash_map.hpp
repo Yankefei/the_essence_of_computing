@@ -369,7 +369,8 @@ public:
         Entry* entry = buy_entry(key, V());
         entry->hash_val_ = hash_val;
         entry->status_ = KindOfEntry::Used;
-        assert(insert(entry, index_pair.first) == true);
+        bool res = insert(entry, index_pair.first);
+        assert(res == true);
         return entry->data_.second;
     }
 
