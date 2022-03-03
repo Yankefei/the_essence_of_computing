@@ -77,4 +77,9 @@
 - balance_plus_tree 目录：<br>见[ReadMe.md](./balance_plus_tree/ReadMe.md)文件。
 - balance_plus_tree_debug 目录： <br>见[ReadMe.md](./balance_plus_tree_debug/ReadMe.md)文件。
 
+## 四. 测试
+- 正确性测试代码目录：**test**, 无锁容器的正确性测试代码目录：**test_lock_free**。
+- 性能测试代码目录：**test_performance**, 目前仅提供无锁容器和Map, HashMap的对比验证。
+
+
  --  *by Yankefei <yankefei1114@163.com>*
