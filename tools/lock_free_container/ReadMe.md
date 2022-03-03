@@ -18,7 +18,7 @@
 
 7. documentation文件夹：介绍内存屏障的一些文档
 
-8. [summary_of_point.md](./summary_of_point.md) 整理了无锁算法底层锁依赖的一些关键知识点。
+8. summary_of_point.md 整理了无锁算法底层锁依赖的一些关键知识点。
 
 ```
 
@@ -30,5 +30,5 @@ documentation中的文档概述：
 分别来自linux内核的文档以及IBM研究员的论文，均为对内存屏障的专业性分析。在经过机器翻译后对内容重新
 进行了梳理和理解。 "_cn"后缀的即是对应的译文。
 
-如果想直接了解具体的要点，可以直接阅读本文件夹的 [summary_of_point.md](./summary_of_point.md)
+如果想直接了解具体的要点，可以直接阅读本文件夹的 summary_of_point.md
 ```
