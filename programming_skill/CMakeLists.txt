@@ -15,3 +15,5 @@ target_link_libraries(func_param_skill  tools)
 add_executable(align_main  align_main.cpp)
 target_link_libraries(align_main  tools)
 
+
+add_subdirectory(test)
