@@ -123,7 +123,7 @@ public:
             if (len <= hight_ + 1)
             {
                 free_array(insert_array_);
-                insert_array_ = buy_array(len << 2);
+                insert_array_ = buy_array(len << 1);
             }
         }
 
