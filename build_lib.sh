@@ -16,7 +16,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
-mkdir ../tools_lib
+mkdir  -p ../tools_lib
 
 cp tools/libtools.a  ../tools_lib
 
