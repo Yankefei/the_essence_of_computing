@@ -111,3 +111,7 @@ target_link_libraries(index_p_queue_main  tools)
 
 add_executable(algorithm_main  algorithm_main.cpp)
 target_link_libraries(algorithm_main  tools)
+
+
+add_executable(crc_check_main  crc_check_main.cpp)
+target_link_libraries(crc_check_main  tools)

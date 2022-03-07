@@ -13,7 +13,7 @@ struct MyStruct
 
 void func1(const std::string& name,  std::string& str)
 {
-	stream << str << "\n";
+	stream << str <<", " <<name <<"\n";
 }
 
 //void func2(const std::string& name, const void* ptr)
@@ -22,11 +22,13 @@ void func1(const std::string& name,  std::string& str)
 
 void func3(const std::string& name,  uint64_t& a)
 {
-	stream << a << "\n";
+	stream << a  <<", " <<name << "\n";
+	a = 1234567;
 }
 
-void func4(const std::string& name,  std::vector<std::string>& a)
+void func4(const std::string& name,  const std::vector<std::string>& a)
 {
+	stream << name << "\n";
 	stream << a.size() << "\n";
 	for (auto e : a)
 	{
@@ -36,6 +38,7 @@ void func4(const std::string& name,  std::vector<std::string>& a)
 
 void func5(const std::string& name,  MyStruct & a)
 {
+	stream << name << "\n";
 	stream << a.a << "\n";
 	stream << a.b << "\n";
 	stream << a.c.size() << "\n";
@@ -43,20 +46,21 @@ void func5(const std::string& name,  MyStruct & a)
 
 
 /**
- *  这是一个很有趣的编程技法，如果现在有多个函数指针，参数的个数相同，但是最后一个参数的类型不一致
- *  有一种方式可以用一个函数指针的定义式调用其他所有的回调函数：
- *  如下所示，将最后一个参数定义为 const void* str, 调用的时候，将其他函数指针拷贝过来，然后传入
- *  实际调用类型参数的地址即可。可以做到函数调用的形式一致性。目前测试，可以支持任意类型的const
- *  修饰的参数.
- *  ps. 经过测试发现，不加const修饰可完全可以
+ *  这是一个很有趣的编程技法，如果现在有多个函数指针，只要参数的个数相同，有一种只定义一个公共
+ *  类型的函数指针，就可以调用其他所有的回调函数的内容：
+ *  如下所示，将最后一个参数定义为 void* str, 调用的时候，将其他函数指针拷贝过来，然后传入
+ *  实际调用类型参数的地址即可。可以做到函数调用的形式一致性。目前测试，支持任意类型,有const 修饰
+ *  没有const修饰，引用也支持，容器也支持
+ *  ps. 经过测试发现，gcc， vs都可以
 */
-typedef void(*func2_type)(const std::string& name,  void* str);
+typedef void(*func2_type)(void* name,  void* str);
 
 typedef void(*func1_type)(const std::string& name,  std::string& str);
 typedef void(*func3_type)(const std::string& name,  uint64_t& a);
-typedef void(*func4_type)(const std::string& name,  std::vector<std::string>& a);
+typedef void(*func4_type)(const std::string& name,  const std::vector<std::string>& a);
 typedef void(*func5_type)(const std::string& name,  MyStruct& a);
 
+std::string g_name("999");
 
 void test()
 {
@@ -68,7 +72,7 @@ void test()
 
 	std::string str = "value";
 
-	func2_local("123", &str);
+	func2_local(&g_name, &str);
 }
 
 void test2()
@@ -81,7 +85,8 @@ void test2()
 
 	uint64_t test_a = 123456;
 
-	func2_local("123", &test_a);
+	func2_local(&g_name, &test_a);
+	stream << test_a << std::endl;
 }
 
 void test3()
@@ -94,7 +99,7 @@ void test3()
 
 	std::vector<std::string> v{ "1","12", "123", "1234" };
 
-	func2_local("123", &v);
+	func2_local(&g_name, &v);
 }
 
 void test4()
@@ -110,7 +115,7 @@ void test4()
 	v.b = "yankefei";
 	v.c = std::vector<int32_t>({ 123, 123, 123 });
 
-	func2_local("123", &v);
+	func2_local(&g_name, &v);
 }
 
 int main()
