@@ -1,12 +1,60 @@
 #include <iostream>
 
 #include <cstring>
+#include <memory>
 #include "stream.h"
 #include "vector.hpp"
 
 using namespace tools;
 using namespace std;
 
+
+
+int main()
+{
+	std::shared_ptr<int> a(new int(4));
+	std::shared_ptr<int> b = a;
+	a.reset();
+
+	printf("%d\n", a.use_count());
+	printf("%d\n", b.use_count());
+
+	printf("%d\n", a);
+	printf("%d\n", b);
+
+
+	char array[] = "hello";
+	char array2[] = {"hello"};
+
+	assert(strcmp(array, array2) == 0);
+
+	stream << sizeof(array) <<  ", "<<strlen(array) << std::endl;
+	stream << sizeof(array2) <<  ", "<<strlen(array2) << std::endl;
+
+	/*
+		free delete 空指针竟然没事
+	*/
+	int *p1 = nullptr;
+	delete p1;
+
+	int *p2 = nullptr;
+	free(p2);
+
+	// int *pp = new int(10);
+	// delete pp;
+	// delete pp;
+
+
+	// int* p = (int*)malloc(sizeof(int));
+	// free(p);
+	// free(p);
+
+
+
+	return 0;
+}
+
+#if 0
 
 class Test
 {
@@ -32,7 +80,6 @@ int main()
 }
 
 
-#if 0
 
 class Object
 {
