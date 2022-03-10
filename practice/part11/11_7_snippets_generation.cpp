@@ -91,7 +91,7 @@ void get_snippets_generation(int array[], size_t num, int array2[], size_t num2,
             current.num ++;
         else
         {
-            assert(current.begin == tag_index);
+            //assert(current.begin == tag_index);
             current.num = 1;
         }
     }
