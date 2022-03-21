@@ -11,13 +11,62 @@
 
 using namespace tools;
 
+namespace tools::alg
+{
+
+#define Left_Chile(i)  ((2*i) + 1)
+template<typename T>
+// 数组的下标必须是从0开始
+void heap_down(T* array, int left, int right)
+{
+    int tag_index = Left_Chile(left);
+    while (tag_index <= right)
+    {
+        if (tag_index < right && array[tag_index] < array[tag_index + 1])
+        {
+            tag_index ++;
+        }
+
+        if (array[left] < array[tag_index])
+        {
+            std::swap(array[left], array[tag_index]);
+            left = tag_index;
+            tag_index = Left_Chile(tag_index);
+        }
+        else
+            break;
+    }
+}
+
+template<typename T>
+void heap_sort2(T* array, int left, int right)
+{
+    // 建堆
+    T* tag_array = array + left;
+    int size = right - left + 1;
+    for (int i = size / 2; i >= 1; i--)  // >= 1
+    {
+        heap_down(tag_array, i - 1, size - 1);
+    }
+
+    // 反向pop
+    for (int j = right; j >= 1; j--)  // >= 1
+    {
+        std::swap(tag_array[0], tag_array[j]);
+        heap_down(tag_array, 0, j - 1);
+    }
+}
+
+}
+
 int main()
 {
     {
         int array[10] = {9, 3, 5, 7, 2, 0, 8, 1, 6, 4};
 
-        alg::merge_sort(array, 10);
+        //alg::merge_sort(array, 10);
         //alg::fast_sort(array, 10);
+        alg::heap_sort2(array, 0, 9);
         for (int i = 0; i < 10; i ++)
         {
             stream << array[i] << " ";
@@ -25,8 +74,9 @@ int main()
         stream << std::endl;
 
         int array2[11] = {9, 3, 5, 7, 2, 0, 8, 10, 1, 6, 4};
-        alg::merge_sort(array2, 11);
+        //alg::merge_sort(array2, 11);
         //alg::fast_sort(array2, 11);
+        alg::heap_sort2(array2, 0, 10);
         for (int i = 0; i < 11; i ++)
         {
             stream << array2[i] << " ";
@@ -146,6 +196,7 @@ int main()
             std::sort(t_array.data(), t_array.data() + t_array.size());
 
             //alg::heap_sort(array.data(), array.size());
+            alg::heap_sort2(array.data(), 0, array.size() - 1);
             //alg::selection(array.data(), array.size());
             //alg::insertion(array.data(), array.size());
             //alg::insertion2(array.data(), array.size());
@@ -156,7 +207,7 @@ int main()
             //alg::shellsort(array.data(), array.size());
             //alg::_fast_sort(array.data(), array.size());
             //alg::fast_sort(array.data(), array.size());
-            alg::merge_sort(array.data(), array.size());
+            //alg::merge_sort(array.data(), array.size());
 
             alg::check_sort(array.data(), array.size());
             for (int i = 0; i < t_array.size(); i ++)
